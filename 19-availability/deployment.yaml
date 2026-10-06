@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  replicas: 2
+  minReadySeconds: 5              # neuer Pod muss 5 s "ready" sein, bevor es weitergeht
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1                 # höchstens 1 Pod mehr als gewünscht
+      maxUnavailable: 0           # nie weniger Pods als gewünscht
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:
+        app: demo
+    spec:
+      # Pods möglichst auf verschiedene Nodes verteilen
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: demo
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: demo
+          image: quay.io/ghilling/quarkus-demo:1.0
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "100m"          # Basis für den HorizontalPodAutoscaler
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 2
+            failureThreshold: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: 1
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              # Kurz warten, bis der Pod aus allen Service-Endpoints entfernt ist,
+              # bevor die Anwendung beendet wird – sonst gehen Anfragen verloren.
+              exec:
+                command: ["sleep", "5"]

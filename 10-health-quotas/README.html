@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kapitel 10: Health-Checks, Quotas und
+LimitRanges – Container und Kubernetes/OpenShift</title>
+<style type="text/css">:root {
+--bg: #ffffff;
+--fg: #1f2328;
+--muted: #59636e;
+--border: #d1d9e0;
+--accent: #1a5fb4;
+--accent-soft: #e8f0fe;
+--code-bg: #f6f8fa;
+--topbar-bg: #f6f8fa;
+--warn: #9a6700;
+--warn-bg: #fff8c5;
+--rookie: #1a7f37;
+--rookie-bg: #dafbe1;
+--advanced: #8250df;
+--advanced-bg: #fbefff;
+--tok-comment: #6e7781;
+--tok-keyword: #cf222e;
+--tok-string: #0a3069;
+--tok-variable: #953800;
+--tok-function: #8250df;
+--tok-number: #0550ae;
+--tok-attr: #116329;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg: #0d1117;
+--fg: #e6edf3;
+--muted: #9198a1;
+--border: #30363d;
+--accent: #6cb6ff;
+--accent-soft: #15233a;
+--code-bg: #161b22;
+--topbar-bg: #161b22;
+--warn: #d29922;
+--warn-bg: #2b2111;
+--rookie: #3fb950;
+--rookie-bg: #12261e;
+--advanced: #d2a8ff;
+--advanced-bg: #221a33;
+--tok-comment: #9198a1;
+--tok-keyword: #ff7b72;
+--tok-string: #a5d6ff;
+--tok-variable: #ffa657;
+--tok-function: #d2a8ff;
+--tok-number: #79c0ff;
+--tok-attr: #7ee787;
+}
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 4.5rem; }
+body {
+margin: 0;
+background: var(--bg);
+color: var(--fg);
+font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.topbar {
+position: sticky; top: 0; z-index: 10;
+display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+padding: 0.6rem 1.5rem;
+background: var(--topbar-bg);
+border-bottom: 1px solid var(--border);
+}
+.topbar .course { font-weight: 600; color: var(--fg); }
+.pager { display: flex; gap: 1.25rem; font-size: 0.95rem; }
+.layout {
+display: grid;
+grid-template-columns: 16rem minmax(0, 52rem);
+gap: 3rem;
+justify-content: center;
+padding: 2rem 1.5rem 4rem;
+}
+.toc {
+position: sticky; top: 4.5rem;
+align-self: start;
+max-height: calc(100vh - 6rem);
+overflow-y: auto;
+font-size: 0.9rem;
+}
+.toc-title { margin: 0 0 0.5rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; }
+.toc ul { list-style: none; margin: 0; padding-left: 0; }
+.toc ul ul { padding-left: 1rem; }
+.toc li { margin: 0.3rem 0; }
+.toc a { color: var(--muted); }
+.toc a:hover { color: var(--accent); }
+main { min-width: 0; }
+h1, h2, h3, h4 { line-height: 1.25; margin: 2rem 0 1rem; }
+h1 { font-size: 2rem; margin-top: 0; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+h2 { font-size: 1.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.2rem; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 2rem 0; }
+img { max-width: 100%; height: auto; display: block; margin: 1.5rem auto; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.95rem; display: block; overflow-x: auto; }
+th, td { border: 1px solid var(--border); padding: 0.4rem 0.75rem; text-align: left; vertical-align: top; }
+th { background: var(--code-bg); }
+code { font: 0.875em/1.5 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+:not(pre) > code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.1em 0.35em; }
+pre {
+position: relative;
+background: var(--code-bg);
+border: 1px solid var(--border);
+border-radius: 8px;
+padding: 1rem 1.25rem;
+overflow-x: auto;
+}
+pre code { background: none; border: 0; padding: 0; }
+pre .copy {
+position: absolute; top: 0.5rem; right: 0.5rem;
+font: 0.75rem/1 inherit; font-family: inherit;
+padding: 0.3rem 0.55rem;
+color: var(--muted); background: var(--bg);
+border: 1px solid var(--border); border-radius: 6px;
+cursor: pointer; opacity: 0; transition: opacity 0.15s;
+}
+pre:hover .copy, pre .copy:focus { opacity: 1; }
+blockquote {
+margin: 1rem 0; padding: 0.5rem 1rem;
+color: var(--fg);
+background: var(--accent-soft);
+border-left: 4px solid var(--accent);
+border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0.4rem 0; }
+.pager-bottom { display: flex; justify-content: space-between; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.pager-bottom a { display: flex; flex-direction: column; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; max-width: 40%; }
+.pager-bottom a span { font-size: 0.8rem; color: var(--muted); }
+.pager-bottom .next { margin-left: auto; text-align: right; }
+.pager-bottom .up { text-align: center; }
+@media (max-width: 960px) {
+.layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; padding: 1.5rem 1rem 3rem; }
+.toc { position: static; max-height: none; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+.topbar { padding: 0.6rem 1rem; }
+}
+
+code span.co { color: var(--tok-comment); font-style: italic; }
+code span.kw, code span.cf { color: var(--tok-keyword); }
+code span.st, code span.ss, code span.ch, code span.vs { color: var(--tok-string); }
+code span.va { color: var(--tok-variable); }
+code span.fu, code span.bu { color: var(--tok-function); }
+code span.dv, code span.fl, code span.bn, code span.cn { color: var(--tok-number); }
+code span.at { color: var(--tok-attr); }
+code span.op, code span.ot { color: inherit; }
+div.sourceCode { margin: 1rem 0; }
+pre > code.sourceCode > span { display: inline; }
+
+.badge {
+display: inline-block;
+padding: 0.15em 0.6em;
+border-radius: 999px;
+font-size: 0.75rem;
+font-weight: 600;
+line-height: 1.5;
+vertical-align: middle;
+white-space: nowrap;
+}
+.badge-rookie { color: var(--rookie); background: var(--rookie-bg); border: 1px solid var(--rookie); }
+.badge-advanced { color: var(--advanced); background: var(--advanced-bg); border: 1px solid var(--advanced); }
+.chapter-level { margin: -0.5rem 0 1.5rem; }
+h1 + .chapter-level { margin-top: -0.25rem; }
+.advanced-section {
+margin: 1.5rem 0;
+padding: 0.25rem 1.25rem 0.75rem;
+border-left: 4px solid var(--advanced);
+background: var(--advanced-bg);
+border-radius: 0 8px 8px 0;
+}
+.toc .badge { font-size: 0.65rem; padding: 0 0.45em; margin-left: 0.25rem; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="course" href="../README.html">Container und Kubernetes/OpenShift</a>
+  <nav class="pager">
+    <a href="../README.html#inhaltsverzeichnis">↑ Inhaltsverzeichnis</a>
+
+    <a href="../09-kustomize/README.html" title="Kapitel 9: Kustomize Grundlagen">← Zurück</a>
+
+    <a href="../11-rbac/README.html" title="Kapitel 11: Kubernetes RBAC">Weiter →</a>
+
+  </nav>
+</header>
+<div class="layout">
+<aside class="toc">
+  <p class="toc-title">Inhalt</p>
+<ul>
+<li><a href="#kapitel-10-health-checks-quotas-und-limitranges" id="toc-kapitel-10-health-checks-quotas-und-limitranges">Kapitel 10:
+Health-Checks, Quotas und LimitRanges</a>
+<ul>
+<li><a href="#app-erweiterung" id="toc-app-erweiterung">App-Erweiterung</a></li>
+<li><a href="#probe-typen" id="toc-probe-typen">Probe-Typen</a></li>
+<li><a href="#beispiel-deployment" id="toc-beispiel-deployment">Beispiel-Deployment</a></li>
+<li><a href="#demo-ablauf" id="toc-demo-ablauf">Demo-Ablauf</a></li>
+<li><a href="#vertiefung-quotas-und-limitranges-rückblick-kapitel-8" id="toc-vertiefung-quotas-und-limitranges-rückblick-kapitel-8">Vertiefung:
+Quotas und LimitRanges (Rückblick Kapitel 8)</a></li>
+<li><a href="#manifeste-in-diesem-kapitel" id="toc-manifeste-in-diesem-kapitel">Manifeste in diesem
+Kapitel</a></li>
+<li><a href="#weiterführende-links" id="toc-weiterführende-links">Weiterführende Links</a></li>
+</ul></li>
+</ul>
+</aside>
+<main>
+<h1 id="kapitel-10-health-checks-quotas-und-limitranges">Kapitel 10:
+Health-Checks, Quotas und LimitRanges</h1>
+<div class="chapter-level">
+<span class="badge badge-rookie">Rookie · Tag 1–2</span>
+</div>
+<p>Kubernetes kann nur dann sinnvoll auf Probleme reagieren, wenn es
+weiß, ob eine Anwendung überhaupt funktioniert. Dafür gibt es
+<strong>Probes</strong>. Gleichzeitig schützen
+<strong>ResourceQuotas</strong> und <strong>LimitRanges</strong> (siehe
+bereits Kapitel 8) den Cluster davor, dass einzelne Anwendungen zu viele
+Ressourcen beanspruchen. In diesem Kapitel werden beide Themen
+kombiniert: Die Demo-App aus Kapitel 1 bekommt echte Health-Endpunkte,
+an denen sich das Verhalten der unterschiedlichen Probe-Typen beobachten
+lässt.</p>
+<h2 id="app-erweiterung">App-Erweiterung</h2>
+<p>Die Demo-App (<code>01-container/demo-app</code>) bietet dafür
+folgende Endpunkte (Klassen <code>HealthResource</code> und
+<code>AdminResource</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Methode</th>
+<th>Wirkung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/health</code></td>
+<td>GET</td>
+<td><code>200 {&quot;status&quot;:&quot;UP&quot;}</code> oder
+<code>503 {&quot;status&quot;:&quot;DOWN&quot;}</code></td>
+</tr>
+<tr>
+<td><code>/admin/health/toggle</code></td>
+<td>POST</td>
+<td>Kippt den internen Health-Zustand (UP ↔︎ DOWN)</td>
+</tr>
+<tr>
+<td><code>/admin/restart</code></td>
+<td>POST</td>
+<td>Beendet den Prozess nach kurzer Verzögerung (simulierter
+Absturz)</td>
+</tr>
+</tbody>
+</table>
+<p>Der Health-Zustand wird nur im Arbeitsspeicher gehalten
+(<code>HealthState</code>) – nach einem Neustart des Containers ist er
+wieder <code>UP</code>.</p>
+<h2 id="probe-typen">Probe-Typen</h2>
+<p>Kubernetes kennt drei Arten von Probes, die alle dieselben
+Prüfmechanismen (<code>httpGet</code>, <code>exec</code>,
+<code>tcpSocket</code>) verwenden können, aber unterschiedliche
+Konsequenzen haben:</p>
+<table>
+<thead>
+<tr>
+<th>Probe</th>
+<th>Frage</th>
+<th>Bei Fehlschlag</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>startupProbe</code></td>
+<td>Ist die Anwendung überhaupt hochgefahren?</td>
+<td>Andere Probes warten, bis diese einmal erfolgreich war</td>
+</tr>
+<tr>
+<td><code>readinessProbe</code></td>
+<td>Kann der Pod gerade Traffic annehmen?</td>
+<td>Pod wird aus den Service-Endpoints entfernt (kein Neustart)</td>
+</tr>
+<tr>
+<td><code>livenessProbe</code></td>
+<td>Läuft die Anwendung noch korrekt?</td>
+<td>Kubelet startet den Container neu</td>
+</tr>
+</tbody>
+</table>
+<p>Prüfmechanismen:</p>
+<ul>
+<li><code>httpGet</code>: HTTP-Request auf Pfad/Port, Status
+<code>2xx</code>/<code>3xx</code> gilt als Erfolg.</li>
+<li><code>exec</code>: Ein Befehl wird im Container ausgeführt,
+Exit-Code <code>0</code> gilt als Erfolg.</li>
+<li><code>tcpSocket</code>: Es wird nur geprüft, ob sich eine
+TCP-Verbindung öffnen lässt.</li>
+</ul>
+<h2 id="beispiel-deployment">Beispiel-Deployment</h2>
+<p><code>deployment-with-probes.yaml</code> definiert
+<code>startupProbe</code>, <code>readinessProbe</code> und
+<code>livenessProbe</code> auf <code>GET /health</code>, mit
+unterschiedlichen Schwellwerten:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">startupProbe</span><span class="kw">:</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">httpGet</span><span class="kw">:</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /health</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">failureThreshold</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span><span class="co">     # bis zu 40 s Zeit zum Hochfahren</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">readinessProbe</span><span class="kw">:</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">httpGet</span><span class="kw">:</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /health</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">failureThreshold</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">livenessProbe</span><span class="kw">:</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">httpGet</span><span class="kw">:</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /health</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">failureThreshold</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span></code></pre></div>
+<p>Solange die Startup-Probe noch nicht erfolgreich war, werden
+Readiness- und Liveness-Probe nicht ausgeführt – eine langsam startende
+Anwendung wird so nicht vorzeitig neu gestartet. Die Readiness-Probe
+reagiert schnell (bereits nach einem Fehlschlag), die Liveness-Probe
+toleriert mehr Fehlschläge, bevor sie eingreift – ein klassisches
+Muster, um kurze Hänger nicht sofort mit einem Neustart zu
+&quot;bestrafen&quot;.</p>
+<h2 id="demo-ablauf">Demo-Ablauf</h2>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 10-health-quotas/deployment-with-probes.yaml</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 10-health-quotas/service.yaml</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> rollout status deployment/demo</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Name eines Pods ermitteln und merken</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pods <span class="at">-l</span> app=demo</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="va">POD</span><span class="op">=</span><span class="va">$(</span><span class="ex">oc</span> get pod <span class="at">-l</span> app=demo <span class="at">-o</span> jsonpath=<span class="st">&#39;{.items[0].metadata.name}&#39;</span><span class="va">)</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Health-Status umschalten</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> exec <span class="va">$POD</span> <span class="at">--</span> curl <span class="at">-s</span> <span class="at">-X</span> POST http://localhost:8080/admin/health/toggle</span></code></pre></div>
+<p>Beobachtbares Verhalten:</p>
+<ol type="1">
+<li><p><strong>Sofort:</strong> Die Readiness-Probe schlägt beim
+nächsten Check fehl (<code>failureThreshold: 1</code>). Der Pod
+verschwindet aus den Endpoints des Service, erhält aber
+<strong>keinen</strong> Neustart:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get endpointslices <span class="at">-l</span> kubernetes.io/service-name=demo <span class="at">-o</span> wide</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> describe pod <span class="va">$POD</span>   <span class="co"># Events: &quot;Readiness probe failed&quot;</span></span></code></pre></div></li>
+<li><p><strong>Nach einigen Sekunden:</strong> Bleibt der Zustand
+<code>DOWN</code>, schlägt irgendwann auch die Liveness-Probe dreimal in
+Folge fehl. Erst dann startet das Kubelet den Container neu:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pods <span class="at">-l</span> app=demo <span class="at">-w</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> describe pod <span class="va">$POD</span>   <span class="co"># Events: &quot;Liveness probe failed&quot;, &quot;Killing container&quot;</span></span></code></pre></div></li>
+</ol>
+<p>Zum Vergleich: <code>/admin/restart</code> beendet den Prozess
+sofort, ohne auf irgendeine Probe-Schwelle zu warten:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> exec <span class="va">$POD</span> <span class="at">--</span> curl <span class="at">-s</span> <span class="at">-X</span> POST http://localhost:8080/admin/restart</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pods <span class="at">-l</span> app=demo <span class="at">-w</span></span></code></pre></div>
+<p>Der Unterschied macht deutlich, wofür Probes eigentlich da sind: Sie
+erkennen Probleme, die die Anwendung selbst nicht meldet (z. B. ein
+hängender Thread), während <code>/admin/restart</code> einen von außen
+sichtbaren, sofortigen Absturz simuliert.</p>
+<h2 id="vertiefung-quotas-und-limitranges-rückblick-kapitel-8">Vertiefung:
+Quotas und LimitRanges (Rückblick Kapitel 8)</h2>
+<p>Kapitel 8 hat <code>LimitRange</code> (Standard-Requests/Limits pro
+Container) und <code>ResourceQuota</code> (Obergrenze pro
+Namespace/Project) eingeführt. Hier folgen ein paar Befehle, um deren
+Auswirkungen konkret zu beobachten:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Aktuelle Auslastung der Quota im eigenen Project ansehen</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> describe quota</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Wie viele Ressourcen sind einem Pod tatsächlich zugewiesen?</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> describe pod <span class="va">$POD</span> <span class="kw">|</span> <span class="fu">grep</span> <span class="at">-A5</span> Limits</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Events nach Ressourcen-Problemen durchsuchen</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get events <span class="at">--field-selector</span> reason=OOMKilling</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> describe pod <span class="va">$POD</span>   <span class="co"># Abschnitt &quot;Last State&quot; zeigt z. B. &quot;OOMKilled&quot;</span></span></code></pre></div>
+<p>Wird das Memory-Limit eines Containers überschritten, beendet der
+Kernel den Prozess mit <code>OOMKilled</code> – das Kubelet startet ihn
+danach neu (analog zu einer fehlgeschlagenen Liveness-Probe). Wird nur
+das CPU-Limit erreicht, wird der Container <strong>gedrosselt</strong>
+(Throttling), aber nicht beendet – das lässt sich in
+<code>oc describe quota</code> als anhaltend hohe
+<code>cpu</code>-Auslastung erkennen, ohne dass Pods neu starten.</p>
+<p>❗ <code>cluster-specific/resourcequota.yaml</code> in diesem Kapitel
+zeigt beispielhaft eine ResourceQuota, die die Summe aller
+Requests/Limits sowie die Anzahl Pods in einem Project begrenzt
+(Cluster-Admin-Rechte nötig, um sie in einem fremden Project anzulegen –
+im eigenen Project i. d. R. bereits von der Cluster-Administration
+vorgegeben).</p>
+<h2 id="manifeste-in-diesem-kapitel">Manifeste in diesem Kapitel</h2>
+<ul>
+<li><code>deployment-with-probes.yaml</code> – Deployment (3 Replicas,
+Rolling Update) mit <code>startupProbe</code>,
+<code>readinessProbe</code> und <code>livenessProbe</code></li>
+<li><code>service.yaml</code> – Service für die Demo-App</li>
+<li>❗ <code>cluster-specific/resourcequota.yaml</code> –
+Beispiel-ResourceQuota (Cluster-Admin nötig, siehe Kapitel 8)</li>
+</ul>
+<hr />
+<h2 id="weiterführende-links">Weiterführende Links</h2>
+<ul>
+<li><a href="https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/">Kubernetes:
+Liveness-, Readiness- und Startup-Probes</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/policy/resource-quotas/">Kubernetes:
+ResourceQuotas</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/policy/limit-range/">Kubernetes:
+LimitRange</a></li>
+<li><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/nodes/index">OpenShift
+4.22: Nodes</a></li>
+</ul>
+<p>Siehe auch <a href="../99-anhang/DOCUMENTATION.html">99-anhang/DOCUMENTATION.md</a>
+für die vollständige Liste.</p>
+<nav class="pager-bottom">
+  <a class="prev" href="../09-kustomize/README.html"><span>← Zurück</span>Kapitel 9: Kustomize Grundlagen</a>
+
+  <a class="up" href="../README.html#inhaltsverzeichnis"><span>↑ Übersicht</span>Inhaltsverzeichnis</a>
+
+  <a class="next" href="../11-rbac/README.html"><span>Weiter →</span>Kapitel 11: Kubernetes RBAC</a>
+
+</nav>
+</main>
+</div>
+<script>
+// Kopier-Button für Codeblöcke
+document.querySelectorAll("pre").forEach(function (pre) {
+  var button = document.createElement("button");
+  button.className = "copy";
+  button.type = "button";
+  button.textContent = "Kopieren";
+  button.addEventListener("click", function () {
+    navigator.clipboard.writeText(pre.innerText).then(function () {
+      button.textContent = "Kopiert ✓";
+      setTimeout(function () { button.textContent = "Kopieren"; }, 1500);
+    });
+  });
+  pre.appendChild(button);
+});
+</script>
+</body>
+</html>

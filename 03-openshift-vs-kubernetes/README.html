@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kapitel 3: OpenShift vs. &quot;Vanilla
+Kubernetes&quot; – Container und Kubernetes/OpenShift</title>
+<style type="text/css">:root {
+--bg: #ffffff;
+--fg: #1f2328;
+--muted: #59636e;
+--border: #d1d9e0;
+--accent: #1a5fb4;
+--accent-soft: #e8f0fe;
+--code-bg: #f6f8fa;
+--topbar-bg: #f6f8fa;
+--warn: #9a6700;
+--warn-bg: #fff8c5;
+--rookie: #1a7f37;
+--rookie-bg: #dafbe1;
+--advanced: #8250df;
+--advanced-bg: #fbefff;
+--tok-comment: #6e7781;
+--tok-keyword: #cf222e;
+--tok-string: #0a3069;
+--tok-variable: #953800;
+--tok-function: #8250df;
+--tok-number: #0550ae;
+--tok-attr: #116329;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg: #0d1117;
+--fg: #e6edf3;
+--muted: #9198a1;
+--border: #30363d;
+--accent: #6cb6ff;
+--accent-soft: #15233a;
+--code-bg: #161b22;
+--topbar-bg: #161b22;
+--warn: #d29922;
+--warn-bg: #2b2111;
+--rookie: #3fb950;
+--rookie-bg: #12261e;
+--advanced: #d2a8ff;
+--advanced-bg: #221a33;
+--tok-comment: #9198a1;
+--tok-keyword: #ff7b72;
+--tok-string: #a5d6ff;
+--tok-variable: #ffa657;
+--tok-function: #d2a8ff;
+--tok-number: #79c0ff;
+--tok-attr: #7ee787;
+}
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 4.5rem; }
+body {
+margin: 0;
+background: var(--bg);
+color: var(--fg);
+font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.topbar {
+position: sticky; top: 0; z-index: 10;
+display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+padding: 0.6rem 1.5rem;
+background: var(--topbar-bg);
+border-bottom: 1px solid var(--border);
+}
+.topbar .course { font-weight: 600; color: var(--fg); }
+.pager { display: flex; gap: 1.25rem; font-size: 0.95rem; }
+.layout {
+display: grid;
+grid-template-columns: 16rem minmax(0, 52rem);
+gap: 3rem;
+justify-content: center;
+padding: 2rem 1.5rem 4rem;
+}
+.toc {
+position: sticky; top: 4.5rem;
+align-self: start;
+max-height: calc(100vh - 6rem);
+overflow-y: auto;
+font-size: 0.9rem;
+}
+.toc-title { margin: 0 0 0.5rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; }
+.toc ul { list-style: none; margin: 0; padding-left: 0; }
+.toc ul ul { padding-left: 1rem; }
+.toc li { margin: 0.3rem 0; }
+.toc a { color: var(--muted); }
+.toc a:hover { color: var(--accent); }
+main { min-width: 0; }
+h1, h2, h3, h4 { line-height: 1.25; margin: 2rem 0 1rem; }
+h1 { font-size: 2rem; margin-top: 0; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+h2 { font-size: 1.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.2rem; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 2rem 0; }
+img { max-width: 100%; height: auto; display: block; margin: 1.5rem auto; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.95rem; display: block; overflow-x: auto; }
+th, td { border: 1px solid var(--border); padding: 0.4rem 0.75rem; text-align: left; vertical-align: top; }
+th { background: var(--code-bg); }
+code { font: 0.875em/1.5 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+:not(pre) > code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.1em 0.35em; }
+pre {
+position: relative;
+background: var(--code-bg);
+border: 1px solid var(--border);
+border-radius: 8px;
+padding: 1rem 1.25rem;
+overflow-x: auto;
+}
+pre code { background: none; border: 0; padding: 0; }
+pre .copy {
+position: absolute; top: 0.5rem; right: 0.5rem;
+font: 0.75rem/1 inherit; font-family: inherit;
+padding: 0.3rem 0.55rem;
+color: var(--muted); background: var(--bg);
+border: 1px solid var(--border); border-radius: 6px;
+cursor: pointer; opacity: 0; transition: opacity 0.15s;
+}
+pre:hover .copy, pre .copy:focus { opacity: 1; }
+blockquote {
+margin: 1rem 0; padding: 0.5rem 1rem;
+color: var(--fg);
+background: var(--accent-soft);
+border-left: 4px solid var(--accent);
+border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0.4rem 0; }
+.pager-bottom { display: flex; justify-content: space-between; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.pager-bottom a { display: flex; flex-direction: column; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; max-width: 40%; }
+.pager-bottom a span { font-size: 0.8rem; color: var(--muted); }
+.pager-bottom .next { margin-left: auto; text-align: right; }
+.pager-bottom .up { text-align: center; }
+@media (max-width: 960px) {
+.layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; padding: 1.5rem 1rem 3rem; }
+.toc { position: static; max-height: none; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+.topbar { padding: 0.6rem 1rem; }
+}
+
+code span.co { color: var(--tok-comment); font-style: italic; }
+code span.kw, code span.cf { color: var(--tok-keyword); }
+code span.st, code span.ss, code span.ch, code span.vs { color: var(--tok-string); }
+code span.va { color: var(--tok-variable); }
+code span.fu, code span.bu { color: var(--tok-function); }
+code span.dv, code span.fl, code span.bn, code span.cn { color: var(--tok-number); }
+code span.at { color: var(--tok-attr); }
+code span.op, code span.ot { color: inherit; }
+div.sourceCode { margin: 1rem 0; }
+pre > code.sourceCode > span { display: inline; }
+
+.badge {
+display: inline-block;
+padding: 0.15em 0.6em;
+border-radius: 999px;
+font-size: 0.75rem;
+font-weight: 600;
+line-height: 1.5;
+vertical-align: middle;
+white-space: nowrap;
+}
+.badge-rookie { color: var(--rookie); background: var(--rookie-bg); border: 1px solid var(--rookie); }
+.badge-advanced { color: var(--advanced); background: var(--advanced-bg); border: 1px solid var(--advanced); }
+.chapter-level { margin: -0.5rem 0 1.5rem; }
+h1 + .chapter-level { margin-top: -0.25rem; }
+.advanced-section {
+margin: 1.5rem 0;
+padding: 0.25rem 1.25rem 0.75rem;
+border-left: 4px solid var(--advanced);
+background: var(--advanced-bg);
+border-radius: 0 8px 8px 0;
+}
+.toc .badge { font-size: 0.65rem; padding: 0 0.45em; margin-left: 0.25rem; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="course" href="../README.html">Container und Kubernetes/OpenShift</a>
+  <nav class="pager">
+    <a href="../README.html#inhaltsverzeichnis">↑ Inhaltsverzeichnis</a>
+
+    <a href="../02-kubernetes-basics/README.html" title="Kapitel 2: Kubernetes Basics">← Zurück</a>
+
+    <a href="../04-pods-on-kubernetes/README.html" title="Kapitel 4: Container/Pods auf Kubernetes">Weiter →</a>
+
+  </nav>
+</header>
+<div class="layout">
+<aside class="toc">
+  <p class="toc-title">Inhalt</p>
+<ul>
+<li><a href="#kapitel-3-openshift-vs-vanilla-kubernetes" id="toc-kapitel-3-openshift-vs-vanilla-kubernetes">Kapitel 3: OpenShift
+vs. &quot;Vanilla Kubernetes&quot;</a>
+<ul>
+<li><a href="#warum-gibt-es-kein-vanilla-kubernetes" id="toc-warum-gibt-es-kein-vanilla-kubernetes">Warum gibt es kein
+&quot;Vanilla Kubernetes&quot;?</a></li>
+<li><a href="#die-wichtigsten-ergänzungen-von-openshift" id="toc-die-wichtigsten-ergänzungen-von-openshift">Die wichtigsten
+Ergänzungen von OpenShift</a></li>
+<li><a href="#fazit" id="toc-fazit">Fazit</a></li>
+<li><a href="#weiterführende-links" id="toc-weiterführende-links">Weiterführende Links</a></li>
+</ul></li>
+</ul>
+</aside>
+<main>
+<h1 id="kapitel-3-openshift-vs-vanilla-kubernetes">Kapitel 3: OpenShift
+vs. &quot;Vanilla Kubernetes&quot;</h1>
+<div class="chapter-level">
+<span class="badge badge-rookie">Rookie · Tag 1–2</span>
+</div>
+<h2 id="warum-gibt-es-kein-vanilla-kubernetes">Warum gibt es kein
+&quot;Vanilla Kubernetes&quot;?</h2>
+<p>Kubernetes selbst ist ein <strong>Framework</strong>, kein fertiges
+Produkt. Es fehlen viele Komponenten für den Produktionseinsatz:</p>
+<table>
+<thead>
+<tr>
+<th>Funktion</th>
+<th>Kubernetes (upstream)</th>
+<th>OpenShift 4.x</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Container Runtime</td>
+<td>(wählbar)</td>
+<td>CRI-O (inklusive)</td>
+</tr>
+<tr>
+<td>Netzwerk-Plugin (CNI)</td>
+<td>(wählbar)</td>
+<td>OVN-Kubernetes (inklusive)</td>
+</tr>
+<tr>
+<td>Storage (CSI)</td>
+<td>(wählbar)</td>
+<td>(wählbar)</td>
+</tr>
+<tr>
+<td>Image Registry</td>
+<td>nicht enthalten</td>
+<td>integrierte Registry (optional)</td>
+</tr>
+<tr>
+<td>Ingress/Routes</td>
+<td>(wählbar)</td>
+<td>HAProxy Router (inklusive)</td>
+</tr>
+<tr>
+<td>Monitoring</td>
+<td>(wählbar)</td>
+<td>Prometheus + Grafana (inklusive)</td>
+</tr>
+<tr>
+<td>Logging</td>
+<td>nicht enthalten</td>
+<td>LokiStack / OpenShift Logging</td>
+</tr>
+<tr>
+<td>CI/CD</td>
+<td>nicht enthalten</td>
+<td>OpenShift Pipelines (Tekton)</td>
+</tr>
+<tr>
+<td>Service Mesh</td>
+<td>(wählbar)</td>
+<td>OpenShift Service Mesh (Istio)</td>
+</tr>
+<tr>
+<td>Operator Framework</td>
+<td>nicht enthalten</td>
+<td>OperatorHub + OLM (inklusive)</td>
+</tr>
+<tr>
+<td>Security (SCC)</td>
+<td>PSA (eingeschränkt)</td>
+<td>Security Context Constraints</td>
+</tr>
+<tr>
+<td>Web-Console</td>
+<td>Headlamp, wird gerade neu entwickelt</td>
+<td>OpenShift Web-Console</td>
+</tr>
+<tr>
+<td>Auth / LDAP</td>
+<td>externe Lösung nötig</td>
+<td>OAuth Server inklusive</td>
+</tr>
+<tr>
+<td>Updates/Upgrades</td>
+<td>manuell</td>
+<td>automatisiert via CVO</td>
+</tr>
+</tbody>
+</table>
+<h2 id="die-wichtigsten-ergänzungen-von-openshift">Die wichtigsten
+Ergänzungen von OpenShift</h2>
+<h3 id="security-context-constraints-scc">Security Context Constraints
+(SCC)</h3>
+<p>OpenShift hat ein erweitertes Sicherheitsmodell:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># restricted-v2 SCC (Standard für normale Nutzer):</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># - kein root (UID 0), sondern eine zufällige UID aus dem Bereich des Projects</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># - keine privilegierten Container</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># - keine Privilege Escalation, alle Capabilities entfernt</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># - keine hostPath-Volumes</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># - readOnlyRootFilesystem wird nicht erzwungen, ist aber empfohlen</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Welche SCC hat mein Pod? (steht in einer Annotation)</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 04-pods-on-kubernetes/pod.yaml</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pod demo <span class="at">-o</span> jsonpath=<span class="st">&#39;{.metadata.annotations.openshift\.io/scc}{&quot;\n&quot;}&#39;</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Mit welcher UID läuft der Container?</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> wait <span class="at">--for</span><span class="op">=</span>condition=Ready pod/demo <span class="at">--timeout</span><span class="op">=</span>120s</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> exec demo <span class="at">--</span> id</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> delete pod demo</span></code></pre></div>
+<p>❗ Nur mit Leserechten auf Cluster-Ebene (z. B. nicht in der
+Developer Sandbox):</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Welche SCCs gibt es?</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get scc</span></code></pre></div>
+<h3 id="routes-openshift-spezifisch">Routes (OpenShift-spezifisch)</h3>
+<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> route.openshift.io/v1</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Route</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> demo</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">to</span><span class="kw">:</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> demo</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">port</span><span class="kw">:</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">tls</span><span class="kw">:</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">termination</span><span class="kw">:</span><span class="at"> edge</span></span></code></pre></div>
+<h2 id="fazit">Fazit</h2>
+<p>&quot;Vanilla Kubernetes&quot; ist eine Basis-Infrastruktur. In der Praxis
+nutzt man immer eine Distribution oder einen managed Service, der alle
+fehlenden Komponenten integriert und supportet.</p>
+<hr />
+<h2 id="weiterführende-links">Weiterführende Links</h2>
+<ul>
+<li><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/architecture/index">OpenShift
+4.22: Architecture</a></li>
+<li><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/building_applications/index">OpenShift
+4.22: Building Applications</a></li>
+<li><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/security_and_compliance/index">OpenShift
+4.22: Security and Compliance (SCCs)</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/overview/">Kubernetes:
+Übersicht der Konzepte</a></li>
+</ul>
+<p>Siehe auch <a href="../99-anhang/DOCUMENTATION.html">99-anhang/DOCUMENTATION.md</a>
+für die vollständige Liste.</p>
+<nav class="pager-bottom">
+  <a class="prev" href="../02-kubernetes-basics/README.html"><span>← Zurück</span>Kapitel 2: Kubernetes Basics</a>
+
+  <a class="up" href="../README.html#inhaltsverzeichnis"><span>↑ Übersicht</span>Inhaltsverzeichnis</a>
+
+  <a class="next" href="../04-pods-on-kubernetes/README.html"><span>Weiter →</span>Kapitel 4: Container/Pods auf Kubernetes</a>
+
+</nav>
+</main>
+</div>
+<script>
+// Kopier-Button für Codeblöcke
+document.querySelectorAll("pre").forEach(function (pre) {
+  var button = document.createElement("button");
+  button.className = "copy";
+  button.type = "button";
+  button.textContent = "Kopieren";
+  button.addEventListener("click", function () {
+    navigator.clipboard.writeText(pre.innerText).then(function () {
+      button.textContent = "Kopiert ✓";
+      setTimeout(function () { button.textContent = "Kopieren"; }, 1500);
+    });
+  });
+  pre.appendChild(button);
+});
+</script>
+</body>
+</html>

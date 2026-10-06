@@ -1,0 +1,64 @@
+...@../../tools/diagrams/style
+
+direction: down
+
+control-plane: "Control Plane Node (in OpenShift: 3 Stück)" {
+  class: group
+  grid-rows: 2
+  grid-gap: 16
+
+  components: "Control-Plane-Komponenten (statische Pods)" {
+    class: subgroup
+    grid-columns: 4
+    grid-gap: 12
+    api: API Server {class: component; width: 150}
+    etcd: etcd {class: store; width: 100}
+    scheduler: Scheduler {class: component; width: 150}
+    controller: Controller Manager {class: component; width: 218}
+  }
+  base: "" {
+    grid-columns: 3
+    grid-gap: 12
+    style.stroke: transparent
+    style.fill: transparent
+    kubelet: kubelet {class: component; width: 210}
+    network: "kube-proxy /\nOVN-Kubernetes" {class: component; width: 210}
+    runtime: Container Runtime {class: component; width: 210}
+  }
+}
+
+workers: Worker Nodes {
+  class: group
+  grid-columns: 3
+  grid-gap: 24
+
+  node1: Worker Node 1 {
+    class: subgroup
+    grid-rows: 4
+    grid-gap: 10
+    pods: Anwendungs-Pods {class: resource; style.multiple: true}
+    kubelet: kubelet {class: component}
+    network: "kube-proxy /\nOVN-Kubernetes" {class: component}
+    runtime: Container Runtime {class: component}
+  }
+  node2: Worker Node 2 {
+    class: subgroup
+    grid-rows: 4
+    grid-gap: 10
+    pods: Anwendungs-Pods {class: resource; style.multiple: true}
+    kubelet: kubelet {class: component}
+    network: "kube-proxy /\nOVN-Kubernetes" {class: component}
+    runtime: Container Runtime {class: component}
+  }
+  node3: Worker Node 3 {
+    class: subgroup
+    grid-rows: 4
+    grid-gap: 10
+    pods: Anwendungs-Pods {class: resource; style.multiple: true}
+    kubelet: kubelet {class: component}
+    network: "kube-proxy /\nOVN-Kubernetes" {class: component}
+    runtime: Container Runtime {class: component}
+  }
+}
+
+control-plane <-> workers: "kubelet ↔ API Server (HTTPS)"

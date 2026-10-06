@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kapitel 8: Requests und
+Limits – Container und Kubernetes/OpenShift</title>
+<style type="text/css">:root {
+--bg: #ffffff;
+--fg: #1f2328;
+--muted: #59636e;
+--border: #d1d9e0;
+--accent: #1a5fb4;
+--accent-soft: #e8f0fe;
+--code-bg: #f6f8fa;
+--topbar-bg: #f6f8fa;
+--warn: #9a6700;
+--warn-bg: #fff8c5;
+--rookie: #1a7f37;
+--rookie-bg: #dafbe1;
+--advanced: #8250df;
+--advanced-bg: #fbefff;
+--tok-comment: #6e7781;
+--tok-keyword: #cf222e;
+--tok-string: #0a3069;
+--tok-variable: #953800;
+--tok-function: #8250df;
+--tok-number: #0550ae;
+--tok-attr: #116329;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg: #0d1117;
+--fg: #e6edf3;
+--muted: #9198a1;
+--border: #30363d;
+--accent: #6cb6ff;
+--accent-soft: #15233a;
+--code-bg: #161b22;
+--topbar-bg: #161b22;
+--warn: #d29922;
+--warn-bg: #2b2111;
+--rookie: #3fb950;
+--rookie-bg: #12261e;
+--advanced: #d2a8ff;
+--advanced-bg: #221a33;
+--tok-comment: #9198a1;
+--tok-keyword: #ff7b72;
+--tok-string: #a5d6ff;
+--tok-variable: #ffa657;
+--tok-function: #d2a8ff;
+--tok-number: #79c0ff;
+--tok-attr: #7ee787;
+}
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 4.5rem; }
+body {
+margin: 0;
+background: var(--bg);
+color: var(--fg);
+font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.topbar {
+position: sticky; top: 0; z-index: 10;
+display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+padding: 0.6rem 1.5rem;
+background: var(--topbar-bg);
+border-bottom: 1px solid var(--border);
+}
+.topbar .course { font-weight: 600; color: var(--fg); }
+.pager { display: flex; gap: 1.25rem; font-size: 0.95rem; }
+.layout {
+display: grid;
+grid-template-columns: 16rem minmax(0, 52rem);
+gap: 3rem;
+justify-content: center;
+padding: 2rem 1.5rem 4rem;
+}
+.toc {
+position: sticky; top: 4.5rem;
+align-self: start;
+max-height: calc(100vh - 6rem);
+overflow-y: auto;
+font-size: 0.9rem;
+}
+.toc-title { margin: 0 0 0.5rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; }
+.toc ul { list-style: none; margin: 0; padding-left: 0; }
+.toc ul ul { padding-left: 1rem; }
+.toc li { margin: 0.3rem 0; }
+.toc a { color: var(--muted); }
+.toc a:hover { color: var(--accent); }
+main { min-width: 0; }
+h1, h2, h3, h4 { line-height: 1.25; margin: 2rem 0 1rem; }
+h1 { font-size: 2rem; margin-top: 0; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+h2 { font-size: 1.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.2rem; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 2rem 0; }
+img { max-width: 100%; height: auto; display: block; margin: 1.5rem auto; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.95rem; display: block; overflow-x: auto; }
+th, td { border: 1px solid var(--border); padding: 0.4rem 0.75rem; text-align: left; vertical-align: top; }
+th { background: var(--code-bg); }
+code { font: 0.875em/1.5 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+:not(pre) > code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.1em 0.35em; }
+pre {
+position: relative;
+background: var(--code-bg);
+border: 1px solid var(--border);
+border-radius: 8px;
+padding: 1rem 1.25rem;
+overflow-x: auto;
+}
+pre code { background: none; border: 0; padding: 0; }
+pre .copy {
+position: absolute; top: 0.5rem; right: 0.5rem;
+font: 0.75rem/1 inherit; font-family: inherit;
+padding: 0.3rem 0.55rem;
+color: var(--muted); background: var(--bg);
+border: 1px solid var(--border); border-radius: 6px;
+cursor: pointer; opacity: 0; transition: opacity 0.15s;
+}
+pre:hover .copy, pre .copy:focus { opacity: 1; }
+blockquote {
+margin: 1rem 0; padding: 0.5rem 1rem;
+color: var(--fg);
+background: var(--accent-soft);
+border-left: 4px solid var(--accent);
+border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0.4rem 0; }
+.pager-bottom { display: flex; justify-content: space-between; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.pager-bottom a { display: flex; flex-direction: column; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; max-width: 40%; }
+.pager-bottom a span { font-size: 0.8rem; color: var(--muted); }
+.pager-bottom .next { margin-left: auto; text-align: right; }
+.pager-bottom .up { text-align: center; }
+@media (max-width: 960px) {
+.layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; padding: 1.5rem 1rem 3rem; }
+.toc { position: static; max-height: none; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+.topbar { padding: 0.6rem 1rem; }
+}
+
+code span.co { color: var(--tok-comment); font-style: italic; }
+code span.kw, code span.cf { color: var(--tok-keyword); }
+code span.st, code span.ss, code span.ch, code span.vs { color: var(--tok-string); }
+code span.va { color: var(--tok-variable); }
+code span.fu, code span.bu { color: var(--tok-function); }
+code span.dv, code span.fl, code span.bn, code span.cn { color: var(--tok-number); }
+code span.at { color: var(--tok-attr); }
+code span.op, code span.ot { color: inherit; }
+div.sourceCode { margin: 1rem 0; }
+pre > code.sourceCode > span { display: inline; }
+
+.badge {
+display: inline-block;
+padding: 0.15em 0.6em;
+border-radius: 999px;
+font-size: 0.75rem;
+font-weight: 600;
+line-height: 1.5;
+vertical-align: middle;
+white-space: nowrap;
+}
+.badge-rookie { color: var(--rookie); background: var(--rookie-bg); border: 1px solid var(--rookie); }
+.badge-advanced { color: var(--advanced); background: var(--advanced-bg); border: 1px solid var(--advanced); }
+.chapter-level { margin: -0.5rem 0 1.5rem; }
+h1 + .chapter-level { margin-top: -0.25rem; }
+.advanced-section {
+margin: 1.5rem 0;
+padding: 0.25rem 1.25rem 0.75rem;
+border-left: 4px solid var(--advanced);
+background: var(--advanced-bg);
+border-radius: 0 8px 8px 0;
+}
+.toc .badge { font-size: 0.65rem; padding: 0 0.45em; margin-left: 0.25rem; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="course" href="../README.html">Container und Kubernetes/OpenShift</a>
+  <nav class="pager">
+    <a href="../README.html#inhaltsverzeichnis">↑ Inhaltsverzeichnis</a>
+
+    <a href="../07-konfiguration/README.html" title="Kapitel 7: Konfiguration">← Zurück</a>
+
+    <a href="../09-kustomize/README.html" title="Kapitel 9: Kustomize Grundlagen">Weiter →</a>
+
+  </nav>
+</header>
+<div class="layout">
+<aside class="toc">
+  <p class="toc-title">Inhalt</p>
+<ul>
+<li><a href="#kapitel-8-requests-und-limits" id="toc-kapitel-8-requests-und-limits">Kapitel 8: Requests und
+Limits</a>
+<ul>
+<li><a href="#überblick" id="toc-überblick">Überblick</a></li>
+<li><a href="#cpu" id="toc-cpu">CPU</a></li>
+<li><a href="#memory" id="toc-memory">Memory</a></li>
+<li><a href="#warum-requests-und-limits-wichtig-sind" id="toc-warum-requests-und-limits-wichtig-sind">Warum Requests und
+Limits wichtig sind</a></li>
+<li><a href="#limitrange-namespace-standard" id="toc-limitrange-namespace-standard">LimitRange
+(Namespace-Standard)</a></li>
+<li><a href="#resourcequota-namespace-budget" id="toc-resourcequota-namespace-budget">ResourceQuota
+(Namespace-Budget)</a></li>
+<li><a href="#ausprobieren" id="toc-ausprobieren">Ausprobieren</a></li>
+<li><a href="#empfehlungen-für-die-demo-anwendung" id="toc-empfehlungen-für-die-demo-anwendung">Empfehlungen für die
+Demo-Anwendung</a></li>
+<li><a href="#manifeste-in-diesem-kapitel" id="toc-manifeste-in-diesem-kapitel">Manifeste in diesem
+Kapitel</a></li>
+<li><a href="#weiterführende-links" id="toc-weiterführende-links">Weiterführende Links</a></li>
+</ul></li>
+</ul>
+</aside>
+<main>
+<h1 id="kapitel-8-requests-und-limits">Kapitel 8: Requests und
+Limits</h1>
+<div class="chapter-level">
+<span class="badge badge-rookie">Rookie · Tag 1–2</span>
+</div>
+<h2 id="überblick">Überblick</h2>
+<table>
+<thead>
+<tr>
+<th>Begriff</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Request</strong></td>
+<td>Mindest-Ressourcen, die Kubernetes <strong>reserviert</strong></td>
+</tr>
+<tr>
+<td><strong>Limit</strong></td>
+<td>Maximum, das ein Container <strong>verbrauchen darf</strong></td>
+</tr>
+</tbody>
+</table>
+<p><img role="img" aria-label="Request und Limit im Verhältnis zur CPU eines Nodes" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiICBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWluWU1pbiBtZWV0IiB2aWV3Qm94PSIwIDAgNzQyIDE0OSI+PHN2ZyBjbGFzcz0iZDItMzQ5MTQ0MTQxNCBkMi1zdmciIHdpZHRoPSI3NDIiIGhlaWdodD0iMTQ5IiB2aWV3Qm94PSItOSAtOSA3NDIgMTQ5Ij48cmVjdCB4PSItOSIgeT0iLTkiIHdpZHRoPSI3NDIiIGhlaWdodD0iMTQ5IiByeD0iMCIgZmlsbD0idHJhbnNwYXJlbnQiIHN0cm9rZS13aWR0aD0iMCIgLz48c3R5bGUgdHlwZT0idGV4dC9jc3MiPjwhW0NEQVRBWwouZDItMzQ5MTQ0MTQxNCAudGV4dC1ib2xkIHsKCWZvbnQtZmFtaWx5OiAiZDItMzQ5MTQ0MTQxNC1mb250LWJvbGQiLCAiU291cmNlIFNhbnMgUHJvIiwgIlNvdXJjZSBTYW5zIDMiLCAtYXBwbGUtc3lzdGVtLCBCbGlua01hY1N5c3RlbUZvbnQsICJTZWdvZSBVSSIsIEhlbHZldGljYSwgQXJpYWwsIHNhbnMtc2VyaWY7Cn0KQGZvbnQtZmFjZSB7Cglmb250LWZhbWlseTogZDItMzQ5MTQ0MTQxNC1mb250LWJvbGQ7Cglmb250LWRpc3BsYXk6IHN3YXA7CglzcmM6IHVybCgiZGF0YTpmb250L3dvZmY7YmFzZTY0LGQwOUdSZ0FCQUFBQUFBMW9BQW9BQUFBQUZJQUFBZ3VGQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFCUFV5OHlBQUFBOUFBQUFHQUFBQUJnWHhIWHJtTnRZWEFBQUFGVUFBQUFtd0FBQU5RRG9RVmFaMng1WmdBQUFmQUFBQWJ1QUFBSkhOVTVQMHRvWldGa0FBQUk0QUFBQURZQUFBQTJHMzhlMUdob1pXRUFBQWtZQUFBQUpBQUFBQ1FLZndYZWFHMTBlQUFBQ1R3QUFBQjhBQUFBZkRzVkJIOXNiMk5oQUFBSnVBQUFBRUFBQUFCQUpGSW11RzFoZUhBQUFBbjRBQUFBSUFBQUFDQUFOd0QzYm1GdFpRQUFDaGdBQUFNdkFBQUlLZ2p3VmtGd2IzTjBBQUFOU0FBQUFDQUFBQUFnLzlFQU1nQURBaW9DdkFBRkFBQUNpZ0pZQUFBQVN3S0tBbGdBQUFGZUFESUJLUUFBQWdzSEF3TUVBd0lDQkdBQUF2Y0FBQUFEQUFBQUFBQUFBQUJCUkVKUEFDQUFJUC8vQXU3L0JnQUFBOWdCRVNBQUFaOEFBQUFBQWZBQ2xBQUFBQ0FBQTNpY2ZNMDVTZ01CQUlYaGI1eHhIL2RkUWVZQTNzSldSQVFQb0FneWhZaVY0R1ZFUWUzRnBiVE5OWEtDWENEd0FwTTJoRmU4NW9NZmhWS0JXcVdIUnFQcS9zU3BNK2N1WExweTQwN3J3Wk5udzJTQ3VIYXJkZTl4TE5MUElQLzV5MjkrOHAydmZPWWo3M25MYTE1eTNEV25yM0JrUnFreWE4NjhCWXVXTEt1dFdMVm0zWVpOVzdidDJMVm4zNEZEUmdBQUFQLy9Bd0F1RFNyakFIaWNYRlZiYk52bUZUNy9MNHFjWlRveExaR1VaRk9VUklrVWZaRXRVUlFqK1NMTGxxK1ZmRVVjWi9NbERZcXRuZU9raXgzRUxWSmtRSU5pNkpSdW1MeTIyOE1HRkNtR0RlMUQwUlZZZzJVUGUrZ2FkQThkVXF4UHhicWh5SURtUlNpRVljQmthaUJseDI0ZjdQTkRvcjd6bis5eUNFNVlBTUFYOFQ0NG9BVk9Rd2V3QUJvVFlxS2Fva2lVb1JtR3hEc01CVEhVQXU0dzM3eWpxSVNxRXQzQjE4WG5OemRSYVFQdkgxejZUdW5peGY5c0RnNmF2M3Ivcm5rYjdkd0ZRQkJ2MVBBQWZoMDZBWnhoV2RaVDZiU1c1SGhLbHFVd1NiSWVUa3VtRFo1RTYwc3ZMNSs5dlpSN0tqVG5NNlRlbVo2VjZWak9PN2RFRjMrK2Zla1hpMXA0Z3hlU0cyTlBQUnZ4clYwQUJDVUE5QzljQnFkMVQ0MEpzYVVLd3JoOFVMMEJZUFV0QWVBaUxvUGIvdDdOYTdLczZ4b2pPUlNKNDFpMjlOcnZSZ25pVk5rcXpqWmNOdi80MDlRUHN3OFBkdEhFSytrYjJYOERBTFo2NEFGY0JobzhOa3FTNDFnUFNVb1N5MmhKUFNWTFV1bno2V3VUazdzVGk5TjdvME1GWEZiVzVvc1grejlEUzA5cjNmQVlZeG1YNFJUd0p6QW90NlRZS09rbXpLT0pxNFdjdnYvbUM0dkY3UEJ3dG9qTDBkVzU2WFhlL04ralIraENZbUJBdG1hYWFkVHdQQzREWTNPcE14cGowMmNmU0RSMzg2WDlyR0VNdmZJaS9lb2R0R0ZXTGhTTEY5QzIrY2FkVndGRGQ2T0dQa0YxOElFRXdJY3RJUXhiQTBxeEZXRVpTWkZJMGtpbURkM1c1VStGaFZzVkxLbmlhRVR2MzhwdWZuZlBSWWhUMy9KRjNYTkRJbjB1TjdkNk9xUjQyU2VGeU9XcjVoZGFsM1NWZDU5ejlRaGUzcDQ3MzZoaER0OERENGoyYlJXSmtoaU5wZXhtTm8xS01xMm5wRERGY2h5YUNJMExCTDFUSVlSQ2VHaTFmMmh6VlU2djlLcWVHQjBLNnZqZVcwVy9NUEtENHRubmNudVR4WmY2UHVvNFpmZFFHalZVeC9mQURjR2ptU3gwWHRHMUU5UFlVN0llN3F1MUs0T2JLZldNajZ6c3VRai9KUFlxSGU0ZWo1VHVwMy84M09LMWtTNXY4YmNINHdtL3RPZnhmZFJ4YW54cVpnSXdSQm8xOUU5VUJ5K0lYM093TlFJVjRqZ3RhZkFrNmRCU1ZoY2tUbDBkRzc4ME9MWGVUMkR6VTlka1FrOG41STFmdnF2MGh0UDB5TzdTNG00dXQxVndSMXZTV3VpOFA0Q3lxdDV2K1FTQkZ3RHQ0dnRXMVJoSk40NW1hUWFGWlRWV1lyNDlOaFpaR0JkVDdaMXRmcm96Y1A0OGVtSGIyYW12cEdqeWt0TVprZ003NW9zQURnZzMrakNGNnRBUGd6QnJNeVByS1VPMzczNVkwbHFTMTFqcDBOQmh4VkpjczJ6Z0lVbUhKY3doYWU3bVdRckw5aU5mWlRmT1RMazdnMTYvbXQzUWUwUHZ6Vk10cVZWREVEdkM2c0xhazRVYnM0S2lDSUtpcU1sUkphcjVRblRuOEFQL21kNmhHTkVXRXp1VDdVUkhvV2RvUGtadnRZWTltZG1JNnpUbjdoZ2MxeGJqNkg2M3FxaXhtTnB0VmlJK3Z0M2g4UHE2QkFCb05NQUFnTS93QXl4REZ3QlFJTURMTm1kNUFJZUE2aEN5T05ONHJjbllrWjBaU3hMcWNjMWIvcDFNNkhsM2FEYXg4RVJGQ0VZSHJILzlxRG9xOXZYRXdvbXRkZk92S0pTT0RaanZISlptRHd5b0RwNlRQWTdReVNac3NKUmNuS2tJd2E2WUYxVnpnYjRqSUI5dnZtUDVOTktvMlhxYy9zWVdQSTdCSWR1SXkxMHBGSzdrY3BjTGhjdTV2bmk4TDk3WFJ3OWZXMXJlSFI3ZVhWNjZObnk5TkpvdkZ2T2oxbG9CcFRHTjZxamU5TDlUTjBoU09nNkJabWlNNDZULzBUT2tieXpjRE1HSWxiWXZIZ2ZnRDY4VnZhSWRBaUdZT0ZoRmtlTUVIUEtNZm9McTBQRTFuaW41bUlIT29zeDJ1Ynh0dnZhdVlRK3Fua3Ntbk02YkJLRW16YzhCQWR1b29WK2pPaWkyRnhYRFNvMWxLMW1KWXoxMURNWjZPRDZBV1EvNUlQRTllU3ljRTBNQkllNFBETWFlT1pzNUo0NzVVLzVNUmc0T3EwL1RzcmptNitUZERPZDIwWkdNT3JHaWVGYzluT0wxbldxVk12SHg5V2FtbUVZTlhjYTcxdWExOXFVdTZZYWhXVWw2L05vaEVhek5GNHJNODlldlN3THRjL0Z1Zy83K3l2MXQ4dGF0bmI5MFIwbGlpNlNiV0VPTkd2b3ZxbG8rNEUvc1hvTTVYRFYvWDV5cEJJSmRNbGZaYTNXSXMvVFdPa3FaLzlCVnY0Q216ZmFKYUM4Z29BRlFBMVdoRFVCemFEekhXWlkxRE0zeDdtLzJSMTF1RjlIaWR1VnZ2NEdxWDBaTGlsS0tmbW0ySCswR1hFVlZDSDNqZHljUUpFV1dyWTFIVWZzM2ZqWkF1a2lDYW1zeGJwNXBPVTBSVkF2Vi82UHJiL1ZSYlJSQnRWSzlxUG93T2kzTHM5SkR1MDVISDVydEgwaVRzZGlrOUlIZHozclovQjVWb1FWQTA5MlNIbUlkR2l0Ly9ENTY5dU5QNTFGOFo4NzgyNDZWUzVzVC9DR1dnYk56R1VDQ25jdDRZd1FCdkczNWhWZlNhU1VjYnZyU3lxV0hMQWJPWkJFbXNKUk95OG5VMnAvblBQbG9UMHlPeithWDl1REliL0FKcW9MRDlodVRyNkNxMlE2bzhUYk93REorQUswQXpBbkFhRHdlamNiak9OTXRTZDNXSHdCdVBJRXo4QjcrRUZvdDlSMG5udFpPbkxkRlZSV0RpbkpYak1YRVlDeUdNNm9ZVU5XQTlYRkFWUU9pQ3ZCL0FBQUEvLzhEQUdQZzNqNEFBQUFCQUFBQUFndUZHUVMwYzE4UFBQVUFBUVBvQUFBQUFOaGRvSVFBQUFBQTNXWXZOdjQzL3NRSWJRUHhBQUVBQXdBQ0FBQUFBQUFBQUFFQUFBUFkvdThBQUFpWS9qZitOd2h0QUFFQUFBQUFBQUFBQUFBQUFBQUFBQUFmQXJJQVVBRElBQUFDUmdBdUFnWUFUUUtaQUUwQ1ZBQk5BbVVBVFFLWkFFa0NEd0FxQWowQVFRSTlBQ2NDQmdBa0FWVUFHQUlXQUNJQkZBQTNBMWtBUVFJOEFFRUNLd0FrQWowQUp3R09BRUVCdXdBVkFYOEFFUUk0QUR3Q0N3QU1Bd2dBR0FITUFDWUNPQUE4QVN3QUxnRVVBRUVBQVArdEFBRC9Td0FBQUN3QUxBQllBR2dBaWdDc0FOSUE4QUVvQVZvQmpBSEFBZVlDVGdKYUFvd0NyZ0xhQXc0RExnTnFBNUFEc2dQT0JBWUVHZ1FtQkVZRVVnUm9CSTRBQVFBQUFCOEFrQUFNQUdNQUJ3QUJBQUFBQUFBQUFBQUFBQUFBQUFRQUEzaWNuSlRQYmh0bEZNVi9UbXpUQ3NFQ1JWVzZpYjRGaXlLMVkxTWxWZHVzSnFSV1JrUng4TGdnSklRMHRpZTI1ZkhNeUROMkdwNkFOVy9CVzNURlEvQWNpRFc2MTlldVhSQUZLNHAxWnViK09kKzU1MzdBQVgreVQ2VjZIL2l0bmhxdWNGUy9OcnpIdmZxRjRYMWE5VDNEVlI3VmZqZGNZMUJiR0s3emVhMWorQ1BlVm44eGZJL2o2bytHNzNOWWJSbittS2ZWQThPZjdEditNUHdweDd4ZDRnbzg1MmZERlE3SkRlOXh3QStHOTNtQTFheFVlVURUY0kzUE9ESmM1d2pvTXFZa1lVektFTWNOWTRiTW1SRlRFQkl6WTh3Tk1RTWNBVDRKcGI1TmlSUTVodi80TmlLa1pFYWtGVWVVT0JKQ0VpSUtSbGJ4SjgzS3VOYU8wbWVtU0xyNWxJeUk2R25HaElnVVI4YVFqSlNZaWRZcEtjbDVTWU1HQlgzbG0xTlM0RkV3SnNFalk4YVFCbTFhWE5KbHhKZ0NSMHNyQ2JPUWpCdEtib20wdjdNSVVhWlBURXBock9ha0RKU25VMzZ4WmdkYzRtaVRhK3htNWN1dENvOXhmS3Zad2sxaUhGL2k2Yi9iWUxiZGQ4VW1ZcUY2aW9ZOUV1VjVxeE1jcWVMUzErY2J4U1V2Y1R2cHM4M2t3eG9ObEozTWVreVB1YzVmNWlkNXdpVEZ1VU44UW5WUTZCN2lPTlBuZ0ZBVitZNkFMaGUwZVUxWG4zMDZkUEM1b2t2QUs4MXQwOEh4RlcydU9OZU1RUEh5VzBzZGM4WDNPTDRtMEJpcEhacytvcms4dlNFM2R3dDNjWWFjWTBxdVd5QXpsdk9MOCtPZEppdzdsRzI1bzFCWDlIV1BKRkwyUUZTUlBZc1ltaXR5ZGNWVXRWeDVvekQ5QnVZSStWcnFiTjk5bDIxWTJPNnR0dmlPVEhmWU1UZE9Ncmtsb3c5TjFYdlBNN2Y2NXhFeElLT25FWDB5cGpRb3VkT3pYUk14SjhGeHJqNiswQzBwOGRjNTB1ZE9YUkl6VlFZQnFkYVprZXR2Wkw0SmpYdC95L2ZPN2hMWnZLbnU2R1I5cWwyNlNPVjBZMGF2VmIzVnQ5QlVqamNtMExDcFpwWWpFNWJLeTVPSzl5WGEyK0lmcXZzTHZkMHlubkJHUnNMZ2J6ZkFVenlhSEhQQ0tTUHRJSlZURm5ZN05QV0dhUEtDVXozOWhGaWo1TDU4b3pwSmhSTThubkhDQ1M5NDlwNk9LeWJPdUxnMWw4M2VQdWVjMGViMFA1MWlHZC9takZmcmQvL2U5VmRsMnRTek9KNnNuNTd2UE1WSC84T3RYL0I0Njc3czZDMGdtN093YXUrMjRvcUlxWEJ4aDV0YXVJZDRmd0VBQVAvL0F3RDB0MDlSQUFBREFBQUFBQUFBLzg0QU1nQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiKTsKfV1dPjwvc3R5bGU+PHN0eWxlIHR5cGU9InRleHQvY3NzIj48IVtDREFUQVsuc2hhcGUgewogIHNoYXBlLXJlbmRlcmluZzogZ2VvbWV0cmljUHJlY2lzaW9uOwogIHN0cm9rZS1saW5lam9pbjogcm91bmQ7Cn0KLmNvbm5lY3Rpb24gewogIHN0cm9rZS1saW5lY2FwOiByb3VuZDsKICBzdHJva2UtbGluZWpvaW46IHJvdW5kOwp9Ci5ibGVuZCB7CiAgbWl4LWJsZW5kLW1vZGU6IG11bHRpcGx5OwogIG9wYWNpdHk6IDAuNTsKfQoKCQkuZDItMzQ5MTQ0MTQxNCAuZmlsbC1OMXtmaWxsOiMwQTBGMjU7fQoJCS5kMi0zNDkxNDQxNDE0IC5maWxsLUI0e2ZpbGw6I0UzRTlGRDt9CgkJLmQyLTM0OTE0NDE0MTQgLmZpbGwtQjV7ZmlsbDojRURGMEZEO30KCQkuZDItMzQ5MTQ0MTQxNCAuc3Ryb2tlLUIxe3N0cm9rZTojMEQzMkIyO30KCQkuZDItMzQ5MTQ0MTQxNCAuc3Ryb2tlLUIye3N0cm9rZTojMEQzMkIyO30uYXBwZW5kaXggdGV4dC50ZXh0e2ZpbGw6IzBBMEYyNX0ubWR7LS1jb2xvci1mZy1kZWZhdWx0OiMwQTBGMjU7LS1jb2xvci1mZy1tdXRlZDojNjc2QzdFOy0tY29sb3ItZmctc3VidGxlOiM5NDk5QUI7LS1jb2xvci1jYW52YXMtZGVmYXVsdDojRkZGRkZGOy0tY29sb3ItY2FudmFzLXN1YnRsZTojRUVGMUY4Oy0tY29sb3ItYm9yZGVyLWRlZmF1bHQ6IzBEMzJCMjstLWNvbG9yLWJvcmRlci1tdXRlZDojMEQzMkIyOy0tY29sb3ItbmV1dHJhbC1tdXRlZDojRUVGMUY4Oy0tY29sb3ItYWNjZW50LWZnOiMwRDMyQjI7LS1jb2xvci1hY2NlbnQtZW1waGFzaXM6IzBEMzJCMjstLWNvbG9yLWF0dGVudGlvbi1zdWJ0bGU6IzY3NkM3RTstLWNvbG9yLWRhbmdlci1mZzpyZWQ7fS5saWdodC1jb2Rle2Rpc3BsYXk6IGJsb2NrfS5kYXJrLWNvZGV7ZGlzcGxheTogbm9uZX1AbWVkaWEgc2NyZWVuIGFuZCAocHJlZmVycy1jb2xvci1zY2hlbWU6ZGFyayl7CgkJLmQyLTM0OTE0NDE0MTQgLmZpbGwtTjF7ZmlsbDojQ0RENkY0O30KCQkuZDItMzQ5MTQ0MTQxNCAuZmlsbC1CNHtmaWxsOiM1ODVCNzA7fQoJCS5kMi0zNDkxNDQxNDE0IC5maWxsLUI1e2ZpbGw6IzQ1NDc1QTt9CgkJLmQyLTM0OTE0NDE0MTQgLnN0cm9rZS1CMXtzdHJva2U6I0NCQTZmNzt9CgkJLmQyLTM0OTE0NDE0MTQgLnN0cm9rZS1CMntzdHJva2U6I0NCQTZmNzt9LmFwcGVuZGl4IHRleHQudGV4dHtmaWxsOiNDREQ2RjR9Lm1key0tY29sb3ItZmctZGVmYXVsdDojQ0RENkY0Oy0tY29sb3ItZmctbXV0ZWQ6I0JBQzJERTstLWNvbG9yLWZnLXN1YnRsZTojQTZBREM4Oy0tY29sb3ItY2FudmFzLWRlZmF1bHQ6IzFFMUUyRTstLWNvbG9yLWNhbnZhcy1zdWJ0bGU6IzMxMzI0NDstLWNvbG9yLWJvcmRlci1kZWZhdWx0OiNDQkE2Zjc7LS1jb2xvci1ib3JkZXItbXV0ZWQ6I0NCQTZmNzstLWNvbG9yLW5ldXRyYWwtbXV0ZWQ6IzMxMzI0NDstLWNvbG9yLWFjY2VudC1mZzojQ0JBNmY3Oy0tY29sb3ItYWNjZW50LWVtcGhhc2lzOiNDQkE2Zjc7LS1jb2xvci1hdHRlbnRpb24tc3VidGxlOiNCQUMyREU7LS1jb2xvci1kYW5nZXItZmc6cmVkO30ubGlnaHQtY29kZXtkaXNwbGF5OiBub25lfS5kYXJrLWNvZGV7ZGlzcGxheTogYmxvY2t9fV1dPjwvc3R5bGU+PGcgY2xhc3M9ImJtOWtaUT09IGdyb3VwIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSIxMiIgeT0iMTIiIHdpZHRoPSI3MDAiIGhlaWdodD0iMTA3IiByeD0iOCIgY2xhc3M9IiBzdHJva2UtQjEgZmlsbC1CNCIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iMzYyIiB5PSIzNSIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxOHB4Ij5DUFUgZWluZXMgTm9kZXM8L3RleHQ+PC9nPjxnIGNsYXNzPSJibTlrWlM1eVpYRjFaWE4wIGNvbXBvbmVudCI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iMTIiIHk9IjQ1IiB3aWR0aD0iMTYwIiBoZWlnaHQ9Ijc0IiByeD0iNiIgZmlsbD0iI0M4RTZDOSIgY2xhc3M9IiBzdHJva2UtQjEiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjkyIiB5PSI4MCIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNXB4Ij48dHNwYW4geD0iOTIiIGR5PSIwIj5SZXF1ZXN0PC90c3Bhbj48dHNwYW4geD0iOTIiIGR5PSIxNyI+cmVzZXJ2aWVydCwgZ2FyYW50aWVydDwvdHNwYW4+PC90ZXh0PjwvZz48ZyBjbGFzcz0iYm05a1pTNWlkWEp6ZEE9PSBjb21wb25lbnQiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjE3MiIgeT0iNDUiIHdpZHRoPSIyMjAiIGhlaWdodD0iNzQiIHJ4PSI2IiBmaWxsPSIjRkZGM0M0IiBjbGFzcz0iIHN0cm9rZS1CMSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iMjgyIiB5PSI4MCIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNXB4Ij48dHNwYW4geD0iMjgyIiBkeT0iMCI+YmlzIHp1bSBMaW1pdDwvdHNwYW4+PHRzcGFuIHg9IjI4MiIgZHk9IjE3Ij5udXR6YmFyLCB3ZW5uIGZyZWk8L3RzcGFuPjwvdGV4dD48L2c+PGcgY2xhc3M9ImJtOWtaUzV5WlhOMCBjb21wb25lbnQiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjM5MiIgeT0iNDUiIHdpZHRoPSIzMjAiIGhlaWdodD0iNzQiIHJ4PSI2IiBjbGFzcz0iIHN0cm9rZS1CMSBmaWxsLUI1IiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSI1NTIiIHk9Ijg3LjUiIGNsYXNzPSJ0ZXh0LWJvbGQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTVweCI+ZsO8ciBhbmRlcmUgUG9kczwvdGV4dD48L2c+PG1hc2sgaWQ9ImQyLTM0OTE0NDE0MTQiIG1hc2tVbml0cz0idXNlclNwYWNlT25Vc2UiIHg9Ii05IiB5PSItOSIgd2lkdGg9Ijc0MiIgaGVpZ2h0PSIxNDkiPgo8cmVjdCB4PSItOSIgeT0iLTkiIHdpZHRoPSI3NDIiIGhlaWdodD0iMTQ5IiBmaWxsPSJ3aGl0ZSI+PC9yZWN0PgoKPC9tYXNrPjwvc3ZnPjwvc3ZnPgo=" alt="Request und Limit im Verhältnis zur CPU eines Nodes" /></p>
+<hr />
+<h2 id="cpu">CPU</h2>
+<ul>
+<li>Einheit: <code>m</code> (millicores) – 1000m = 1 CPU-Kern</li>
+<li><strong>Request</strong>: Garantierte CPU-Zeit</li>
+<li><strong>Limit</strong>: CPU wird gedrosselt (throttled), kein
+OOM-Kill</li>
+</ul>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;100m&quot;</span><span class="co">    # 0.1 CPU-Kern reserviert</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span><span class="co">    # maximal 0.5 CPU-Kern</span></span></code></pre></div>
+<hr />
+<h2 id="memory">Memory</h2>
+<ul>
+<li>Einheit: <code>Mi</code> (Mebibyte), <code>Gi</code> (Gibibyte)</li>
+<li><strong>Request</strong>: Garantierter Speicher</li>
+<li><strong>Limit</strong>: Container wird <strong>gekillt</strong>
+(OOMKilled) wenn überschritten!</li>
+</ul>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;128Mi&quot;</span><span class="co">   # 128 MiB reserviert</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;256Mi&quot;</span><span class="co">   # maximal 256 MiB</span></span></code></pre></div>
+<hr />
+<h2 id="warum-requests-und-limits-wichtig-sind">Warum Requests und
+Limits wichtig sind</h2>
+<h3 id="ohne-requests">Ohne Requests:</h3>
+<ul>
+<li>Scheduler kann Pods nicht sinnvoll planen.</li>
+<li>Das Laufzeitverhalten von Pods ist nicht vorhersagbar.</li>
+<li>Tests sind nicht aussagekräftig.</li>
+<li>Erfahrungswerte sind nicht aussagekräftig: Die Pods einer Anwendung
+können zum Beispiel vor einem Deployment zufällig mehr Speicher zur
+Verfügung gehabt haben.</li>
+</ul>
+<h3 id="ohne-limits">Ohne Limits:</h3>
+<ul>
+<li>Ein fehlerhafter Pod kann den ganzen Node destabilisieren</li>
+<li>Ein Pod kann alle Ressourcen eines Nodes verbrauchen</li>
+<li>Memory-Leak → alle anderen Pods sterben</li>
+<li>Und siehe oben: Pods zu einem Deployment können sich unter Umständen
+sehr unterschiedlich verhalten.</li>
+</ul>
+<h3 id="quality-of-service-qos-classes">Quality of Service (QoS)
+Classes</h3>
+<table>
+<thead>
+<tr>
+<th>QoS-Klasse</th>
+<th>Bedingung</th>
+<th>Verhalten bei Druck (CPU-Pressure, Memory-Pressure)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Guaranteed</strong></td>
+<td>Limits = Requests</td>
+<td>Zuletzt gekillt</td>
+</tr>
+<tr>
+<td><strong>Burstable</strong></td>
+<td>Requests &lt; Limits</td>
+<td>Nach Best-Effort gekillt</td>
+</tr>
+<tr>
+<td><strong>BestEffort</strong></td>
+<td>Keine Requests/Limits</td>
+<td>Als erstes gekillt</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="limitrange-namespace-standard">LimitRange
+(Namespace-Standard)</h2>
+<p>OpenShift/Kubernetes kann Default-Werte für Requests/Limits
+setzen.</p>
+<p>❗ Nur mit Cluster-Admin-Rechten (Manifest:
+<code>cluster-specific/limitrange.yaml</code>):</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> LimitRange</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> default-limits</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Container</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">default</span><span class="kw">:</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;256Mi&quot;</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">defaultRequest</span><span class="kw">:</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;100m&quot;</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;128Mi&quot;</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">max</span><span class="kw">:</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2&quot;</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1Gi&quot;</span></span></code></pre></div>
+<hr />
+<h2 id="resourcequota-namespace-budget">ResourceQuota
+(Namespace-Budget)</h2>
+<p>❗ Nur mit Cluster-Admin-Rechten (Manifest:
+<code>../10-health-quotas/cluster-specific/resourcequota.yaml</code>):</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceQuota</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> namespace-quota</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">hard</span><span class="kw">:</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requests.cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4&quot;</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requests.memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4Gi&quot;</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">limits.cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;8&quot;</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">limits.memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;8Gi&quot;</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">pods</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;20&quot;</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Quota anzeigen</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get resourcequota</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe resourcequota namespace-quota   <span class="co"># ❗ nur, wenn diese Quota angelegt wurde</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Aktuelle Ressourcennutzung</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> top pods      <span class="co"># ❗ Metriken erst ca. 1 Minute nach dem Pod-Start verfügbar</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> top nodes     <span class="co"># ❗ benötigt Leserechte auf Cluster-Ebene</span></span></code></pre></div>
+<hr />
+<h2 id="ausprobieren">Ausprobieren</h2>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Die ConfigMap aus Kapitel 7 wird vom Deployment benötigt</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 07-konfiguration/configmap-html.yaml</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 08-requests-limits/deployment-with-resources.yaml</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> rollout status deployment/demo</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co"># QoS-Klasse der Pods (Requests &lt; Limits → Burstable)</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pods <span class="at">-l</span> app=demo <span class="at">-o</span> custom-columns=NAME:.metadata.name,QOS:.status.qosClass</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Welche LimitRange / ResourceQuota gilt im eigenen Project?</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> describe limitrange</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> describe resourcequota</span></code></pre></div>
+<h2 id="empfehlungen-für-die-demo-anwendung">Empfehlungen für die
+Demo-Anwendung</h2>
+<div class="sourceCode" id="cb7"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;100m&quot;</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;128Mi&quot;</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;256Mi&quot;</span></span></code></pre></div>
+<hr />
+<h2 id="manifeste-in-diesem-kapitel">Manifeste in diesem Kapitel</h2>
+<ul>
+<li><code>deployment-with-resources.yaml</code> – Deployment mit
+Requests &amp; Limits</li>
+<li>❗ <code>cluster-specific/limitrange.yaml</code> – LimitRange für
+den Namespace (Cluster-Admin nötig)</li>
+</ul>
+<hr />
+<h2 id="weiterführende-links">Weiterführende Links</h2>
+<ul>
+<li><a href="https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/">Kubernetes:
+Ressourcen für Container verwalten</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/policy/resource-quotas/">Kubernetes:
+ResourceQuotas</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/policy/limit-range/">Kubernetes:
+LimitRange</a></li>
+<li><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/nodes/index">OpenShift
+4.22: Nodes</a></li>
+</ul>
+<p>Siehe auch <a href="../99-anhang/DOCUMENTATION.html">99-anhang/DOCUMENTATION.md</a>
+für die vollständige Liste.</p>
+<nav class="pager-bottom">
+  <a class="prev" href="../07-konfiguration/README.html"><span>← Zurück</span>Kapitel 7: Konfiguration</a>
+
+  <a class="up" href="../README.html#inhaltsverzeichnis"><span>↑ Übersicht</span>Inhaltsverzeichnis</a>
+
+  <a class="next" href="../09-kustomize/README.html"><span>Weiter →</span>Kapitel 9: Kustomize Grundlagen</a>
+
+</nav>
+</main>
+</div>
+<script>
+// Kopier-Button für Codeblöcke
+document.querySelectorAll("pre").forEach(function (pre) {
+  var button = document.createElement("button");
+  button.className = "copy";
+  button.type = "button";
+  button.textContent = "Kopieren";
+  button.addEventListener("click", function () {
+    navigator.clipboard.writeText(pre.innerText).then(function () {
+      button.textContent = "Kopiert ✓";
+      setTimeout(function () { button.textContent = "Kopieren"; }, 1500);
+    });
+  });
+  pre.appendChild(button);
+});
+</script>
+</body>
+</html>

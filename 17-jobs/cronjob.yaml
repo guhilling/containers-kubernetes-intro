@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: demo-health
+  labels:
+    app: demo-job
+spec:
+  schedule: "*/2 * * * *"          # alle 2 Minuten (Cron-Syntax, Zeitzone: UTC)
+  concurrencyPolicy: Forbid        # kein neuer Lauf, solange der vorige noch läuft
+  successfulJobsHistoryLimit: 3    # die letzten 3 erfolgreichen Jobs aufbewahren
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    metadata:
+      labels:
+        app: demo-job
+    spec:
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            app: demo-job
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: check
+              image: quay.io/ghilling/ubi-tools:10-latest
+              command: ["sh", "-c", "date; curl -sf http://demo:8080/health"]
+              resources:
+                requests:
+                  cpu: "50m"
+                  memory: "64Mi"
+                limits:
+                  cpu: "200m"
+                  memory: "128Mi"

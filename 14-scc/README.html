@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kapitel 14: OpenShift Security Context Constraints
+(SCCs) – Container und Kubernetes/OpenShift</title>
+<style type="text/css">:root {
+--bg: #ffffff;
+--fg: #1f2328;
+--muted: #59636e;
+--border: #d1d9e0;
+--accent: #1a5fb4;
+--accent-soft: #e8f0fe;
+--code-bg: #f6f8fa;
+--topbar-bg: #f6f8fa;
+--warn: #9a6700;
+--warn-bg: #fff8c5;
+--rookie: #1a7f37;
+--rookie-bg: #dafbe1;
+--advanced: #8250df;
+--advanced-bg: #fbefff;
+--tok-comment: #6e7781;
+--tok-keyword: #cf222e;
+--tok-string: #0a3069;
+--tok-variable: #953800;
+--tok-function: #8250df;
+--tok-number: #0550ae;
+--tok-attr: #116329;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg: #0d1117;
+--fg: #e6edf3;
+--muted: #9198a1;
+--border: #30363d;
+--accent: #6cb6ff;
+--accent-soft: #15233a;
+--code-bg: #161b22;
+--topbar-bg: #161b22;
+--warn: #d29922;
+--warn-bg: #2b2111;
+--rookie: #3fb950;
+--rookie-bg: #12261e;
+--advanced: #d2a8ff;
+--advanced-bg: #221a33;
+--tok-comment: #9198a1;
+--tok-keyword: #ff7b72;
+--tok-string: #a5d6ff;
+--tok-variable: #ffa657;
+--tok-function: #d2a8ff;
+--tok-number: #79c0ff;
+--tok-attr: #7ee787;
+}
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 4.5rem; }
+body {
+margin: 0;
+background: var(--bg);
+color: var(--fg);
+font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.topbar {
+position: sticky; top: 0; z-index: 10;
+display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+padding: 0.6rem 1.5rem;
+background: var(--topbar-bg);
+border-bottom: 1px solid var(--border);
+}
+.topbar .course { font-weight: 600; color: var(--fg); }
+.pager { display: flex; gap: 1.25rem; font-size: 0.95rem; }
+.layout {
+display: grid;
+grid-template-columns: 16rem minmax(0, 52rem);
+gap: 3rem;
+justify-content: center;
+padding: 2rem 1.5rem 4rem;
+}
+.toc {
+position: sticky; top: 4.5rem;
+align-self: start;
+max-height: calc(100vh - 6rem);
+overflow-y: auto;
+font-size: 0.9rem;
+}
+.toc-title { margin: 0 0 0.5rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; }
+.toc ul { list-style: none; margin: 0; padding-left: 0; }
+.toc ul ul { padding-left: 1rem; }
+.toc li { margin: 0.3rem 0; }
+.toc a { color: var(--muted); }
+.toc a:hover { color: var(--accent); }
+main { min-width: 0; }
+h1, h2, h3, h4 { line-height: 1.25; margin: 2rem 0 1rem; }
+h1 { font-size: 2rem; margin-top: 0; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+h2 { font-size: 1.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.2rem; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 2rem 0; }
+img { max-width: 100%; height: auto; display: block; margin: 1.5rem auto; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.95rem; display: block; overflow-x: auto; }
+th, td { border: 1px solid var(--border); padding: 0.4rem 0.75rem; text-align: left; vertical-align: top; }
+th { background: var(--code-bg); }
+code { font: 0.875em/1.5 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+:not(pre) > code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.1em 0.35em; }
+pre {
+position: relative;
+background: var(--code-bg);
+border: 1px solid var(--border);
+border-radius: 8px;
+padding: 1rem 1.25rem;
+overflow-x: auto;
+}
+pre code { background: none; border: 0; padding: 0; }
+pre .copy {
+position: absolute; top: 0.5rem; right: 0.5rem;
+font: 0.75rem/1 inherit; font-family: inherit;
+padding: 0.3rem 0.55rem;
+color: var(--muted); background: var(--bg);
+border: 1px solid var(--border); border-radius: 6px;
+cursor: pointer; opacity: 0; transition: opacity 0.15s;
+}
+pre:hover .copy, pre .copy:focus { opacity: 1; }
+blockquote {
+margin: 1rem 0; padding: 0.5rem 1rem;
+color: var(--fg);
+background: var(--accent-soft);
+border-left: 4px solid var(--accent);
+border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0.4rem 0; }
+.pager-bottom { display: flex; justify-content: space-between; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.pager-bottom a { display: flex; flex-direction: column; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; max-width: 40%; }
+.pager-bottom a span { font-size: 0.8rem; color: var(--muted); }
+.pager-bottom .next { margin-left: auto; text-align: right; }
+.pager-bottom .up { text-align: center; }
+@media (max-width: 960px) {
+.layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; padding: 1.5rem 1rem 3rem; }
+.toc { position: static; max-height: none; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+.topbar { padding: 0.6rem 1rem; }
+}
+
+code span.co { color: var(--tok-comment); font-style: italic; }
+code span.kw, code span.cf { color: var(--tok-keyword); }
+code span.st, code span.ss, code span.ch, code span.vs { color: var(--tok-string); }
+code span.va { color: var(--tok-variable); }
+code span.fu, code span.bu { color: var(--tok-function); }
+code span.dv, code span.fl, code span.bn, code span.cn { color: var(--tok-number); }
+code span.at { color: var(--tok-attr); }
+code span.op, code span.ot { color: inherit; }
+div.sourceCode { margin: 1rem 0; }
+pre > code.sourceCode > span { display: inline; }
+
+.badge {
+display: inline-block;
+padding: 0.15em 0.6em;
+border-radius: 999px;
+font-size: 0.75rem;
+font-weight: 600;
+line-height: 1.5;
+vertical-align: middle;
+white-space: nowrap;
+}
+.badge-rookie { color: var(--rookie); background: var(--rookie-bg); border: 1px solid var(--rookie); }
+.badge-advanced { color: var(--advanced); background: var(--advanced-bg); border: 1px solid var(--advanced); }
+.chapter-level { margin: -0.5rem 0 1.5rem; }
+h1 + .chapter-level { margin-top: -0.25rem; }
+.advanced-section {
+margin: 1.5rem 0;
+padding: 0.25rem 1.25rem 0.75rem;
+border-left: 4px solid var(--advanced);
+background: var(--advanced-bg);
+border-radius: 0 8px 8px 0;
+}
+.toc .badge { font-size: 0.65rem; padding: 0 0.45em; margin-left: 0.25rem; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="course" href="../README.html">Container und Kubernetes/OpenShift</a>
+  <nav class="pager">
+    <a href="../README.html#inhaltsverzeichnis">↑ Inhaltsverzeichnis</a>
+
+    <a href="../13-configmaps-secrets/README.html" title="Kapitel 13: ConfigMaps und Secrets vertieft">← Zurück</a>
+
+    <a href="../15-storage/README.html" title="Kapitel 15: Persistent Storage">Weiter →</a>
+
+  </nav>
+</header>
+<div class="layout">
+<aside class="toc">
+  <p class="toc-title">Inhalt</p>
+<ul>
+<li><a href="#kapitel-14-openshift-security-context-constraints-sccs" id="toc-kapitel-14-openshift-security-context-constraints-sccs">Kapitel
+14: OpenShift Security Context Constraints (SCCs)</a>
+<ul>
+<li><a href="#standard-scc-restricted-v2" id="toc-standard-scc-restricted-v2">Standard-SCC
+<code>restricted-v2</code></a></li>
+<li><a href="#runasuser-strategien" id="toc-runasuser-strategien"><code>runAsUser</code>-Strategien</a></li>
+<li><a href="#beispiel-feste-user-id" id="toc-beispiel-feste-user-id">Beispiel: feste User-ID</a></li>
+<li><a href="#ausblick-linux-user-namespaces" id="toc-ausblick-linux-user-namespaces">Ausblick: Linux User
+Namespaces</a></li>
+<li><a href="#manifeste-in-diesem-kapitel" id="toc-manifeste-in-diesem-kapitel">Manifeste in diesem
+Kapitel</a></li>
+<li><a href="#weiterführende-links" id="toc-weiterführende-links">Weiterführende Links</a></li>
+</ul></li>
+</ul>
+</aside>
+<main>
+<h1 id="kapitel-14-openshift-security-context-constraints-sccs">Kapitel
+14: OpenShift Security Context Constraints (SCCs)</h1>
+<div class="chapter-level">
+<span class="badge badge-advanced">Advanced · Tag 3–4</span>
+</div>
+<p>Kubernetes kennt für Pod-Sicherheit die <strong>Pod Security
+Admission</strong> (Labels
+<code>enforce</code>/<code>audit</code>/<code>warn</code> mit den Stufen
+<code>privileged</code>/<code>baseline</code>/<code>restricted</code>).
+OpenShift geht mit <strong>SCCs (Security Context Constraints)</strong>
+einen Schritt weiter: SCCs sind feingranularer, werden pro
+ServiceAccount/User zugewiesen und steuern u. a., welche User-IDs,
+Capabilities oder Volume-Typen ein Pod verwenden darf.</p>
+<blockquote>
+<p>❗ Das Anlegen und Zuweisen von SCCs erfordert Cluster-Admin-Rechte.
+Die Manifeste in <code>cluster-specific/</code> sind daher
+<strong>Referenzbeispiele</strong> – zum Nachvollziehen, nicht zum
+eigenständigen Ausprobieren ohne Admin-Zugriff.</p>
+</blockquote>
+<h2 id="standard-scc-restricted-v2">Standard-SCC
+<code>restricted-v2</code></h2>
+<p>Jeder Pod, der keiner anderen SCC zugewiesen ist, läuft standardmäßig
+unter <code>restricted-v2</code>. Welche SCC ein Pod bekommen hat und
+welche UID OpenShift vergeben hat, lässt sich am Pod selbst ablesen:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 04-pods-on-kubernetes/pod.yaml</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> wait <span class="at">--for</span><span class="op">=</span>condition=Ready pod/demo <span class="at">--timeout</span><span class="op">=</span>120s</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Verwendete SCC (Annotation am Pod)</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pod demo <span class="at">-o</span> jsonpath=<span class="st">&#39;{.metadata.annotations.openshift\.io/scc}{&quot;\n&quot;}&#39;</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Vergebene UID – stammt aus dem UID-Bereich des Projects</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> exec demo <span class="at">--</span> id</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get project <span class="va">$(</span><span class="ex">oc</span> project <span class="at">-q</span><span class="va">)</span> <span class="at">-o</span> jsonpath=<span class="st">&#39;{.metadata.annotations.openshift\.io/sa\.scc\.uid-range}{&quot;\n&quot;}&#39;</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> delete pod demo</span></code></pre></div>
+<p>❗ Die SCC-Definitionen selbst anzusehen erfordert Leserechte auf
+Cluster-Ebene (z. B. nicht in der Developer Sandbox):</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get scc</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> describe scc restricted-v2</span></code></pre></div>
+<p><code>restricted-v2</code> erzwingt u. a.:</p>
+<ul>
+<li>keine privilegierten Container</li>
+<li>keine feste, vom Nutzer gewählte User-ID
+(<code>runAsUser: MustRunAsRange</code>) – OpenShift weist stattdessen
+automatisch eine UID aus einem für das Project reservierten Bereich
+zu</li>
+<li><code>allowPrivilegeEscalation: false</code></li>
+<li><code>readOnlyRootFilesystem</code> nicht erzwungen, aber viele
+weitere Einschränkungen bei Capabilities und Volume-Typen</li>
+</ul>
+<p>Das erklärt, warum Container-Images, die intern eine feste User-ID
+(z. B. <code>root</code>, UID 0, oder eine andere fest einkompilierte
+UID) voraussetzen, auf OpenShift ohne Anpassung oft nicht laufen – die
+tatsächlich verwendete UID steht erst zur Laufzeit fest.</p>
+<h2 id="runasuser-strategien"><code>runAsUser</code>-Strategien</h2>
+<table>
+<thead>
+<tr>
+<th>Strategie</th>
+<th>Bedeutung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MustRunAs</code></td>
+<td>Es wird eine einzige, feste UID erzwungen (Beispiel in diesem
+Kapitel)</td>
+</tr>
+<tr>
+<td><code>MustRunAsRange</code></td>
+<td>UID muss aus einem Bereich stammen (Default für
+<code>restricted-v2</code>)</td>
+</tr>
+<tr>
+<td><code>RunAsAny</code></td>
+<td>Keine Einschränkung – Pod/Image bestimmt die UID selbst</td>
+</tr>
+</tbody>
+</table>
+<h2 id="beispiel-feste-user-id">Beispiel: feste User-ID</h2>
+<p><code>cluster-specific/scc-fixed-uid.yaml</code> zeigt eine SCC, die
+genau die UID <code>1001</code> erzwingt – ein typisches Muster für
+Legacy-Images, die intern mit einer bestimmten, fest verdrahteten
+User-ID arbeiten:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">runAsUser</span><span class="kw">:</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> MustRunAs</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">uid</span><span class="kw">:</span><span class="at"> </span><span class="dv">1001</span></span></code></pre></div>
+<p>❗ Zuweisung an eine ServiceAccount (nur mit Cluster-Admin-Rechten
+möglich):</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> adm policy add-scc-to-user demo-fixed-uid <span class="at">-z</span> demo-reader</span></code></pre></div>
+<p>Erst nach dieser Zuweisung darf ein Pod, der über die entsprechende
+ServiceAccount läuft, tatsächlich mit UID <code>1001</code> starten –
+ohne Zuweisung lehnt der Admission-Controller den Pod ab.</p>
+<h2 id="ausblick-linux-user-namespaces">Ausblick: Linux User
+Namespaces</h2>
+<p>Ein neuerer Ansatz, der einen Teil der SCC-Komplexität rund um
+User-IDs entschärfen könnte, sind Linux <strong>User Namespaces</strong>
+für Pods (<code>hostUsers: false</code> im Pod-Spec). Dabei werden die
+UIDs <em>innerhalb</em> des Containers auf einen anderen, isolierten
+UID-Bereich auf dem Host abgebildet – ein Prozess, der im Container als
+&quot;root&quot; (UID 0) läuft, hat auf dem Host eine unprivilegierte, gemappte
+UID. Das reduziert das Sicherheitsrisiko fester/hoher Rechte im
+Container, unabhängig davon, welche UID das Image intern erwartet.</p>
+<p>Der Reifegrad und die Verfügbarkeit dieser Funktion unterscheiden
+sich je nach Kubernetes-/OpenShift-Version und Container-Runtime – zum
+Zeitpunkt dieses Seminars ist das Feature als Ausblick zu verstehen,
+nicht als aktuell einsatzbereite Standardlösung.</p>
+<h2 id="manifeste-in-diesem-kapitel">Manifeste in diesem Kapitel</h2>
+<ul>
+<li>❗ <code>cluster-specific/scc-fixed-uid.yaml</code> – Referenz-SCC
+mit fester User-ID (Cluster-Admin nötig)</li>
+</ul>
+<hr />
+<h2 id="weiterführende-links">Weiterführende Links</h2>
+<ul>
+<li><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/security_and_compliance/index">OpenShift
+4.22: Security and Compliance (SCCs)</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/security/pod-security-standards/">Kubernetes:
+Pod Security Standards</a></li>
+</ul>
+<p>Siehe auch <a href="../99-anhang/DOCUMENTATION.html">99-anhang/DOCUMENTATION.md</a>
+für die vollständige Liste.</p>
+<nav class="pager-bottom">
+  <a class="prev" href="../13-configmaps-secrets/README.html"><span>← Zurück</span>Kapitel 13: ConfigMaps und Secrets vertieft</a>
+
+  <a class="up" href="../README.html#inhaltsverzeichnis"><span>↑ Übersicht</span>Inhaltsverzeichnis</a>
+
+  <a class="next" href="../15-storage/README.html"><span>Weiter →</span>Kapitel 15: Persistent Storage</a>
+
+</nav>
+</main>
+</div>
+<script>
+// Kopier-Button für Codeblöcke
+document.querySelectorAll("pre").forEach(function (pre) {
+  var button = document.createElement("button");
+  button.className = "copy";
+  button.type = "button";
+  button.textContent = "Kopieren";
+  button.addEventListener("click", function () {
+    navigator.clipboard.writeText(pre.innerText).then(function () {
+      button.textContent = "Kopiert ✓";
+      setTimeout(function () { button.textContent = "Kopieren"; }, 1500);
+    });
+  });
+  pre.appendChild(button);
+});
+</script>
+</body>
+</html>

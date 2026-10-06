@@ -1,0 +1,11 @@
+target/
+*.class
+*.jar
+!demo-app/src/**
+.idea/
+*.iml
+.mvn/
+.vscode/*
+*.swp
+.DS_Store
+

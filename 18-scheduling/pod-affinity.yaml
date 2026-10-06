@@ -1,0 +1,35 @@
+# Ein "Cache" soll auf demselben Node laufen wie ein Pod der Demo-App
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-cache
+  labels:
+    app: demo-cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-cache
+  template:
+    metadata:
+      labels:
+        app: demo-cache
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: demo
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: cache
+          image: quay.io/ghilling/ubi-tools:10-latest
+          command: ["sleep", "infinity"]
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "32Mi"
+            limits:
+              cpu: "100m"
+              memory: "64Mi"

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kapitel 11: Kubernetes
+RBAC – Container und Kubernetes/OpenShift</title>
+<style type="text/css">:root {
+--bg: #ffffff;
+--fg: #1f2328;
+--muted: #59636e;
+--border: #d1d9e0;
+--accent: #1a5fb4;
+--accent-soft: #e8f0fe;
+--code-bg: #f6f8fa;
+--topbar-bg: #f6f8fa;
+--warn: #9a6700;
+--warn-bg: #fff8c5;
+--rookie: #1a7f37;
+--rookie-bg: #dafbe1;
+--advanced: #8250df;
+--advanced-bg: #fbefff;
+--tok-comment: #6e7781;
+--tok-keyword: #cf222e;
+--tok-string: #0a3069;
+--tok-variable: #953800;
+--tok-function: #8250df;
+--tok-number: #0550ae;
+--tok-attr: #116329;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg: #0d1117;
+--fg: #e6edf3;
+--muted: #9198a1;
+--border: #30363d;
+--accent: #6cb6ff;
+--accent-soft: #15233a;
+--code-bg: #161b22;
+--topbar-bg: #161b22;
+--warn: #d29922;
+--warn-bg: #2b2111;
+--rookie: #3fb950;
+--rookie-bg: #12261e;
+--advanced: #d2a8ff;
+--advanced-bg: #221a33;
+--tok-comment: #9198a1;
+--tok-keyword: #ff7b72;
+--tok-string: #a5d6ff;
+--tok-variable: #ffa657;
+--tok-function: #d2a8ff;
+--tok-number: #79c0ff;
+--tok-attr: #7ee787;
+}
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 4.5rem; }
+body {
+margin: 0;
+background: var(--bg);
+color: var(--fg);
+font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.topbar {
+position: sticky; top: 0; z-index: 10;
+display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+padding: 0.6rem 1.5rem;
+background: var(--topbar-bg);
+border-bottom: 1px solid var(--border);
+}
+.topbar .course { font-weight: 600; color: var(--fg); }
+.pager { display: flex; gap: 1.25rem; font-size: 0.95rem; }
+.layout {
+display: grid;
+grid-template-columns: 16rem minmax(0, 52rem);
+gap: 3rem;
+justify-content: center;
+padding: 2rem 1.5rem 4rem;
+}
+.toc {
+position: sticky; top: 4.5rem;
+align-self: start;
+max-height: calc(100vh - 6rem);
+overflow-y: auto;
+font-size: 0.9rem;
+}
+.toc-title { margin: 0 0 0.5rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; }
+.toc ul { list-style: none; margin: 0; padding-left: 0; }
+.toc ul ul { padding-left: 1rem; }
+.toc li { margin: 0.3rem 0; }
+.toc a { color: var(--muted); }
+.toc a:hover { color: var(--accent); }
+main { min-width: 0; }
+h1, h2, h3, h4 { line-height: 1.25; margin: 2rem 0 1rem; }
+h1 { font-size: 2rem; margin-top: 0; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+h2 { font-size: 1.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.2rem; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 2rem 0; }
+img { max-width: 100%; height: auto; display: block; margin: 1.5rem auto; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.95rem; display: block; overflow-x: auto; }
+th, td { border: 1px solid var(--border); padding: 0.4rem 0.75rem; text-align: left; vertical-align: top; }
+th { background: var(--code-bg); }
+code { font: 0.875em/1.5 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+:not(pre) > code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.1em 0.35em; }
+pre {
+position: relative;
+background: var(--code-bg);
+border: 1px solid var(--border);
+border-radius: 8px;
+padding: 1rem 1.25rem;
+overflow-x: auto;
+}
+pre code { background: none; border: 0; padding: 0; }
+pre .copy {
+position: absolute; top: 0.5rem; right: 0.5rem;
+font: 0.75rem/1 inherit; font-family: inherit;
+padding: 0.3rem 0.55rem;
+color: var(--muted); background: var(--bg);
+border: 1px solid var(--border); border-radius: 6px;
+cursor: pointer; opacity: 0; transition: opacity 0.15s;
+}
+pre:hover .copy, pre .copy:focus { opacity: 1; }
+blockquote {
+margin: 1rem 0; padding: 0.5rem 1rem;
+color: var(--fg);
+background: var(--accent-soft);
+border-left: 4px solid var(--accent);
+border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0.4rem 0; }
+.pager-bottom { display: flex; justify-content: space-between; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.pager-bottom a { display: flex; flex-direction: column; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; max-width: 40%; }
+.pager-bottom a span { font-size: 0.8rem; color: var(--muted); }
+.pager-bottom .next { margin-left: auto; text-align: right; }
+.pager-bottom .up { text-align: center; }
+@media (max-width: 960px) {
+.layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; padding: 1.5rem 1rem 3rem; }
+.toc { position: static; max-height: none; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+.topbar { padding: 0.6rem 1rem; }
+}
+
+code span.co { color: var(--tok-comment); font-style: italic; }
+code span.kw, code span.cf { color: var(--tok-keyword); }
+code span.st, code span.ss, code span.ch, code span.vs { color: var(--tok-string); }
+code span.va { color: var(--tok-variable); }
+code span.fu, code span.bu { color: var(--tok-function); }
+code span.dv, code span.fl, code span.bn, code span.cn { color: var(--tok-number); }
+code span.at { color: var(--tok-attr); }
+code span.op, code span.ot { color: inherit; }
+div.sourceCode { margin: 1rem 0; }
+pre > code.sourceCode > span { display: inline; }
+
+.badge {
+display: inline-block;
+padding: 0.15em 0.6em;
+border-radius: 999px;
+font-size: 0.75rem;
+font-weight: 600;
+line-height: 1.5;
+vertical-align: middle;
+white-space: nowrap;
+}
+.badge-rookie { color: var(--rookie); background: var(--rookie-bg); border: 1px solid var(--rookie); }
+.badge-advanced { color: var(--advanced); background: var(--advanced-bg); border: 1px solid var(--advanced); }
+.chapter-level { margin: -0.5rem 0 1.5rem; }
+h1 + .chapter-level { margin-top: -0.25rem; }
+.advanced-section {
+margin: 1.5rem 0;
+padding: 0.25rem 1.25rem 0.75rem;
+border-left: 4px solid var(--advanced);
+background: var(--advanced-bg);
+border-radius: 0 8px 8px 0;
+}
+.toc .badge { font-size: 0.65rem; padding: 0 0.45em; margin-left: 0.25rem; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="course" href="../README.html">Container und Kubernetes/OpenShift</a>
+  <nav class="pager">
+    <a href="../README.html#inhaltsverzeichnis">↑ Inhaltsverzeichnis</a>
+
+    <a href="../10-health-quotas/README.html" title="Kapitel 10: Health-Checks, Quotas und LimitRanges">← Zurück</a>
+
+    <a href="../12-apply-strategies/README.html" title="Kapitel 12: Server-Side vs. Client-Side Apply">Weiter →</a>
+
+  </nav>
+</header>
+<div class="layout">
+<aside class="toc">
+  <p class="toc-title">Inhalt</p>
+<ul>
+<li><a href="#kapitel-11-kubernetes-rbac" id="toc-kapitel-11-kubernetes-rbac">Kapitel 11: Kubernetes RBAC</a>
+<ul>
+<li><a href="#grundbegriffe" id="toc-grundbegriffe">Grundbegriffe</a></li>
+<li><a href="#subjects" id="toc-subjects">Subjects</a></li>
+<li><a href="#beispiel-in-diesem-kapitel" id="toc-beispiel-in-diesem-kapitel">Beispiel in diesem Kapitel</a></li>
+<li><a href="#aggregierte-clusterroles" id="toc-aggregierte-clusterroles">Aggregierte ClusterRoles</a></li>
+<li><a href="#oc-kurzform-vs-manifest" id="toc-oc-kurzform-vs-manifest">oc-Kurzform vs. Manifest</a></li>
+<li><a href="#manifeste-in-diesem-kapitel" id="toc-manifeste-in-diesem-kapitel">Manifeste in diesem
+Kapitel</a></li>
+<li><a href="#weiterführende-links" id="toc-weiterführende-links">Weiterführende Links</a></li>
+</ul></li>
+</ul>
+</aside>
+<main>
+<h1 id="kapitel-11-kubernetes-rbac">Kapitel 11: Kubernetes RBAC</h1>
+<div class="chapter-level">
+<span class="badge badge-rookie">Rookie · Tag 1–2</span>
+</div>
+<p>RBAC (Role-Based Access Control) regelt, wer welche Aktionen auf
+welchen Ressourcen ausführen darf – sowohl für Menschen als auch für
+Anwendungen (via ServiceAccounts). Dieses Kapitel lässt sich vollständig
+im eigenen Project durchspielen, da Project-Owner dort selbst
+RBAC-Objekte anlegen dürfen, ohne Cluster-Admin zu sein.</p>
+<h2 id="grundbegriffe">Grundbegriffe</h2>
+<table>
+<thead>
+<tr>
+<th>Objekt</th>
+<th>Bedeutung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ServiceAccount</code></td>
+<td>Identität für Anwendungen/Pods (kein Mensch)</td>
+</tr>
+<tr>
+<td><code>Role</code></td>
+<td>Erlaubnisse (<code>verbs</code> auf <code>resources</code>)
+<strong>innerhalb eines Namespace/Project</strong></td>
+</tr>
+<tr>
+<td><code>ClusterRole</code></td>
+<td>Wie <code>Role</code>, aber clusterweit gültig (oder für
+clusterweite Ressourcen)</td>
+</tr>
+<tr>
+<td><code>RoleBinding</code></td>
+<td>Verknüpft Subjects (User/Group/ServiceAccount) mit einer Role
+<strong>in einem Namespace</strong></td>
+</tr>
+<tr>
+<td><code>ClusterRoleBinding</code></td>
+<td>Verknüpft Subjects clusterweit mit einer ClusterRole</td>
+</tr>
+</tbody>
+</table>
+<p>Wichtig: Eine <code>ClusterRole</code> kann auch über eine
+<code>RoleBinding</code> (statt <code>ClusterRoleBinding</code>)
+gebunden werden – dann gelten die Rechte nur innerhalb des Namespace der
+Bindung. Das ist ein gängiges Muster, um eine Menge vordefinierter
+ClusterRoles (z. B. <code>view</code>, <code>edit</code>,
+<code>admin</code>) wiederzuverwenden, ohne sie clusterweit zu
+vergeben.</p>
+<h2 id="subjects">Subjects</h2>
+<p>Ein RoleBinding/ClusterRoleBinding kann an drei Arten von Subjects
+binden:</p>
+<ul>
+<li><code>User</code> – ein menschlicher Benutzer (z. B. via
+OAuth/OpenShift-Identity)</li>
+<li><code>Group</code> – eine Gruppe von Usern</li>
+<li><code>ServiceAccount</code> – eine Identität für Anwendungen, immer
+an ein Namespace/Project gebunden</li>
+</ul>
+<h2 id="beispiel-in-diesem-kapitel">Beispiel in diesem Kapitel</h2>
+<p><img role="img" aria-label="RBAC: ServiceAccount, RoleBinding, Role und die erlaubten Ressourcen" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiICBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWluWU1pbiBtZWV0IiB2aWV3Qm94PSIwIDAgNjE5IDg5NSI+PHN2ZyBjbGFzcz0iZDItMzczNDc0MTUyNCBkMi1zdmciIHdpZHRoPSI2MTkiIGhlaWdodD0iODk1IiB2aWV3Qm94PSItOSAtOSA2MTkgODk1Ij48cmVjdCB4PSItOSIgeT0iLTkiIHdpZHRoPSI2MTkiIGhlaWdodD0iODk1IiByeD0iMCIgZmlsbD0idHJhbnNwYXJlbnQiIHN0cm9rZS13aWR0aD0iMCIgLz48c3R5bGUgdHlwZT0idGV4dC9jc3MiPjwhW0NEQVRBWwouZDItMzczNDc0MTUyNCAudGV4dC1ib2xkIHsKCWZvbnQtZmFtaWx5OiAiZDItMzczNDc0MTUyNC1mb250LWJvbGQiLCAiU291cmNlIFNhbnMgUHJvIiwgIlNvdXJjZSBTYW5zIDMiLCAtYXBwbGUtc3lzdGVtLCBCbGlua01hY1N5c3RlbUZvbnQsICJTZWdvZSBVSSIsIEhlbHZldGljYSwgQXJpYWwsIHNhbnMtc2VyaWY7Cn0KQGZvbnQtZmFjZSB7Cglmb250LWZhbWlseTogZDItMzczNDc0MTUyNC1mb250LWJvbGQ7Cglmb250LWRpc3BsYXk6IHN3YXA7CglzcmM6IHVybCgiZGF0YTpmb250L3dvZmY7YmFzZTY0LGQwOUdSZ0FCQUFBQUFCQ01BQW9BQUFBQUdOd0FBZ3VGQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFCUFV5OHlBQUFBOUFBQUFHQUFBQUJnWHhIWHJtTnRZWEFBQUFGVUFBQUFzQUFBQVBKUmwrQWhaMng1WmdBQUFnUUFBQW01QUFBTkVHWFg2bkJvWldGa0FBQUx3QUFBQURZQUFBQTJHMzhlMUdob1pXRUFBQXY0QUFBQUpBQUFBQ1FLZndYcWFHMTBlQUFBREJ3QUFBQ25BQUFBckZDMEJYUnNiMk5oQUFBTXhBQUFBRmdBQUFCWVMxUk8vbTFoZUhBQUFBMGNBQUFBSUFBQUFDQUFRd0QzYm1GdFpRQUFEVHdBQUFNdkFBQUlLZ2p3VmtGd2IzTjBBQUFRYkFBQUFDQUFBQUFnLzlFQU1nQURBaW9DdkFBRkFBQUNpZ0pZQUFBQVN3S0tBbGdBQUFGZUFESUJLUUFBQWdzSEF3TUVBd0lDQkdBQUF2Y0FBQUFEQUFBQUFBQUFBQUJCUkVKUEFDQUFJUC8vQXU3L0JnQUFBOWdCRVNBQUFaOEFBQUFBQWZBQ2xBQUFBQ0FBQTNpY2hNMDVTc1J3SEVEaEx6TnhIOWU0cjMvSHVJR2VRY1JhRUMxUzI0cUYySWdYY21rRnhkWmpXSXJnRGJRSy9JU2c5ZkRhRHg0eWJSazZjbC9vU25JdHlhNDkrdzRjT1hiaVRPWENsUnUzNnUwaUFzbk9uemxzektuS3VVdlgveVkrb283ditJblBlSXZYZUlubmVJckhlSWo3dUl2eXZXak92Y3FVTnEzYjBOWFNsdXZUYjhDZ0ljTkdkSXdhTTI3Q3BDbUZhVE5telptM1lOR1NaU3RXclVtMitBVUFBUC8vQXdCdXRpM0dlSnhjbDJsc0c5ZTF4OCs5SE0xWUZMVU10eUVwa1VOeXlGbElrUkk1SEk0V1VoUXRrcEpsMHRvc1dYWWtLemFTWnlmeWttZkx6M0plQW4rb202UUpqYUtWaTZaeDBRMDF1c0FCR2hnQmtxQnVnYUJJWXNSRlVEaXA4eVZ4aWhZdWtCU0ltZ3BCazhxY1lrYXlUUHVEZEFjRDNYdk8vWjMvLzV3Uk5NQTRBRDZJTDRBSkdxRVZyT0FBa09rQUhaWUZnYU5VV1ZVNXhxUUtpS2JHc2JWMjZlZUNSRWdTRWZHL3lENjVzSUFxKy9HRk8wY2VxaHc4K09WQ2YzL3RSNisvVVR1UFRyNEJnTFd2QWZBUXJrSWowQUEyU2haNFh1QkkwbVNUYlp6QVViZmJYbWh0Ym04bUxPNnZyNzl5L1lmaTJ5SWF6V1FTeCtUVTBkbzNjZlhPMHNXTEFBQW1xQURnREs0Q0RSNEk2cm5KU2FmVFlTY3BoN0dRbkVsT3BwVVV6M0cwbkRUV3lxM0NrY0dZbUJ3cW5CaGVLS1lUeVZScDZrd21PNFdyM2xJdU90VktOTy9NRCsyVzBMTVJqdmZYWm1lallRQUVjVzBOZCtNWG9SMmdJY2p6U2lxZGxwTk9odUo1TGtpU0RydFRUcVpWaGtUems4OVBUWitmekQwUzJPVld1YzRkMFprUk1lZmFOV2twZisvb2tSOU15TUg5akRlNWYvc2pUNFRjY3c4RGdnb0FmaGxYZ1FXUWFkbm1kREp5T3EzYVpKclRRNmdjUlhHQ3dQbXd3MUg1NldObXE1a3cwK1pEUDNtR2FqUVJ5dnpFZklvZ3RsRzRXdnU0WThEbkcraEF3VHRMbi92SHh0bUxYMzExa1IwZjgzOE9nQTFHM2JnS0ZyRFhFU0k1enJIRjVKT1JVNlhTVW5GaVpIa3dVOEJWWVc2c2ZMRHJJelI1V0k0QTNEMWpDbGVoQlpoNnlucXg5Rk0yRUZjK0s1NG81SlFMbDU2ZUtQZGxzMzFsWEEzUDdocVpaMnIvK2V3ejlIQ2l1NXZYV1hMYUdqYmpGeUZpc0JSVXB3NVBTZkdDRU1mM2czWFluUXhqUkNLUmZmQnNjamMzSThaamNuUTZrT0g3SHl2MFBCSFo2UjhVK0ZodlpIZC9xZStZcFR2K3FJOFBlbG12TmRUU1ZlcEt6Nlk2SS9QdWRyYkQ1Nk9EcnQzRjlGd1BJR2dCTVBseEZRSUFzcW1PK2IwbkUyZmEwQ05sZXZiTTkyTmtDMG1ZYmViUzB5V3p6VXhRelZUcy9OTHJnOXVhR3dpeWVWc1dWMnZ2eVlkU3FVTXlTdFRlU3h4V2xFTkpsTGl6aEVTK0VncFYrTnFIZ0NHaXJhSDMwVHE0Z1FOZ2dycUFWRU03bEdCYzJFRnplancxbVZZVlEwKy9LNHlmVzhHY3hBNkdsSzdGdm9YL1dUWVQ3UEEyZDlpMks4TmE5dVIyemJZR0JKZmpnRGQwN0VUdGIzSUhkNEt4N1RGSHZTN0dxRmRlVzhOT2ZCWHN3RzVRNWlpT2xoMlVFY3dBS3VqTXVhQnVGRlFNREhrSnk4a1Z3bHNJWm1hN01ndXpmSHFtVTdLTGxvQmZ3VmN2bHozZWdmOHRUNS9KTFpmS3o4VGV0YmFBWHNlUXRvYXVvblh3UE9nSkxualBFU1J5RjQvblIvNnZFQi91S0hKK0paZnJkc1Z0ZmVFWlMvYlU1TlJTMXNjc2VNdjV3WXFqOVdGLys0YldCRzBOcmVPcllBUC9YVlo2MW95Z3lIV1U3Z3JraTduai9Rc3BxY2ROcml5YkNVOEp1d1NyTFdybjBsMldGODVNbkJyb2NKVi9kV2NvNGVHVzdlNTNyUzFEd3p1S2dJM2MvNExXd1FYc2ZkbnJhS2lBcmtnOWQ1T2MwcU1nZHZqRTlxRWovY1B6WFFTdTNUU1hFa282d2U5LzZZclFHVXhiQnBZbUo1Wnl1Y1dDTGR5WWxnTjdQVDdVSnlsZCtsMFF1QURRRXI2bXJ6TE5LZW9EK25iSURvN2V0MzE3YUh5SVRiVzFOM3NzN2I2OWU5SFRSeHZhbFptVWhUelMwQkRnZlNkcjN3QXdRVkNMWVFxdFF4ZjB3NmhCaGxkU3FtTGt2cm1rNVNRak83aE5nd2NGSFpDc3k4dE9raWE5NEp2UWJKdU9EZkxHbjN6UnQ3OW4yTmJ1ZDNta3Z2MUtaK0RWTWFveE5hdDZXV3RRR3A4N1VIaHExQ3NJWHE4Z1NNbEJJU3k3QTViMjdBMVBUMmRHSkpwRnRqM1pSbGdMMGN5WWFGbHNDdHA3UjBQbVZxZk4yajhrVDhUUnRZZ2tTS0lvUldvcklUZlRaaks1M0IzZURUWjV2ZGlHUmtIZTBxYUQ1bWdET2tYblY2aU9uY21KSFN0ZWY0Zm93bGN2NzNWSEYrZHIxMUVnTGJxWjJpdWdhYUFDd0VmNEJ1WkJBQUFLUkhnZVFOTzBQMm9adUdXOGx6YmZWemRpYW12SWlxOUNxOEZQb1dWNlM2anZsUHRYNk1ZR2lyUmF3cGFIZG1MdXprM0dpdERSQmtyZkIyRHlvbldqWjlBeUl4dTVNdmRsVEcydGVkMnJwWVNTdHdWR0UrTTdWN3orY0xmK3F3dXREckt4cUJoTTNMMUdkKzJWemVVdUQ3UU85dm9ZOVR5V3pZUy9zZ1VFcmVaOHNmdDRiT2phMEVqckE1UHFudVUzRllDY3VlT0Z3dkZjN2xpaGNDd1hpOGRqOFZoczA1UFpwYW5KVTluVGxjRjhXYmVtbmxaZUc4Rk90QTQyOEFFdzk3SXpaTVlMak1OMnI1M28xL2Z1RVBZZHppeWsvUmxQd3hpZm5vbEc3T0pyK0pjSkQvZXRrOVBMdVhiMzJIZFFhS3VaR0hkSDMwYnJZTDJQTDhYZnUzbDdtWGQwbUYzTjdyYU9yQjJ0N2trbUdock9Fb1NVckgwQ0NCemFHdm94V3RkVndOVFBGSDVqcG13ZHBrOFVIM2JZeVJ1SlEvejJZSTROK0x4eGo2OWZmR3k2ZHcrNzNaUHk5UGJ5L3F4MDJNS3pjKzUyeGtZN2JXWkxxRmNxemdpdVdidFRjTGxibXJqZStORDhob1pwYlEwZHcwdjZWR3dJOG9yQ0thb3E2NjZ1YTRBd04xWW8wMCtlUHMxNUxXNHpZMU10ajg5Y08wcWVPM2Z5N1VpWUpCWkp5OFpaR1cwTi9SdXRndjBCYmRLYmJlL1BFenRXZlA0TzNybXkzR1JpUnkyTDh5aFZ1NlZJSGk4YXFiVVZ3NTJBd0FLQU5MUUt6Y1pzWXpZbm1pcWJydnppd3FBK3ZScHQ1dno1bjZIVlQ4TVZRYWlFUDYyMTNlMVRlQld0UXVDQmZYVW5jSnZmYUJSMTRhbnZkcE5ta3FDYUc5V3pQWTJ0RkVFMVVsM1BuYjRjbzVvcGdtcWlPdEhxN2ZBSXo0OXl0NDExSkh5NzF2WVdWeExGRXZlV0VjK2lEYUE3YUJYYTYrdWxxdmVsM0lLWG5ZRldEMlhkRmhiTjFPOHZERGRaemNRMnVqRnovakxUTS9ZbVNUeUJHa0plRC9yckI4RlNtQnZtUHFnMURVenIzeXVhdHNFU3Y0TjU2REQ4SDBGZXcvOXhiUUFCdkt6cmpCSFNhU0VZNUl4aHZLSGxzcStuRDJFQ2MrazBuMHpOdmJuTG5nOUhSVDQrbXA5YzFtdUVRZExXMENYOGEvQUFENkR5QXlZbFZUZkZuUTU3aTRtaDZrNThpWFFLRVcvWTF4RzFUM0FIKzlMVFNWOW54RVBrK1dTUzUyWDU3MUplaVVXZHJOOWpINVdTb1hKL3VMZTdTdzM5U3hGRVJSRUZ4Y2c1Q3RkUUFDWEFCS0Fxc2lQNjViWERoL1gzSTFvRmlmaVdYbXZHTUxxdU5sM2cxM1BGWW01T1RTYlZLNGMrUG5mdTQwUDhnWnVMajk4OENBaTZ0UXBxMjl3anBJMnZMdFdZRnRXNW5tU3laeTVYTEY3aEQ5NThmUEhtQWQ3WUN3Z283Ui80T2Z3YmFEUGk2TjVpNUFHc01pU21MckdqeW40aDZ5WkNqLzUvWWQranIyWHMwOVhSYlBic3dQSkh2eTN1V3FqOTZjT052Z2J2bzFVOWY1bVc2ZndLV3EyMUFkSmV4cjB3aFc5QUV3QmRoeXdjajRmRDhUanVqWEJjUlAvUkphMzM4dy9RS3JUVjY4Vm8zeVFaWXFWV2o5bG05aklyL3NvZnRwRkhUSVFnb1gvV2JPbDlxdjYveGs3Y0M2L2lkNkJKZDZtcExwSmM5M3lVbFNUV0x3aHZzS0xJK2tVUjkwcXNUNUo4K211ZkpQbFlDZUMvQUFBQS8vOERBQkdBcjdBQUFBQUFBUUFBQUFJTGhlSi9NLzlmRHp6MUFBRUQ2QUFBQUFEWVhhQ0VBQUFBQU4xbUx6YitOLzdFQ0cwRDhRQUJBQU1BQWdBQUFBQUFBQUFCQUFBRDJQN3ZBQUFJbVA0My9qY0liUUFCQUFBQUFBQUFBQUFBQUFBQUFBQUFLM2ljQk1DL1NzTlFGTWZ4Ny9rRi9JTkJFV0xJNUtBQjBjVGdac0RjNFN3aTZBVUhoVGc0K2h5TzNmb21YYnIyQmJxRURuMmJMTGNmcmZsa0N3cHAxaTlScjNTYWlmb2k2bytvbHR2c2tYTmQ4S0NBMjU1YWdUc2RVZHMzbFVwdTlJSmJ3Yk9WYWJKclBQdkJOZUJxcUJWd1crSzI0Y3IrdVZUUG9EUHk3SVJLcCtUcUdheWxzeDMzOWtGakkyODI4cVFGeDFiZ2tGWldwZ25TK3dFQUFQLy9Bd0NKaWh4akFBQUFBQ3dBTEFCUUFJUUFzQURpQVFRQktnRnFBYVFCM0FJT0Fqb0NiQUtnQXNZRExnTlFBMXdEYUFPRUE3WUQyQVFFQkRRRVZBU1FCTFlFMkFUMEJTd0ZYQVZvQllnRndnWE9CZWdHQWdZaUJpNEdSQVppQm9nQUFRQUFBQ3NBa0FBTUFHTUFCd0FCQUFBQUFBQUFBQUFBQUFBQUFBUUFBM2ljbkpUUGJodGxGTVYvVG16VENzRUNSVlc2aWI0Rml5SzFZMU1sVmR1c0pxUldSa1J4OExnZ0pJUTB0aWUyNWZITXlETjJHcDZBTlcvQlczVEZRL0FjaURXNjE5ZXVYUkFGSzRwMVp1YitPZCs1NTM3QUFYK3lUNlY2SC9pdG5ocXVjRlMvTnJ6SHZmcUY0WDFhOVQzRFZSN1ZmamRjWTFCYkdLN3plYTFqK0NQZVZuOHhmSS9qNm8rRzczTlliUm4rbUtmVkE4T2Y3RHYrTVB3cHg3eGQ0Z284NTJmREZRN0pEZTl4d0ErRzkzbUExYXhVZVVEVGNJM1BPREpjNXdqb01xWWtZVXpLRU1jTlk0Yk1tUkZURUJJelk4d05NUU1jQVQ0SnBiNU5pUlE1aHYvNE5pS2taRWFrRlVlVU9CSkNFaUlLUmxieEo4M0t1TmFPMG1lbVNMcjVsSXlJNkduR2hJZ1VSOGFRakpTWWlkWXBLY2w1U1lNR0JYM2xtMU5TNEZFd0pzRWpZOGFRQm0xYVhOSmx4SmdDUjBzckNiT1FqQnRLYm9tMHY3TUlVYVpQVEVwaHJPYWtESlNuVTM2eFpnZGM0bWlUYSt4bTVjdXRDbzl4Zkt2WndrMWlIRi9pNmIvYllMYmRkOFVtWXFGNmlvWTlFdVY1cXhNY3FlTFMxK2NieFNVdmNUdnBzODNrd3hvTmxKM01la3lQdWM1ZjVpZDV3aVRGdVVOOFFuVlE2QjdpT05QbmdGQVYrWTZBTGhlMGVVMVhuMzA2ZFBDNW9rdkFLODF0MDhIeEZXMnVPTmVNUVBIeVcwc2RjOFgzT0w0bTBCaXBIWnMrb3JrOHZTRTNkd3QzY1lhY1kwcXVXeUF6bHZPTDgrT2RKaXc3bEcyNW8xQlg5SFdQSkZMMlFGU1JQWXNZbWl0eWRjVlV0Vng1b3pEOUJ1WUkrVnJxYk45OWwyMVkyTzZ0dHZpT1RIZllNVGRPTXJrbG93OU4xWHZQTTdmNjV4RXhJS09uRVgweXBqUW91ZE96WFJNeEo4RnhyajYrMEMwcDhkYzUwdWRPWFJJelZRWUJxZGFaa2V0dlpMNEpqWHQveS9mTzdoTFp2S251NkdSOXFsMjZTT1YwWTBhdlZiM1Z0OUJVampjbTBMQ3BacFlqRTViS3k1T0s5eVhhMitJZnF2c0x2ZDB5bm5CR1JzTGdiemZBVXp5YUhIUENLU1B0SUpWVEZuWTdOUFdHYVBLQ1V6MzloRmlqNUw1OG96cEpoUk04bm5IQ0NTOTQ5cDZPS3liT3VMZzFsODNlUHVlYzBlYjBQNTFpR2QvbWpGZnJkLy9lOVZkbDJ0U3pPSjZzbjU3dlBNVkgvOE90WC9CNDY3N3M2QzBnbTdPd2F1KzI0b3FJcVhCeGg1dGF1SWQ0ZndFQUFQLy9Bd0QwdDA5UkFBQURBQUFBQUFBQS84NEFNZ0FBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBIik7Cn0KLmQyLTM3MzQ3NDE1MjQgLnRleHQtaXRhbGljIHsKCWZvbnQtZmFtaWx5OiAiZDItMzczNDc0MTUyNC1mb250LWl0YWxpYyIsICJTb3VyY2UgU2FucyBQcm8iLCAiU291cmNlIFNhbnMgMyIsIC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgIlNlZ29lIFVJIiwgSGVsdmV0aWNhLCBBcmlhbCwgc2Fucy1zZXJpZjsKfQpAZm9udC1mYWNlIHsKCWZvbnQtZmFtaWx5OiBkMi0zNzM0NzQxNTI0LWZvbnQtaXRhbGljOwoJZm9udC1kaXNwbGF5OiBzd2FwOwoJc3JjOiB1cmwoImRhdGE6Zm9udC93b2ZmO2Jhc2U2NCxkMDlHUmdBQkFBQUFBQkNjQUFvQUFBQUFHWVFBQVJoUkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQlBVeTh5QUFBQTlBQUFBR0FBQUFCZ1cxU1ZlR050WVhBQUFBRlVBQUFBc0FBQUFQSlJsK0FoWjJ4NVpnQUFBZ1FBQUFuUUFBQU5zSnR6NGtKb1pXRmtBQUFMMUFBQUFEWUFBQUEyRzdVcjJtaG9aV0VBQUF3TUFBQUFKQUFBQUNRTGVBalBhRzEwZUFBQUREQUFBQUNvQUFBQXJFbGxBNXRzYjJOaEFBQU0yQUFBQUZnQUFBQllUcHhTWG0xaGVIQUFBQTB3QUFBQUlBQUFBQ0FBUXdEMmJtRnRaUUFBRFZBQUFBTXJBQUFJTWdudFZ6TndiM04wQUFBUWZBQUFBQ0FBQUFBZy84WUFNZ0FEQWVFQmtBQUZBQUFDaWdKWS8vRUFTd0tLQWxnQVJBRmVBRElCSXdBQUFnc0ZBd01FQXdrQ0JDQUFBSGNBQUFBREFBQUFBQUFBQUFCQlJFSlBBQUVBSVAvL0F1Ny9CZ0FBQTlnQkVTQUFBWk1BQUFBQUFlWUNsQUFBQUNBQUEzaWNoTTA1U3NSd0hFRGhMek54SDllNHIzL0h1SUdlUWNSYUVDMVMyNHFGMklnWGNta0Z4ZFpqV0lyZ0RiUUsvSVNnOWZEYUR4NHliUms2Y2wvb1NuSXR5YTQ5K3c0Y09YYmlUT1hDbFJ1MzZ1MGlBc25Pbnpsc3pLbkt1VXZYL3lZK29vN3YrSW5QZUl2WGVJbm5lSXJIZUlqN3VJdnl2V2pPdmNxVU5xM2IwTlhTbHV2VGI4Q2dJY05HZEl3YU0yN0NwQ21GYVRObXpabTNZTkdTWlN0V3JVbTIrQVVBQVAvL0F3QnV0aTNHZUp4OGwzMXNXOVg1eDU5ejdvMXZYdHdrOW5YdXJSMi94TDdYOXliMnRaMzQycjV4RWp0Sm5kaU9ZN2RKMnBUUzVxV0Z0dlFsdjVKZkMvemdCMVY1bVRxR3RzNHdKclNKTWNTTHhnQnByRXlUMkNhbWpVa3JiTjJidWduRVlBSzJGTFZJc0N4aURDMzNUc2RPRTZkLzdKLzQ2RXJuZWM3M2M1N24rNXhBSFlnQStBUitGQ2hvZ0Jhd1FodUF5bm9wU3RVMGdhZFVXUllZUnBOWmxoSHZSeGZ1L3lhZDJmdTN6aWYvcFhqbzNIM2ZIZjlvL3d2NDBkVUZkTy9zbVRQNnZnY1BIYnJoNmxVOWdQNTBGUUFBRzc4Q1FIL0VaV2dBQ3dETHFMSWt5WUxKaEpES0NyTEFmTkQzV2lQZFNOTU9WZjgxT3JpM09Hbjk4Q2k2YTNFeGRxdzNlWXMraWN1cml4Y3ZBbEFnQU9BT1hBWUxPTWhhWmRVbzEyWXptUmlHcS93S2xCcE54R09Tc0xFUUh2amUvRUl3SXlJMW03dG5lOS9jM043UndyN2pKK2RPbE1adXcrVkNUaGxSNm1uemNPL1lySUx1eUdtaDZPcVYwV0kwUmM2TklHbXM0QkIrSER3QWRUNUppc2ZTV0kxeVBDTkpncThadDlrNFRvMG1OTjVrUXI3eEk0bnV2YWVMdlpOYkUyeEM2cHZmSnZvSy9aMlpEa0djTldmdTNGNTY5UDl5V3FDclEwNGR2SE9nZnpiZTBSNzFoQ281QkFEOEUxd0dlMFVQeTZzYXExSUNtMGhvQWtNSkZPSEVVTUlEczBtT3pyNDIrOEI0c2NGaHBuZjhURWx4dEttNXZvREwraE1QUG9odVdsMUVKNVZqd1VmMFo5RE1JOHBSUlQ4SG1ERENJVnlHSnJEVjBCSUVpdDNBODhyTXljSjl1NDdHaHVjUEhTdm1EK0Z5WWZmRUxUMzZaeWczc1NPcEVnN1ZPREl1d3hiZ051SXdyRUJ0aXZTRG1mODlzZlBVem9XVDJzak5jd2ZIOC90eE9idHozd21ML2dIaTlDdG9laXFiaUpCNENNekdDdEx4NHhBQTRIMlNyRlU0eG1PU0xCUElpY1E2WkpPcHpjYnhmUFYyTDJjV081T3VhVzFnTXVRdkJ2cmpNLzM5K3oycVBSdjJ4MTA5WWpFUzZ6OXM3dXNMQnFNanZXS1VDenZHdE9oVU5OWVpkbmQ1dXR1bENCZHk1clMrZlRGQU1BOUFLYmdNM29vYXltUmkxRVJDWTFXV3M3VlZWMGlnWWdtdHduNitZYUtSb21pYTcrYWV5VFVnMmhhMG5TdnB5emN6R05ITlhzdkx1S3cvRmx1SXh4ZGk2S2orV094NEluRThobzZ1THFLSHhSMnlYSlQxV3lzTVpXTUZmWWFXd1VabzhyNzFZbEkxbFJKSUpqbWEwTFQxeW5wNXFLZ1U1bFE1WmFIWjlJSEJlbHJZWTVWMmlFcGIxQ2xtNHA0ZTg3N3A3RjB6YXFjM3BUdnkvc2hRT1BLVzVBdU16VVlISzdXTHdXT3NvRS93Qldnam5VMG9DNHpBcWd4UldybS9aaXhIMDVoY25hL1NQMWZrbElXeURaNHJ5UndXZDRVcTZlTmlKdTd1N3ZKTkNtR2JhdTcwcHZDRlYvZTdnbnQzazlSRGdiRlpOWjBLK0M5TFBrRGdOMWJRZWJRTXprM3FObTV4clZQZTNIRlFLUjJJS3dOY2lKVmMzYnNUeWI2T0JPZHpsTXlIWjBkT1RVZDg5bTYrYldReHN5M3JzRVJ0ZnJqR0RzczFXamJZL1hkNGZWYXFWU3FWMStodDkxOVBUKzZZZjNXMTkzcDh1S0xscDJnWkhPQ3Z6VWVxa1BHYTFydWVVaE9raTRqQ3YrNCtHaHFmNmRhRzNlWTYvUmNOSFptQUs4bTdYWlBmTURCbDdSTGljK1pqQjBZWHA1VHdSTlNwTmc5TytPMFd0YzJEL0UxYnR6aDdQTk9BSUFpQXZvSXZBVTlxVWhqRXRWM0FNQ29qVU1IcHdhYmgxcGJ0S1VmQTJ0N1lidkYyMVZ0dU10ODhqWjVMMWswV2RtNXAwcGpHYUhCbld0OURtQ0ZEUk10b0dUd1FydTB5VFRPWmhGcUNLbVV5VVp2b3ZkQ3pXeENkbzUzcFFyTmQyaFZKVFFUSFpucWt0SVZpQncrenA1TENwQy9JOVRpRllkVWQrYlBraXZPKzR0QVJTZGs5bmJudHhpaXBSMnIrTVBJR0E3K1RmRjNaUGQzOS9lUU9FZkZROUNhK3NPWnpHM1hJVk13dUhoTjhKb2J5bkN0MXQ5SmRVMG82WHA4dUR0QjAzcGtQaitJTFYxTkNaTGpYSStwdklNVzJkY3Q0SUt3L1p4Z2tKbnlPejJNSlpBQXdRV2NlQUF6RCtJSWh3ejhyMzd1cTMwZXJaMUNNRmZnY1h3QXJJUktQRWFjbERyTjJuZjh6YkxxN2RCb2hDMlZpVUNObkhyVFk4ZkhWaDVrR3lvcHdQMDJ2NjhCWDBETHhMcUtqS29OZkUyUGFwS1pXMklGQmhwWjJTbjA5ZFpFOS9sU0NwdE9sRkUzbjJ2TEtLTkdaNWZMQlViUTBKdlpvbllvNjNHdHgyMnExYnF3MldLSmwyRnA3aHV0UmtveGRVK0ZOSkNzWnJnZTUzbVBvYmJRTUxlQ3FyZm1xVVpDbzF4cjUwbzQ1cFRBWDNUR3ZqTThGUXBOcUlrcittSS9zR3owMUhhNytIZHEyT0xJdGwxa2MyWllsc1kxUERSVjlncGFyL2N2VW5MZ1pDeFZuWXRoTlh0VDQwS0NKOGsrSEt5WVVsUVpZYlBVOFcrdEZGL0hMUTU3UVdoTjdqbndib1RVemtqNzBlemZxN1I2MERLMDFqSGhHdXNhbWlYWVZRL2EyOWxhSFdQU2swTktza21vWXFSL3MxeThDTXY1dHJLRFRhQm5rMnM0aDgrbjY4VVNtVTNVNFBkMHphKy9taDZSQXFxczNuRlRHbEhEQkdXWlZyOVNUNkVqSHVxZk1zVTdKMHhrV0hMTEhrZTRLRHZ0RmQ2Zk5FZks0SmF0dlFBbU4rTW1aQjR3VnRBY3ZySHRvUW1PRlFheFd1ci9HUTE4Wml0RW9tV3NxaXNQdGQ1dFBKeW1ucjluUlpHbU5tQWRETFk0dHlKcXNPM3MyclYreFd0M3V4anFOYVNHeGU0MFY5REZhQXZ0RzdJM3FaOWRzOUlYMXlzeTdjc3Bva1F5ZXpsM21iWnJGdzZLRWZvbTFrNUpCZTNSSFFhaThEUkQwQTZEMzBCSnNBVkFwbGVVNGZtMkMzcDhyaXJTSnBpMGkrOVdTdm9xVzlNdkN1Q0NPaWNpdU82cDdzd0Q0bDJnSnZOZnQzVmhSQWxWOUt6TFVVYUhZaWhDaVc5cGI3eDIzWURKOUhhMW44dS9NTjFlK3VscnVRRXY2Kzc0Um4yL0VoOXcxS3dkcUZQS2ltQmYwVHdFWlB6Y2k2QU8wQkE0QXB2TDJJUHExVFNkdnhxYkdqbWE3MWVvZnRsdDNGcVc2ZW9xMitLMWZMdXJ2Mi92enYyZVlaRU1xS3FETCtzZmVraUFVZmNpeSt2ZElTYWw0VDVVemZoRkw1QmFCZ1FEOGdXZzEzak5tb0F3THBCNFptYnp1aUFtdnVZYXRLWkprTU9jV1hBN24zbWZDMWdIUndkbGwwVDIyU0RoaG1ETlcwRlA0ZWJDREgwQkwwMnVkSWwvcklvcGhhcUk5VEFYNmtsSzQwNmx4WGE3SlVIWks3azhwZEphenkwNXVxLzkxdGRBWFQvcTd3azQrN0piSGhudHlmWDJaOEcrZG5FTnhjWFpsN1UzNkxtcEVkcUFBTkUxbEJQUGJXOTY5NXVQRHhnUzZBYjhOTFFCOHRSMDAza1NHTHNmLy8xYXZkcVFRT3JiUVlHdCthZWpwcWR0Zi8vR3MvYXorbHlmQ2gvZExoTUVsWXdLdXJPMlZFMVl5TzhuamovUVBDaDA3M21CdGlaSVFMem5PSXUrM0lvZm5KWGJvcWFuYjMvZ1IyYnRzZklTL2lKOG4vMEh3bFcyOG1xWTB2aGt6ZVhPZ28wK3owbDBMWng3S0JtWi8rT1NBYmVyckdmZTlYN3J4KzkvNVduOW8vTUxIWjZ1ZUNSZlJFdEZFM255ZUE2V2IwRktsRUJIazhEaWN4K2VoQ1lDdEFYa242eFo0bTB2QTR6eG45MjdsN0IyQUtyUGxOMmlKYUdBMnBtcGxrdlR3Z3NYZWFHdDFlaHR2TGQzYW5IbXJzU0ZwWW5xQ1dGeDlKN3Nic1BFUFhFTDErRVZvQW41ekpyVm0zVzdoM1cxVzN2TnM1WmR6NDFJYnkzZHdOczdUeHZJZG5JM3pBUHdIQUFELy93TUF0VWZTTGdBQkFBQUFBUmhSZ28yZThWOFBQUFVBQVFQb0FBQUFBTmhkb013QUFBQUEzV1l2Ti82OS90MElIUVBKQUFJQUF3QUNBQUFBQUFBQUFBRUFBQVBZL3U4QUFBaEEvcjM5dkFnZEErZ0F3di9SQUFBQUFBQUFBQUFBQUFBcmVKd2NqVEZPd21BY1I5Ly8xMUZOVEJ5cURuN0RaKzFRRDZEUnhVRjdBMGU5QkVmb0NkZzRCeGNvc0pDd2NvRWVnQTZGRUVJSWY5Sk9MMjk1VHlPZVdZS2RmYVdTcUJmZU5Sc1lWUkR0eUxWMi9PdUJYUGNFbTVJcEpiZUd6QjRwZElmcGlzQ0dRT3NWQjE2VFFOQU5RUW01VXQvYkw4SEdmckp2UG5YTG05VjhhTUdQMVQ3dm5jNGJtL0JuL1MveVpabXY5ZVRkMElTUzFpdnc3UVVBQVAvL0F3QXdHQ29rQUFBQUxnQXVBRklBaWdDOEFPb0JEZ0UyQVhZQnNBSG9BaUFDVGdLR0FzQUM2QU13QTFvRFpnTnlBNVFEMWdRQUJDNEVhQVNHQk1JRThBVWNCVG9GZEFXa0JiQUZ6Z1lHQmhRR01nWlFCbkFHZmdhVUJySUcyQUFCQUFBQUt3Q01BQXdBWmdBSEFBRUFBQUFBQUFBQUFBQUFBQUFBQkFBRGVKeWNsTjF1R2xjVWhUOWlvRTMvTGlvcmNtNnNjNWxLenVCR2NaVEVWK002VmtaRmtES2tQMUpWYVlBeElHQm14QXc0emhQMHVtL1J0OGhWSDZOUFVmVzYycHNOWVNLclZsQVVhdzFuLzZ5ejl0b0gyT2RmOXFoVTd3Si8xWmVHS3h6V2Z6WjhoeS9xVGNON25OVS9NMXpscVBhMzRScUQybHZEZFI3VU9vWS80VjMxRDhPZjhyajZtK0c3SEZRdkRIL09vK3ErNFMvM0hQOFkvb3JIdkZ2aENqemxkOE1WRHNnTTMyR2ZYdzN2Y1ErcldhbHlqMlBETmI3bTBIQ2RRNkRMbUlJcFl4S0dPQzRaTTJUQm5KaWNrSmc1WXk2SkdlQUk4SmxTNks4SmtTTEg4TVpmSTBJSzVrUmFjVVNCWTBySWxJaWNrVlY4cTFrcHI3U2o5Smtya200K0JTTWllcG94SVNMQmtUSWtKU0Ztb25VS0NqS2UwNkJCVGwvNVpoVGtlT1NNbWVLUk1tZElnellYTk9reVlreU80MElyQ2JPUWxFc0tyb2kwdjdNSVVhWlBURUp1ckJZa0RKU25VMzZ4WmdjMGNiVEpOSGE3Y3JOVTRRakhqNW90M0NURzhTMmUvbmRiek1wOTEyd2lscXFuYU5oanFqeXZkSUlqVlZ6Nit2eWd1T0E1YmlkOXlreHUxMmlnN0dUV1kzb3NkUDR5UDhrVEpnbk9IZUFUcW9OQ2R4L0htWDRIaEtySVR3UjBlVW1iMTNUMTI2ZERCNThXWFFKZWFHNmJEbzd2YU5QaVhETUN4YXV6QzNWTWkxOXdmRStnTVZJN05uMUVjL2w2UTJidUZ1N2lETG5IakV5M1FHWXM5eGZueHp0TldIWW9MYmtqVjFmMGRZOGtVdlpBVkpFOWl4aWFLekoxeFV5MVhIc2pOLzBHNWdnNUxYUzI3ODlsRzVhMmUrc3R2aWJWSFhZc2pKTk1ic1hvdHFsNkgzam1Tdjk1UkF4STZXbEVuNVFaRFFxdTlXNnZpRmd3eFhHdVBuNnBXMUxnYjNLa3o3VzZKR2FtREFJU3JUTW4wNytSK1NZMDd2MlM3NTI5SmJKNU05M1J5ZVpXdTNTUnlzbldqRjZyZXV1ejBGU090eWJRc0ttbWxpTVRsc3FybTRyM0pkb3I4US9WL2JtK2Jpa1BDYlN1VExKLzR5dHd6RE5PT0dXa1hhUjZ3bkp6SnErRVJKeXFBaE5palpJMzg0MXE5UWlQRXp5ZWNNSUp6M2p5Z1pack5zNzR1QktmN2Y0KzU1elI1dlRXMjZ4aTI1enhvbFR0L3p2L3FXeVA5VDZPaDV1dnB6dFA4OEZIdVBZYmprcnZaa2RmQTltZ3BWVjd2eDB0SW1iQ3hSMXNhK0h1NC8wSEFBRC8vd01BY3FGUlFBQUFBd0FBLy9VQUFQL09BRElBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE9PSIpOwp9XV0+PC9zdHlsZT48c3R5bGUgdHlwZT0idGV4dC9jc3MiPjwhW0NEQVRBWy5zaGFwZSB7CiAgc2hhcGUtcmVuZGVyaW5nOiBnZW9tZXRyaWNQcmVjaXNpb247CiAgc3Ryb2tlLWxpbmVqb2luOiByb3VuZDsKfQouY29ubmVjdGlvbiB7CiAgc3Ryb2tlLWxpbmVjYXA6IHJvdW5kOwogIHN0cm9rZS1saW5lam9pbjogcm91bmQ7Cn0KLmJsZW5kIHsKICBtaXgtYmxlbmQtbW9kZTogbXVsdGlwbHk7CiAgb3BhY2l0eTogMC41Owp9CgoJCS5kMi0zNzM0NzQxNTI0IC5maWxsLU4xe2ZpbGw6IzBBMEYyNTt9CgkJLmQyLTM3MzQ3NDE1MjQgLmZpbGwtTjJ7ZmlsbDojNjc2QzdFO30KCQkuZDItMzczNDc0MTUyNCAuZmlsbC1CMXtmaWxsOiMwRDMyQjI7fQoJCS5kMi0zNzM0NzQxNTI0IC5maWxsLUIye2ZpbGw6IzBEMzJCMjt9CgkJLmQyLTM3MzQ3NDE1MjQgLmZpbGwtQjR7ZmlsbDojRTNFOUZEO30KCQkuZDItMzczNDc0MTUyNCAuZmlsbC1CNXtmaWxsOiNFREYwRkQ7fQoJCS5kMi0zNzM0NzQxNTI0IC5maWxsLUI2e2ZpbGw6I0Y3RjhGRTt9CgkJLmQyLTM3MzQ3NDE1MjQgLnN0cm9rZS1CMXtzdHJva2U6IzBEMzJCMjt9CgkJLmQyLTM3MzQ3NDE1MjQgLnN0cm9rZS1CMntzdHJva2U6IzBEMzJCMjt9LmFwcGVuZGl4IHRleHQudGV4dHtmaWxsOiMwQTBGMjV9Lm1key0tY29sb3ItZmctZGVmYXVsdDojMEEwRjI1Oy0tY29sb3ItZmctbXV0ZWQ6IzY3NkM3RTstLWNvbG9yLWZnLXN1YnRsZTojOTQ5OUFCOy0tY29sb3ItY2FudmFzLWRlZmF1bHQ6I0ZGRkZGRjstLWNvbG9yLWNhbnZhcy1zdWJ0bGU6I0VFRjFGODstLWNvbG9yLWJvcmRlci1kZWZhdWx0OiMwRDMyQjI7LS1jb2xvci1ib3JkZXItbXV0ZWQ6IzBEMzJCMjstLWNvbG9yLW5ldXRyYWwtbXV0ZWQ6I0VFRjFGODstLWNvbG9yLWFjY2VudC1mZzojMEQzMkIyOy0tY29sb3ItYWNjZW50LWVtcGhhc2lzOiMwRDMyQjI7LS1jb2xvci1hdHRlbnRpb24tc3VidGxlOiM2NzZDN0U7LS1jb2xvci1kYW5nZXItZmc6cmVkO30ubGlnaHQtY29kZXtkaXNwbGF5OiBibG9ja30uZGFyay1jb2Rle2Rpc3BsYXk6IG5vbmV9QG1lZGlhIHNjcmVlbiBhbmQgKHByZWZlcnMtY29sb3Itc2NoZW1lOmRhcmspewoJCS5kMi0zNzM0NzQxNTI0IC5maWxsLU4xe2ZpbGw6I0NERDZGNDt9CgkJLmQyLTM3MzQ3NDE1MjQgLmZpbGwtTjJ7ZmlsbDojQkFDMkRFO30KCQkuZDItMzczNDc0MTUyNCAuZmlsbC1CMXtmaWxsOiNDQkE2Zjc7fQoJCS5kMi0zNzM0NzQxNTI0IC5maWxsLUIye2ZpbGw6I0NCQTZmNzt9CgkJLmQyLTM3MzQ3NDE1MjQgLmZpbGwtQjR7ZmlsbDojNTg1QjcwO30KCQkuZDItMzczNDc0MTUyNCAuZmlsbC1CNXtmaWxsOiM0NTQ3NUE7fQoJCS5kMi0zNzM0NzQxNTI0IC5maWxsLUI2e2ZpbGw6IzMxMzI0NDt9CgkJLmQyLTM3MzQ3NDE1MjQgLnN0cm9rZS1CMXtzdHJva2U6I0NCQTZmNzt9CgkJLmQyLTM3MzQ3NDE1MjQgLnN0cm9rZS1CMntzdHJva2U6I0NCQTZmNzt9LmFwcGVuZGl4IHRleHQudGV4dHtmaWxsOiNDREQ2RjR9Lm1key0tY29sb3ItZmctZGVmYXVsdDojQ0RENkY0Oy0tY29sb3ItZmctbXV0ZWQ6I0JBQzJERTstLWNvbG9yLWZnLXN1YnRsZTojQTZBREM4Oy0tY29sb3ItY2FudmFzLWRlZmF1bHQ6IzFFMUUyRTstLWNvbG9yLWNhbnZhcy1zdWJ0bGU6IzMxMzI0NDstLWNvbG9yLWJvcmRlci1kZWZhdWx0OiNDQkE2Zjc7LS1jb2xvci1ib3JkZXItbXV0ZWQ6I0NCQTZmNzstLWNvbG9yLW5ldXRyYWwtbXV0ZWQ6IzMxMzI0NDstLWNvbG9yLWFjY2VudC1mZzojQ0JBNmY3Oy0tY29sb3ItYWNjZW50LWVtcGhhc2lzOiNDQkE2Zjc7LS1jb2xvci1hdHRlbnRpb24tc3VidGxlOiNCQUMyREU7LS1jb2xvci1kYW5nZXItZmc6cmVkO30ubGlnaHQtY29kZXtkaXNwbGF5OiBub25lfS5kYXJrLWNvZGV7ZGlzcGxheTogYmxvY2t9fV1dPjwvc3R5bGU+PGcgY2xhc3M9ImMyRT0gY29tcG9uZW50Ij48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSIxODkiIHk9IjEyIiB3aWR0aD0iMjg0IiBoZWlnaHQ9IjY0IiByeD0iNiIgY2xhc3M9IiBzdHJva2UtQjEgZmlsbC1CNiIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iMzMxIiB5PSI0OS41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPlNlcnZpY2VBY2NvdW50IGRlbW8tcmVhZGVyIChXZXI/KTwvdGV4dD48L2c+PGcgY2xhc3M9ImNtST0gcmVzb3VyY2UiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjEwOSIgeT0iMjQ3IiB3aWR0aD0iMTg4IiBoZWlnaHQ9Ijc5IiByeD0iNiIgc3Ryb2tlPSIjMUE3M0U4IiBmaWxsPSIjRThGMEZFIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSIyMDMiIHk9IjI4NC41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPjx0c3BhbiB4PSIyMDMiIGR5PSIwIj5Sb2xlQmluZGluZzwvdHNwYW4+PHRzcGFuIHg9IjIwMyIgZHk9IjE3Ij5kZW1vLXJlYWRlci1iaW5kaW5nPC90c3Bhbj48L3RleHQ+PC9nPjxnIGNsYXNzPSJjbTlzWlE9PSByZXNvdXJjZSI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iNzQiIHk9IjQ5NCIgd2lkdGg9IjI1NyIgaGVpZ2h0PSI3OSIgcng9IjYiIHN0cm9rZT0iIzFBNzNFOCIgZmlsbD0iI0U4RjBGRSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iMjAyLjUiIHk9IjUzMS41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPjx0c3BhbiB4PSIyMDIuNSIgZHk9IjAiPlJvbGUgcG9kLWFuZC1jb25maWdtYXAtcmVhZGVyPC90c3Bhbj48dHNwYW4geD0iMjAyLjUiIGR5PSIxNyI+KFdhcz8pPC90c3Bhbj48L3RleHQ+PC9nPjxnIGNsYXNzPSJjbVZ6IHN1Ymdyb3VwIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSIxMiIgeT0iNzU4IiB3aWR0aD0iMzgyIiBoZWlnaHQ9IjEwNyIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjQiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjIwMyIgeT0iNzc5IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE2cHgiPlJlc3NvdXJjZW4gKFdvcmF1Zj8pPC90ZXh0PjwvZz48ZyBjbGFzcz0iY21JeSByZXNvdXJjZSI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iMzI5IiB5PSIyNDciIHdpZHRoPSIyNjAiIGhlaWdodD0iNzkiIHJ4PSI2IiBzdHJva2U9IiMxQTczRTgiIGZpbGw9IiNFOEYwRkUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjtzdHJva2UtZGFzaGFycmF5OjguMDAwMDAwLDcuODkyNTExOyIgLz48L2c+PHRleHQgeD0iNDU5IiB5PSIyODQuNSIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNXB4Ij48dHNwYW4geD0iNDU5IiBkeT0iMCI+Um9sZUJpbmRpbmc8L3RzcGFuPjx0c3BhbiB4PSI0NTkiIGR5PSIxNyI+KG9jIHBvbGljeSBhZGQtcm9sZS10by11c2VyIHZpZXcpPC90c3Bhbj48L3RleHQ+PC9nPjxnIGNsYXNzPSJZMngxYzNSbGNuSnZiR1U9IHJlc291cmNlIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSIzNTEiIHk9IjQ4NyIgd2lkdGg9IjIxNiIgaGVpZ2h0PSI5NCIgcng9IjYiIHN0cm9rZT0iIzFBNzNFOCIgZmlsbD0iI0U4RjBGRSIgc3R5bGU9InN0cm9rZS13aWR0aDoyO3N0cm9rZS1kYXNoYXJyYXk6OC4wMDAwMDAsNy44OTI1MTE7IiAvPjwvZz48dGV4dCB4PSI0NTkiIHk9IjUyNC41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPjx0c3BhbiB4PSI0NTkiIGR5PSIwIj5DbHVzdGVyUm9sZSB2aWV3PC90c3Bhbj48dHNwYW4geD0iNDU5IiBkeT0iMTYuMzMzMzMzIj4oY2x1c3RlcndlaXQgZGVmaW5pZXJ0LDwvdHNwYW4+PHRzcGFuIHg9IjQ1OSIgZHk9IjE2LjMzMzMzMyI+aGllciBudXIgaW0gUHJvamVjdCBnw7xsdGlnKTwvdHNwYW4+PC90ZXh0PjwvZz48ZyBjbGFzcz0iY21WekxuQnZaSE09IGNvbXBvbmVudCI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iMjQiIHk9Ijc4OSIgd2lkdGg9IjkwIiBoZWlnaHQ9IjY0IiByeD0iNiIgY2xhc3M9IiBzdHJva2UtQjEgZmlsbC1CNSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iNjkiIHk9IjgyNi41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPlBvZHMg4pyTPC90ZXh0PjwvZz48ZyBjbGFzcz0iY21WekxtTnRjdz09IGNvbXBvbmVudCI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iMTI2IiB5PSI3ODkiIHdpZHRoPSIxMzYiIGhlaWdodD0iNjQiIHJ4PSI2IiBjbGFzcz0iIHN0cm9rZS1CMSBmaWxsLUI1IiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSIxOTQiIHk9IjgyNi41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPkNvbmZpZ01hcHMg4pyTPC90ZXh0PjwvZz48ZyBjbGFzcz0iY21WekxuTmxZM0psZEhNPSBjb21wb25lbnQiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjI3NCIgeT0iNzg5IiB3aWR0aD0iMTA4IiBoZWlnaHQ9IjY0IiByeD0iNiIgY2xhc3M9IiBzdHJva2UtQjIgZmlsbC1CNSIgc3R5bGU9InN0cm9rZS13aWR0aDoyO3N0cm9rZS1kYXNoYXJyYXk6OC4wMDAwMDAsNy44OTI1MTE7IiAvPjwvZz48dGV4dCB4PSIzMjgiIHk9IjgyNi41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPlNlY3JldHMg4pyXPC90ZXh0PjwvZz48ZyBjbGFzcz0iS0hOaElDMG1aM1E3SUhKaUtWc3dYUT09Ij48bWFya2VyIGlkPSJtay1kMi0zNzM0NzQxNTI0LTM0ODgzNzgxMzQiIG1hcmtlcldpZHRoPSIxMCIgbWFya2VySGVpZ2h0PSIxMiIgcmVmWD0iNyIgcmVmWT0iNiIgdmlld0JveD0iMCAwIDEwIDEyIiBvcmllbnQ9ImF1dG8iIG1hcmtlclVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+IDxwb2x5Z29uIHBvaW50cz0iMCwwIDEwLDYgMCwxMiIgY2xhc3M9ImNvbm5lY3Rpb24gZmlsbC1CMSIgc3Ryb2tlLXdpZHRoPSIyIiAvPiA8L21hcmtlcj48cGF0aCBkPSJNIDIwMyA3OCBMIDIwMyAyNDMiIGZpbGw9Im5vbmUiIGNsYXNzPSJjb25uZWN0aW9uIHN0cm9rZS1CMSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgbWFya2VyLWVuZD0idXJsKCNtay1kMi0zNzM0NzQxNTI0LTM0ODgzNzgxMzQpIiBtYXNrPSJ1cmwoI2QyLTM3MzQ3NDE1MjQpIiAvPjx0ZXh0IHg9IjIwMyIgeT0iMTY3IiBjbGFzcz0idGV4dC1pdGFsaWMgZmlsbC1OMiIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTZweCI+c3ViamVjdHM8L3RleHQ+PC9nPjxnIGNsYXNzPSJLSE5oSUMwbVozUTdJSEppTWlsYk1GMD0iPjxtYXJrZXIgaWQ9Im1rLWQyLTM3MzQ3NDE1MjQtMjE3NzIwNjU2OSIgbWFya2VyV2lkdGg9IjEwIiBtYXJrZXJIZWlnaHQ9IjEyIiByZWZYPSI3IiByZWZZPSI2IiB2aWV3Qm94PSIwIDAgMTAgMTIiIG9yaWVudD0iYXV0byIgbWFya2VyVW5pdHM9InVzZXJTcGFjZU9uVXNlIj4gPHBvbHlnb24gcG9pbnRzPSIwLDAgMTAsNiAwLDEyIiBjbGFzcz0iY29ubmVjdGlvbiBmaWxsLUIyIiBzdHJva2Utd2lkdGg9IjIiIC8+IDwvbWFya2VyPjxwYXRoIGQ9Ik0gNDU5LjUgNzggTCA0NTkuNSAyNDMiIGZpbGw9Im5vbmUiIGNsYXNzPSJjb25uZWN0aW9uIHN0cm9rZS1CMiIgc3R5bGU9InN0cm9rZS13aWR0aDoyO3N0cm9rZS1kYXNoYXJyYXk6OC4wMDAwMDAsNy44OTI1MTE7IiBtYXJrZXItZW5kPSJ1cmwoI21rLWQyLTM3MzQ3NDE1MjQtMjE3NzIwNjU2OSkiIG1hc2s9InVybCgjZDItMzczNDc0MTUyNCkiIC8+PHRleHQgeD0iNDYwIiB5PSIxNjciIGNsYXNzPSJ0ZXh0LWl0YWxpYyBmaWxsLU4yIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNnB4Ij5zdWJqZWN0czwvdGV4dD48L2c+PGcgY2xhc3M9IktISmlJQzBtWjNRN0lISnZiR1VwV3pCZCI+PHBhdGggZD0iTSAyMDMgMzI3LjUgTCAyMDMgNDkwLjUiIGZpbGw9Im5vbmUiIGNsYXNzPSJjb25uZWN0aW9uIHN0cm9rZS1CMSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgbWFya2VyLWVuZD0idXJsKCNtay1kMi0zNzM0NzQxNTI0LTM0ODgzNzgxMzQpIiBtYXNrPSJ1cmwoI2QyLTM3MzQ3NDE1MjQpIiAvPjx0ZXh0IHg9IjIwMy41IiB5PSI0MTYiIGNsYXNzPSJ0ZXh0LWl0YWxpYyBmaWxsLU4yIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNnB4Ij5yb2xlUmVmPC90ZXh0PjwvZz48ZyBjbGFzcz0iS0hKaU1pQXRKbWQwT3lCamJIVnpkR1Z5Y205c1pTbGJNRjA9Ij48cGF0aCBkPSJNIDQ1OS41IDMyOCBMIDQ1OS41IDQ4MyIgZmlsbD0ibm9uZSIgY2xhc3M9ImNvbm5lY3Rpb24gc3Ryb2tlLUIyIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7c3Ryb2tlLWRhc2hhcnJheTo4LjAwMDAwMCw3Ljg5MjUxMTsiIG1hcmtlci1lbmQ9InVybCgjbWstZDItMzczNDc0MTUyNC0yMTc3MjA2NTY5KSIgbWFzaz0idXJsKCNkMi0zNzM0NzQxNTI0KSIgLz48dGV4dCB4PSI0NTkuNSIgeT0iNDEyIiBjbGFzcz0idGV4dC1pdGFsaWMgZmlsbC1OMiIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTZweCI+cm9sZVJlZjwvdGV4dD48L2c+PGcgY2xhc3M9IktISnZiR1VnTFNabmREc2djbVZ6S1Zzd1hRPT0iPjxwYXRoIGQ9Ik0gMjAzIDU3NSBMIDIwMyA3NTQiIGZpbGw9Im5vbmUiIGNsYXNzPSJjb25uZWN0aW9uIHN0cm9rZS1CMSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgbWFya2VyLWVuZD0idXJsKCNtay1kMi0zNzM0NzQxNTI0LTM0ODgzNzgxMzQpIiBtYXNrPSJ1cmwoI2QyLTM3MzQ3NDE1MjQpIiAvPjx0ZXh0IHg9IjIwMyIgeT0iNjYzIiBjbGFzcz0idGV4dC1pdGFsaWMgZmlsbC1OMiIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTZweCI+PHRzcGFuIHg9IjIwMyIgZHk9IjAiPmdldCwgbGlzdCwgd2F0Y2g8L3RzcGFuPjx0c3BhbiB4PSIyMDMiIGR5PSIxOC41Ij4obnVyIFBvZHMgdW5kIENvbmZpZ01hcHMpPC90c3Bhbj48L3RleHQ+PC9nPjxtYXNrIGlkPSJkMi0zNzM0NzQxNTI0IiBtYXNrVW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4PSItOSIgeT0iLTkiIHdpZHRoPSI2MTkiIGhlaWdodD0iODk1Ij4KPHJlY3QgeD0iLTkiIHk9Ii05IiB3aWR0aD0iNjE5IiBoZWlnaHQ9Ijg5NSIgZmlsbD0id2hpdGUiPjwvcmVjdD4KPHJlY3QgeD0iMTczIiB5PSIxNTEiIHdpZHRoPSI2MCIgaGVpZ2h0PSIyMSIgZmlsbD0iYmxhY2siPjwvcmVjdD4KPHJlY3QgeD0iNDMwIiB5PSIxNTEiIHdpZHRoPSI2MCIgaGVpZ2h0PSIyMSIgZmlsbD0iYmxhY2siPjwvcmVjdD4KPHJlY3QgeD0iMTc3IiB5PSI0MDAiIHdpZHRoPSI1MyIgaGVpZ2h0PSIyMSIgZmlsbD0iYmxhY2siPjwvcmVjdD4KPHJlY3QgeD0iNDMzIiB5PSIzOTYiIHdpZHRoPSI1MyIgaGVpZ2h0PSIyMSIgZmlsbD0iYmxhY2siPjwvcmVjdD4KPHJlY3QgeD0iMTEzIiB5PSI2NDciIHdpZHRoPSIxODAiIGhlaWdodD0iMzciIGZpbGw9ImJsYWNrIj48L3JlY3Q+CjwvbWFzaz48L3N2Zz48L3N2Zz4K" alt="RBAC: ServiceAccount, RoleBinding, Role und die erlaubten Ressourcen" /></p>
+<p><code>serviceaccount.yaml</code> legt eine ServiceAccount
+<code>demo-reader</code> an. <code>role.yaml</code> definiert eine Role,
+die nur lesenden Zugriff auf Pods und ConfigMaps erlaubt:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;pods&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;configmaps&quot;</span><span class="kw">]</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;list&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;watch&quot;</span><span class="kw">]</span></span></code></pre></div>
+<p><code>rolebinding.yaml</code> verknüpft beide. Anwenden und
+testen:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 11-rbac/serviceaccount.yaml</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 11-rbac/role.yaml</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 11-rbac/rolebinding.yaml</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Darf die ServiceAccount Pods lesen?</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> auth can-i get pods <span class="at">--as</span><span class="op">=</span>system:serviceaccount:<span class="va">$(</span><span class="ex">oc</span> project <span class="at">-q</span><span class="va">)</span>:demo-reader</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Darf sie Pods löschen? → &quot;no&quot; (Exit-Code 1, Fehler erwartet)</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> auth can-i delete pods <span class="at">--as</span><span class="op">=</span>system:serviceaccount:<span class="va">$(</span><span class="ex">oc</span> project <span class="at">-q</span><span class="va">)</span>:demo-reader   <span class="co"># → no (Fehler erwartet)</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Darf sie Secrets lesen? → &quot;no&quot;, da nicht in der Role enthalten</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> auth can-i get secrets <span class="at">--as</span><span class="op">=</span>system:serviceaccount:<span class="va">$(</span><span class="ex">oc</span> project <span class="at">-q</span><span class="va">)</span>:demo-reader   <span class="co"># → no (Fehler erwartet)</span></span></code></pre></div>
+<h2 id="aggregierte-clusterroles">Aggregierte ClusterRoles</h2>
+<p>OpenShift/Kubernetes bringen vordefinierte ClusterRoles mit
+(<code>view</code>, <code>edit</code>, <code>admin</code>,
+<code>cluster-admin</code>), die teils über <strong>Aggregation</strong>
+(<code>aggregationRule</code> mit Label-Selektoren) automatisch um
+Regeln aus anderen ClusterRoles erweitert werden – so können auch
+Operatoren/CRDs ihre eigenen Ressourcen in die Standard-Rollen
+&quot;einhängen&quot;, ohne dass die Standard-Rollen manuell angepasst werden
+müssen.</p>
+<h2 id="oc-kurzform-vs-manifest">oc-Kurzform vs. Manifest</h2>
+<p>OpenShift bietet mit <code>oc policy add-role-to-user</code> eine
+Kurzform, die Role und RoleBinding in einem Schritt erledigt:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Vordefinierte ClusterRole &quot;view&quot; per RoleBinding im eigenen Project vergeben</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> policy add-role-to-user view <span class="at">-z</span> demo-reader</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get rolebindings</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Jetzt darf die ServiceAccount auch z. B. Deployments lesen</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> auth can-i list deployments <span class="at">--as</span><span class="op">=</span>system:serviceaccount:<span class="va">$(</span><span class="ex">oc</span> project <span class="at">-q</span><span class="va">)</span>:demo-reader</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Wieder entfernen</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> policy remove-role-from-user view <span class="at">-z</span> demo-reader</span></code></pre></div>
+<p>Für reproduzierbare, versionierte Setups (GitOps) ist das explizite
+Manifest (wie in diesem Kapitel) jedoch vorzuziehen – der
+<code>oc</code>-Befehl eignet sich vor allem für schnelles, interaktives
+Ausprobieren.</p>
+<h2 id="manifeste-in-diesem-kapitel">Manifeste in diesem Kapitel</h2>
+<ul>
+<li><code>serviceaccount.yaml</code> – ServiceAccount
+<code>demo-reader</code></li>
+<li><code>role.yaml</code> – Role mit lesenden Rechten auf
+Pods/ConfigMaps</li>
+<li><code>rolebinding.yaml</code> – verknüpft ServiceAccount und
+Role</li>
+</ul>
+<hr />
+<h2 id="weiterführende-links">Weiterführende Links</h2>
+<ul>
+<li><a href="https://kubernetes.io/docs/reference/access-authn-authz/rbac/">Kubernetes:
+RBAC</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/security/service-accounts/">Kubernetes:
+ServiceAccounts</a></li>
+<li><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/authentication_and_authorization/index">OpenShift
+4.22: Authentication and Authorization</a></li>
+<li><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/rbac_apis/index">OpenShift
+4.22: RBAC APIs</a></li>
+</ul>
+<p>Siehe auch <a href="../99-anhang/DOCUMENTATION.html">99-anhang/DOCUMENTATION.md</a>
+für die vollständige Liste.</p>
+<nav class="pager-bottom">
+  <a class="prev" href="../10-health-quotas/README.html"><span>← Zurück</span>Kapitel 10: Health-Checks, Quotas und LimitRanges</a>
+
+  <a class="up" href="../README.html#inhaltsverzeichnis"><span>↑ Übersicht</span>Inhaltsverzeichnis</a>
+
+  <a class="next" href="../12-apply-strategies/README.html"><span>Weiter →</span>Kapitel 12: Server-Side vs. Client-Side Apply</a>
+
+</nav>
+</main>
+</div>
+<script>
+// Kopier-Button für Codeblöcke
+document.querySelectorAll("pre").forEach(function (pre) {
+  var button = document.createElement("button");
+  button.className = "copy";
+  button.type = "button";
+  button.textContent = "Kopieren";
+  button.addEventListener("click", function () {
+    navigator.clipboard.writeText(pre.innerText).then(function () {
+      button.textContent = "Kopiert ✓";
+      setTimeout(function () { button.textContent = "Kopieren"; }, 1500);
+    });
+  });
+  pre.appendChild(button);
+});
+</script>
+</body>
+</html>

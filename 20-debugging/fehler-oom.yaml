@@ -1,0 +1,29 @@
+# Fehlerbild 4: Container braucht mehr Speicher als erlaubt → OOMKilled
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-fehler-oom
+  labels:
+    app: demo-debug
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-debug
+      fehler: oom
+  template:
+    metadata:
+      labels:
+        app: demo-debug
+        fehler: oom
+    spec:
+      containers:
+        - name: speicherfresser
+          image: quay.io/ghilling/ubi-tools:10-latest
+          # "tail /dev/zero" liest endlos Daten ohne Zeilenumbruch und hält sie im Speicher
+          command: ["tail", "/dev/zero"]
+          resources:
+            requests:
+              memory: "32Mi"
+            limits:
+              memory: "64Mi"

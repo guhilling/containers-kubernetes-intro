@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kapitel 5: Automation – Kubernetes Manifeste &amp;
+GitOps – Container und Kubernetes/OpenShift</title>
+<style type="text/css">:root {
+--bg: #ffffff;
+--fg: #1f2328;
+--muted: #59636e;
+--border: #d1d9e0;
+--accent: #1a5fb4;
+--accent-soft: #e8f0fe;
+--code-bg: #f6f8fa;
+--topbar-bg: #f6f8fa;
+--warn: #9a6700;
+--warn-bg: #fff8c5;
+--rookie: #1a7f37;
+--rookie-bg: #dafbe1;
+--advanced: #8250df;
+--advanced-bg: #fbefff;
+--tok-comment: #6e7781;
+--tok-keyword: #cf222e;
+--tok-string: #0a3069;
+--tok-variable: #953800;
+--tok-function: #8250df;
+--tok-number: #0550ae;
+--tok-attr: #116329;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg: #0d1117;
+--fg: #e6edf3;
+--muted: #9198a1;
+--border: #30363d;
+--accent: #6cb6ff;
+--accent-soft: #15233a;
+--code-bg: #161b22;
+--topbar-bg: #161b22;
+--warn: #d29922;
+--warn-bg: #2b2111;
+--rookie: #3fb950;
+--rookie-bg: #12261e;
+--advanced: #d2a8ff;
+--advanced-bg: #221a33;
+--tok-comment: #9198a1;
+--tok-keyword: #ff7b72;
+--tok-string: #a5d6ff;
+--tok-variable: #ffa657;
+--tok-function: #d2a8ff;
+--tok-number: #79c0ff;
+--tok-attr: #7ee787;
+}
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 4.5rem; }
+body {
+margin: 0;
+background: var(--bg);
+color: var(--fg);
+font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.topbar {
+position: sticky; top: 0; z-index: 10;
+display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+padding: 0.6rem 1.5rem;
+background: var(--topbar-bg);
+border-bottom: 1px solid var(--border);
+}
+.topbar .course { font-weight: 600; color: var(--fg); }
+.pager { display: flex; gap: 1.25rem; font-size: 0.95rem; }
+.layout {
+display: grid;
+grid-template-columns: 16rem minmax(0, 52rem);
+gap: 3rem;
+justify-content: center;
+padding: 2rem 1.5rem 4rem;
+}
+.toc {
+position: sticky; top: 4.5rem;
+align-self: start;
+max-height: calc(100vh - 6rem);
+overflow-y: auto;
+font-size: 0.9rem;
+}
+.toc-title { margin: 0 0 0.5rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; }
+.toc ul { list-style: none; margin: 0; padding-left: 0; }
+.toc ul ul { padding-left: 1rem; }
+.toc li { margin: 0.3rem 0; }
+.toc a { color: var(--muted); }
+.toc a:hover { color: var(--accent); }
+main { min-width: 0; }
+h1, h2, h3, h4 { line-height: 1.25; margin: 2rem 0 1rem; }
+h1 { font-size: 2rem; margin-top: 0; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+h2 { font-size: 1.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.2rem; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 2rem 0; }
+img { max-width: 100%; height: auto; display: block; margin: 1.5rem auto; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.95rem; display: block; overflow-x: auto; }
+th, td { border: 1px solid var(--border); padding: 0.4rem 0.75rem; text-align: left; vertical-align: top; }
+th { background: var(--code-bg); }
+code { font: 0.875em/1.5 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+:not(pre) > code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.1em 0.35em; }
+pre {
+position: relative;
+background: var(--code-bg);
+border: 1px solid var(--border);
+border-radius: 8px;
+padding: 1rem 1.25rem;
+overflow-x: auto;
+}
+pre code { background: none; border: 0; padding: 0; }
+pre .copy {
+position: absolute; top: 0.5rem; right: 0.5rem;
+font: 0.75rem/1 inherit; font-family: inherit;
+padding: 0.3rem 0.55rem;
+color: var(--muted); background: var(--bg);
+border: 1px solid var(--border); border-radius: 6px;
+cursor: pointer; opacity: 0; transition: opacity 0.15s;
+}
+pre:hover .copy, pre .copy:focus { opacity: 1; }
+blockquote {
+margin: 1rem 0; padding: 0.5rem 1rem;
+color: var(--fg);
+background: var(--accent-soft);
+border-left: 4px solid var(--accent);
+border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0.4rem 0; }
+.pager-bottom { display: flex; justify-content: space-between; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.pager-bottom a { display: flex; flex-direction: column; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; max-width: 40%; }
+.pager-bottom a span { font-size: 0.8rem; color: var(--muted); }
+.pager-bottom .next { margin-left: auto; text-align: right; }
+.pager-bottom .up { text-align: center; }
+@media (max-width: 960px) {
+.layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; padding: 1.5rem 1rem 3rem; }
+.toc { position: static; max-height: none; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+.topbar { padding: 0.6rem 1rem; }
+}
+
+code span.co { color: var(--tok-comment); font-style: italic; }
+code span.kw, code span.cf { color: var(--tok-keyword); }
+code span.st, code span.ss, code span.ch, code span.vs { color: var(--tok-string); }
+code span.va { color: var(--tok-variable); }
+code span.fu, code span.bu { color: var(--tok-function); }
+code span.dv, code span.fl, code span.bn, code span.cn { color: var(--tok-number); }
+code span.at { color: var(--tok-attr); }
+code span.op, code span.ot { color: inherit; }
+div.sourceCode { margin: 1rem 0; }
+pre > code.sourceCode > span { display: inline; }
+
+.badge {
+display: inline-block;
+padding: 0.15em 0.6em;
+border-radius: 999px;
+font-size: 0.75rem;
+font-weight: 600;
+line-height: 1.5;
+vertical-align: middle;
+white-space: nowrap;
+}
+.badge-rookie { color: var(--rookie); background: var(--rookie-bg); border: 1px solid var(--rookie); }
+.badge-advanced { color: var(--advanced); background: var(--advanced-bg); border: 1px solid var(--advanced); }
+.chapter-level { margin: -0.5rem 0 1.5rem; }
+h1 + .chapter-level { margin-top: -0.25rem; }
+.advanced-section {
+margin: 1.5rem 0;
+padding: 0.25rem 1.25rem 0.75rem;
+border-left: 4px solid var(--advanced);
+background: var(--advanced-bg);
+border-radius: 0 8px 8px 0;
+}
+.toc .badge { font-size: 0.65rem; padding: 0 0.45em; margin-left: 0.25rem; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="course" href="../README.html">Container und Kubernetes/OpenShift</a>
+  <nav class="pager">
+    <a href="../README.html#inhaltsverzeichnis">↑ Inhaltsverzeichnis</a>
+
+    <a href="../04-pods-on-kubernetes/README.html" title="Kapitel 4: Container/Pods auf Kubernetes">← Zurück</a>
+
+    <a href="../06-networking/README.html" title="Kapitel 6: Networking – Services, Routes &amp; Port-Forward">Weiter →</a>
+
+  </nav>
+</header>
+<div class="layout">
+<aside class="toc">
+  <p class="toc-title">Inhalt</p>
+<ul>
+<li><a href="#kapitel-5-automation--kubernetes-manifeste--gitops" id="toc-kapitel-5-automation--kubernetes-manifeste--gitops">Kapitel 5:
+Automation – Kubernetes Manifeste &amp; GitOps</a>
+<ul>
+<li><a href="#kubernetes-manifeste" id="toc-kubernetes-manifeste">Kubernetes Manifeste</a></li>
+<li><a href="#gitops-mit-oc-apply--kubectl-apply" id="toc-gitops-mit-oc-apply--kubectl-apply">GitOps mit oc apply /
+kubectl apply</a></li>
+<li><a href="#arbeiten-mit-manifesten" id="toc-arbeiten-mit-manifesten">Arbeiten mit Manifesten</a></li>
+<li><a href="#manifeste-in-diesem-kapitel" id="toc-manifeste-in-diesem-kapitel">Manifeste in diesem
+Kapitel</a></li>
+<li><a href="#weiterführende-links" id="toc-weiterführende-links">Weiterführende Links</a></li>
+</ul></li>
+</ul>
+</aside>
+<main>
+<h1 id="kapitel-5-automation--kubernetes-manifeste--gitops">Kapitel 5:
+Automation – Kubernetes Manifeste &amp; GitOps</h1>
+<div class="chapter-level">
+<span class="badge badge-rookie">Rookie · Tag 1–2</span>
+</div>
+<h2 id="kubernetes-manifeste">Kubernetes Manifeste</h2>
+<p>Kubernetes-Ressourcen werden als <strong>deklarative
+YAML-Manifeste</strong> beschrieben.</p>
+<h3 id="struktur-eines-manifests">Struktur eines Manifests</h3>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span><span class="co">        # API-Gruppe und Version</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span><span class="co">           # Ressourcentyp</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> demo</span><span class="co">               # Name der Ressource</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> demo</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span><span class="co">                      # Gewünschter Zustand (desired state)</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">  ...</span></span></code></pre></div>
+<hr />
+<h2 id="gitops-mit-oc-apply--kubectl-apply">GitOps mit oc apply /
+kubectl apply</h2>
+<p><strong>GitOps</strong>: YAML-Manifeste in Git verwalten →
+automatisch im Cluster anwenden.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Einzelne Datei anwenden</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> 05-automation/deployment.yaml</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Komplettes Verzeichnis anwenden</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> 05-automation/</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Rekursiv (inkl. Unterverzeichnisse)</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-R</span> <span class="at">-f</span> 05-automation/</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Dry-Run (Was würde passieren?)</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> 05-automation/deployment.yaml <span class="at">--dry-run</span><span class="op">=</span>client</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Server-seitiger Dry-Run</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> 05-automation/deployment.yaml <span class="at">--dry-run</span><span class="op">=</span>server</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Diff anzeigen (was ändert sich?)</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> diff <span class="at">-f</span> 05-automation/deployment.yaml</span></code></pre></div>
+<h3 id="ablauf-gitops">Ablauf GitOps</h3>
+<p><img role="img" aria-label="Ablauf GitOps: push, apply, Control-Loop" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiICBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWluWU1pbiBtZWV0IiB2aWV3Qm94PSIwIDAgODE4IDUxNiI+PHN2ZyBjbGFzcz0iZDItMzg1OTcxODg2MSBkMi1zdmciIHdpZHRoPSI4MTgiIGhlaWdodD0iNTE2IiB2aWV3Qm94PSItOCAtOCA4MTggNTE2Ij48cmVjdCB4PSItOCIgeT0iLTgiIHdpZHRoPSI4MTgiIGhlaWdodD0iNTE2IiByeD0iMCIgZmlsbD0idHJhbnNwYXJlbnQiIHN0cm9rZS13aWR0aD0iMCIgLz48c3R5bGUgdHlwZT0idGV4dC9jc3MiPjwhW0NEQVRBWwouZDItMzg1OTcxODg2MSAudGV4dCB7Cglmb250LWZhbWlseTogImQyLTM4NTk3MTg4NjEtZm9udC1yZWd1bGFyIiwgIlNvdXJjZSBTYW5zIFBybyIsICJTb3VyY2UgU2FucyAzIiwgLWFwcGxlLXN5c3RlbSwgQmxpbmtNYWNTeXN0ZW1Gb250LCAiU2Vnb2UgVUkiLCBIZWx2ZXRpY2EsIEFyaWFsLCBzYW5zLXNlcmlmOwp9CkBmb250LWZhY2UgewoJZm9udC1mYW1pbHk6IGQyLTM4NTk3MTg4NjEtZm9udC1yZWd1bGFyOwoJZm9udC1kaXNwbGF5OiBzd2FwOwoJc3JjOiB1cmwoImRhdGE6Zm9udC93b2ZmO2Jhc2U2NCxkMDlHUmdBQkFBQUFBQTFjQUFvQUFBQUFGRWdBQWd1RkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQlBVeTh5QUFBQTlBQUFBR0FBQUFCZ1hkL1ZvMk50WVhBQUFBRlVBQUFBclFBQUFQQUV0UVVHWjJ4NVpnQUFBZ1FBQUFiSkFBQUkyTzBISnoxb1pXRmtBQUFJMEFBQUFEWUFBQUEyRzRVZTMyaG9aV0VBQUFrSUFBQUFKQUFBQUNRS2hBWGlhRzEwZUFBQUNTd0FBQUNBQUFBQWdEZXBCczVzYjJOaEFBQUpyQUFBQUVJQUFBQkNKcXdrcEcxaGVIQUFBQW53QUFBQUlBQUFBQ0FBT0FEMmJtRnRaUUFBQ2hBQUFBTXJBQUFJRkFiRFZVMXdiM04wQUFBTlBBQUFBQ0FBQUFBZy85RUFNZ0FEQWdrQmtBQUZBQUFDaWdKWUFBQUFTd0tLQWxnQUFBRmVBRElCSXdBQUFnc0ZBd01FQXdJQ0JHQUFBdmNBQUFBREFBQUFBQUFBQUFCQlJFSlBBRUFBSVAvL0F1Ny9CZ0FBQTlnQkVTQUFBWjhBQUFBQUFlWUNsQUFBQUNBQUEzaWNqTTQ3SzRVQkFJZngzK3U4anR0eHY5L3FuY1RnUTRpU0xHSTdHekVvU1FibDR3Z3BKaE1ENHFNb3M4bitsM2N3bjU3MU56d29OQlJvS1gxaFNhWFVWRm14YXMyR1RWdTI3ZGpUZHVESXNSTm5MbHdtcUN6WGJ2M2Y3V3JiZDFpN1UrZC9McC81eVhjKzhwNjN2T1lsejNuS1l4NXluN3ZjNWliWHVhb3ZPcW13WU5HOExnMmxiazA5ZXZYcE42QmwwSkJoSTBhTkdUZGgwcFJwTTJiTjhRc0FBUC8vQXdBSFRER2RBQUFBZUp4MFZXOU1HK2Y5L3o2UEhUdkVKbkN4ejJjYjIrZTdBeDgyTVgvdWZEN0E1aHlNY1F3QmJNNGxCQUpHSVRTaytTWDhHcENJSXFGVlUwZ2FxWnJtU1prVWFXazFUZEdtYXY4NlZXb241VjIzYm14ZHF2Vk5zNjBsbXZhQ1JVcW5ib3dYMHpyTzA1ME5oVXA3KytpZTcrZlA5L041RG83QUZBQ1c4RDB3UVIwMHdBa2dBVVNDSVZvWW51ZXNzaWpMSEdXU2VVUllwOUNuV2htaG9aZzVIamQzcForbmI3N3lDanIzTlh4djkycnYrdUxpKzZVYk43UnZiRDNUQlBUaE04QmdBc0IrWElZNklBQWNWcEVQaFhqT1lqRTVSQWZIYzlZUDZQZnBFOEZHYzBQd1QwOUxUNmVVejFQby94Y1c1R3M5UGRlMGFWemVmWGxqQXdBQVFheXlnNXZ3QS9BREhHRkRJU2tXajR1Q2k3S0dRaHhyc1pCT2wwc1U0akpsc1NCVi9mcVprZlZpY3NZWDlhWWp5cXdvbkZjNmh1bDJmdDQrZnYvL3J0eFh1NEp4SDl1L3FxbzMwNjFzTENvQUFJWnBBQnpEWlRpcTh4UUpVWENSVGd2SGkwSmNpb1U0YnZyaC9UZGUvL2JFbVpXVmxaVXp1UHptZzlkL2tubHRiZTMyUHJjUWZnREIvOFZORk9LeXhFa2lZYkdnbWJOM1JzYnVUbVptZmUyZXRKQ2VsNjYveEoxeXZQYUVmcWxHVHd6RXZjMzlxK3JhdDhnVFB4elVQbVBhZEl4cEFQZ3hMdXQraW9SSVRCZHhlZmZsNmpsTzRUTFlxK2NpRXEwT3ptUWxwNHNtUkpRZS8yMzJsOWR4V1hzWERmMWJ1NEltYnY5K1Q2c05sOEVHenBwV1F5eEhFUHR5SHcwdktYZXVYcDAvVzV3OFc4TGw1b25jNG9MMkg1VHJ6NTZXOS8wSzRqSWNCK3JBREIzNzRKakhBNWNUaGN3UFNtL2NXQnBWMWRFbFhPYkdNeU96aFBZWFJHclAwVlRxVkg4TURBOGpsUjMwT1g0QVVjTkRYamIyS2NWQ0laNXZ4NGNkSlowdUYwVUZNT20wV0ZEajRHcWJ3TTJKL1RsL0YxMmkrOEpTS1pGWTRLS0JvWFo1Z0JHOHM2Rys1dmlDWFRyWjJ4Sk5kTEt0dnVQaCtraTZVOGhIbzgxeFB4TTdTWWU5dHRiR2FIOVhiRUlBcE9PamZ4aDVCVkZDak1TUWlDR2phRXI3RmZxZTluMDBLMkIzdG12MzJXbmRnMWhsQi8wTWJZTVhtZ0VvTmlURjRuTE1vR2psRGNJa3dlbGg1NFc0TEJsQmVLOXYvSnZmSWRwYUk4UCtJSHV4ZDZxUXNaclljUmVuY0RjdkNQYWgvc0lFUVhkelFXZVBLM3p0dlBaeHJ5K1NadWxYRzVJZDRSYkFvRloyMEJkNEF4eTFwUEdjbFNORTBsckZjaHBBdXUrc3hVcTZYQ2pNRGdWTjFyU0ttWHpyM0h4aUxwdk1Kd2JwVTF3d1pXZjhBdDU0NzV5ZnYzTzl1S29NTGs0WExyTEJpby9TZDRHaG83S0QvcmlIVTlXbEkxQzhKTzRKa3FYOWNQL3IvRkxpZ2h4Umd1Wml4bXJ5alhoT0plbWVBSjhLWmUyM2IrWlhsSUMzK0dpM3U4Y1hIaHpRZkZSSHNYdnlJbUJvcit5ZzM2SnRjQU45cURWNmlKajlNcHNZUXc2aStxOG9xUVY1OWtXRXRaOGZtY3h5aVNZL25mOEFtVk05NHJpOWJ6bGZXRmJXTHRkNzZrWm5TQ0x1REtEUThHZ2VvRktCUVFCNEc3K0RReEFBQUF2UWE3cEdwSHNKZjhBYjBGQlZTSWlFY3cvMHpmYXdlcnpPYkxYYWpycnNQUksrdEh2UFFTQ2ttTTJBUUFWQVQ5QjJyVG1VdUxkbndpQnFKZFNNMWNTTkNhT24xWk9kTFlrV3RKWGxPaTdNYXI5RDRZd1NhdEcrQ3pYdGYwZmIwQUJOaDdRZjNpSHBkS0dHeEdJcXRaaElYa3FsTGlWVG82TXBaV3pNbmx3dXFNdko1TEphV0U1bUZvc3ZYTDc4UW5GUm42dFdSUFFGMnE3dDdVdDJUb3VGWTBNOFJUb081a05ueXVUYlN2T0p1VzUyZ01VM2pIaWttaG5sTVg2NzI5ZjY2blYxVlFsNEp4NGl5NkY4VkQwb29lM2FTMWxGcVhXemFvQW5GL1pUalhabkF6M2dRVnZuMnVQSGNtYXpvR2kxdDl4WDJVRzMwRFpFRE84UGR0Mm8rbGVhWGkzNlI3RVNGdzVtMmpvN0diR0pUVWVtOHRFeFg2c25IbXh2QzNRMmNabG9PRy9uZmJLSGlkSWVsanBXejBqaFJENUl4Unp1aUkveWs3WjZSbTduMDYwR3ZydXlnd2J4RWxDMTNYT1NMSXVrU0hKZlp1RDVXRjl1NU5qZ3JWdE1wRDVnYjNSMjJLZHpxRjQ1Y3ZmdWdMWWQ3YW96SzFhYk1ldE1aUWQ5aUxiQStaVWNFYldxL0hrMFYyenJEQ1ZZM1JkMnhINWhGc1cwSnhtRmIwTlRtbmVrdFJPUS9uYWpYNk10cUFjUVRhTEQ1ZEl0bFIyaTZkRlBKMlpzbE0xc280N05qUDhJYldtZk5lYzRMdGVNbkpwWHYxZnBNTzQxSGZSUmxnK05PSTZuRy8zMnhxUE91bkM4d2ZhTGlZczJqODFzY3g2YkxMeExkQXgrWkRIMzR5T0phRFA2cS9aUE9zY3l1U0NxMzkzdUhOR2ZRUWpESjZnQmVmVi9qaXlKWkhqcmsxUktQMWNyQlZTSFA5WDVVa1o0ZGNkSXA0djZXTWxtRmJHM3A2ZjNyUmMzMTllZkxyam5OcGVYTitjQVFhaFNnTTNhSFQ2dWIxdmZPK20wVEJuZmkwbzIrMWJ0YS9mQzAvWDFUUjBIQUI2aXJiMS9ucXFpTFYxMzVUZDRHR1Q4RHRnQUNGYkhyNGJjVGROdU4wM2pZYi9ISFFpNFBYNzRMd0FBQVAvL0F3RHZYK255QUFBQUFBRUFBQUFDQzRYd0N1dlRYdzg4OVFBREErZ0FBQUFBMkYyZ29RQUFBQURkWmk4Mi9qcisyd2h2QThnQUFBQURBQUlBQUFBQUFBQUFBUUFBQTlqKzd3QUFDSmorT3Y0NkNHOEFBUUFBQUFBQUFBQUFBQUFBQUFBQUFDQUNqUUJaQU1nQUFBSWdBQU1DT3dBMEFtY0FXZ0pwQURRQkJ3QmFBa01BV2dJMkFGb0NPUUJhQWhZQUtnSWJBQzBCK0FBMEFpa0FVZ0lyQUM4QjhBQXVBUFlBUlFEL0FGSUNJd0JTQWg0QUxnSXJBRklCV3dCU0FhTUFIQUZTQUJnQ0lBQkxBZE1BREFIVEFBd0JOd0FwQVM4QVVnRXZBQ1lBOWdCU0FBRC95UUFBQUN3QUxBQlFBSUFBbmdEUUFOd0E5Z0VZQVVBQmhBR2FBZElDQmdJNEFtd0NlQUtVQXJZQzRnTVdBellEZGdPY0E3NEQyZ1FLQkJZRU1BUktCRllFYkFBQUFBRUFBQUFnQUl3QURBQm1BQWNBQVFBQUFBQUFBQUFBQUFBQUFBQUVBQU40bkp5VTMyb2JWeERHZjRvbHRhRTBGOFVFNThhY3k3WTRLelhZSWJHdjFuVk1saG9yMVNyOUE2V3dsdGFTa0xTNzdLN2t1UFFCZXQyMzZGdmtxcy9SaHlpOUxqTWFLZHEwRUN4Q3pMYzZNOTk4WithYkErenlEenZVNnZlQlA1cy9HSzZ4M3p3MmZJOEh6UVBETzF3MC9qSmMzNGhwTUdqOGFyakpsNDJ1NFk5NFcvL2Q4TWNjMW44MmZKKzkrcm5oVDNoUzN6WDg2WTdqYjhNUE9PVHRFdGZnR2I4WnJyRkhadmdldS94a2VJZUhHR2V0emtQYWhodDh4cjdoSnZ0QWp6RWxVOFlrREhGY00yYkluSnlZZ3BDWW5ESFh4QXh3QlBoTUtmWFhoRWlSWS9pL3YwYUVsT1JFeWppaXhERWxaRXBFd2NnWWY5R3NsRmRhVWVya2lxU2FUOG1JaUN2Tm1CQ1I0RWdaa3BJUU0xR2VrcEtNWTFxMEtPaXIzb3lTQW8rQ01WTThVbktHdE9od3pnVTlSb3dwY0p3cmt5Z0xTYm1tNUlaSTZ6dUxrTTcwaVVrb1ROV2NoSUhxZEtvdjF1eUFDeHdkTW8zZFpMNm9NQnpnK0U2elJadkVPTDdDMC85dVExbTE3a3BOeEVMN0tUMjhZcW82YjNTQ0krMjQxUFg1Vm5ISk1XNnIvbFNWZkxoSEExVW5zeDV6eFZ6bkwvT1RQRkdTNE53ZVBxRTZLSFNQY0p6cWQwQ29IZm1lZ0I0djZmQ2Fubjc3ZE9uaWMwbVBnQmVhMjZHTDQyczZYSEttR1lIaTVkbTVPdWFTSDNGOFE2QXh3aDFiZjZUbjh2V0d6Tnd0MnNVWmNvOFptVzZCekZqdUw4NlB0NXF3N0ZCYWNVZWhydWpySGttazdJRjBSZllzWW1pdXlOUVZNKzNseWh1RjlXOWdqcERUVW1mNzdseTJZV0c3dDlyaVcxTGRZY2ZjTk1ua2xvbytORlh2UGMvYzZEK1BpQUVwVnhyUkoyVkdpNUpidmRzckl1Wk1jWnlwajEvcWxwVDQ2eHlwYzZzdWlabXBnb0JFZVhJeS9SdVpiMExUM3EvNDN0bGJJcHMzMHgyZHJHKzFUUlZoVGpabTlGcTd0em9McmN2eHhnUmFOdFhVY21UQ3dyeThxWGhmb3IySy9sRGRYK2pybHZLWUxyRytyakwvL0QvdndCTTgyaHh5eEFranJTUDhDUXQ3STlyNlRyUjV6b24yWUVLc1VmSnF2dEZ1Q2NNUkhrODU0b2puUEsxdytweHhTb2VUTzJoY1puVTQ1Y1Y3SjVzY2JzM2lqT2NQVmROV3ZZN0g2NjluVzgvcjh6djQ4Z3NPS2kraktKYzl5RmtZMnp2L1h4SXhFeTF1YjdNdjdoSGV2d0FBQVAvL0F3QUhXMHd3QUFBREFBQUFBQUFBLzg0QU1nQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiKTsKfQouZDItMzg1OTcxODg2MSAudGV4dC1pdGFsaWMgewoJZm9udC1mYW1pbHk6ICJkMi0zODU5NzE4ODYxLWZvbnQtaXRhbGljIiwgIlNvdXJjZSBTYW5zIFBybyIsICJTb3VyY2UgU2FucyAzIiwgLWFwcGxlLXN5c3RlbSwgQmxpbmtNYWNTeXN0ZW1Gb250LCAiU2Vnb2UgVUkiLCBIZWx2ZXRpY2EsIEFyaWFsLCBzYW5zLXNlcmlmOwp9CkBmb250LWZhY2UgewoJZm9udC1mYW1pbHk6IGQyLTM4NTk3MTg4NjEtZm9udC1pdGFsaWM7Cglmb250LWRpc3BsYXk6IHN3YXA7CglzcmM6IHVybCgiZGF0YTpmb250L3dvZmY7YmFzZTY0LGQwOUdSZ0FCQUFBQUFBdklBQW9BQUFBQUVud0FBUmhSQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFCUFV5OHlBQUFBOUFBQUFHQUFBQUJnVzFTVmVHTnRZWEFBQUFGVUFBQUFqd0FBQU1BRGRBUFdaMng1WmdBQUFlUUFBQVdHQUFBSFRHV1lHNXBvWldGa0FBQUhiQUFBQURZQUFBQTJHN1VyMm1ob1pXRUFBQWVrQUFBQUpBQUFBQ1FMZUFpOGFHMTBlQUFBQjhnQUFBQmdBQUFBWUNZVkFxRnNiMk5oQUFBSUtBQUFBRElBQUFBeUdBNFdUbTFoZUhBQUFBaGNBQUFBSUFBQUFDQUFNQUQyYm1GdFpRQUFDSHdBQUFNckFBQUlNZ250VnpOd2IzTjBBQUFMcUFBQUFDQUFBQUFnLzhZQU1nQURBZUVCa0FBRkFBQUNpZ0pZLy9FQVN3S0tBbGdBUkFGZUFESUJJd0FBQWdzRkF3TUVBd2tDQkNBQUFIY0FBQUFEQUFBQUFBQUFBQUJCUkVKUEFBRUFJUC8vQXU3L0JnQUFBOWdCRVNBQUFaTUFBQUFBQWVZQ2xBQUFBQ0FBQTNpY2ZNMDVTZ01CQUViaGI1eHhIOGR4YThVTGVBb3J3YzRUaUlnSWc0aGc0VmtFbFN3WENDbENtcHdsWFc3eGg2UU80WlZmOFZBb0ZhaFZ4cmpXS2pWdTNMcHo3OEdqSjg5ZXZPbDgrUEtkc01GZmRkNTlyanp6TERMTE5KT01Nc3dnL2ZUeW43Lzg1bWQ5MjFiaHlvNVNaZGVlZlFjT0hUbFdPOUU0MVRwejdzSWxTd0FBQVAvL0F3QWE0U2N5QUhpY2JGVnZhQ05wSGY2OTcweG50bTJhM1dTU21VNDJ5U1F6azhtZlRpYkpURExUTkUzU052M2ZaSGRicjdWZW0rNVY3a3JWVXdvcnVuS1cwMXM0UkVTcTdCZmxRRUVFWmIvMVB2bEpFRDhVWVVIaGtKT1QrK0NmbmxqaE5BVFJ4V1pra3Y3Skx2ZGx2cnpNODN0K3ovczh6d3NESUFQZ0wrSEhRTUFnM0FRditBRU1Ka29RaG1WSkhHSEU0eEpOVzNHR29lVzMwTWxiUHlSckwvODE4ZVAvcWdLNThNMmZyL3pqbFNmNDhmbnI2QnZOTjkvc2JIM3J0ZGMrZlhiV1NhSGZud0VBSUNqYWJaekc3NEFBTUNBcVNpRmZ3WWJPY3JTaVNLSWIrMzBzYStpbXhWRVVFbGYyemV6TGgvWHgxVkdUTVpXSit6T3l1RnhLMUNLUzNIVFZIdDVwUFA3cWdwVktSdUxsVng5T2xwcUZ5RzFkU0hkblNBRFF4a2RBT0x3TlFucDA1eEUrT2orNFBFUGZ4MGN3MER1TDB0S2pPMTlCdmhGOGRINDhBd2hjZGh0MThEdVFBdUJFSlc1MStSVHlTanp1a0RYTks3SVU1ZmV4SE1leWZoOUZmVlE3U0JSRDY5YmthanBXVDVVSzI2WFNLNExCejJ1eFFpZ24xelA1MHA1clltSnNUSjhkbDNWV0N5eForcHFlVDJqaHBKQzlyV1RZZEhEQm10aktBNGE0M1ViL1FTM3dPVXc1OFVvZ3d6SUl5WklvS3E2YmxuV2wxcnRUZFhWNXg0aVhQU1JUMmEzZUlLVk5yM0pYVnYxNlVLNFZoSnhyYTMzK2E5dEdJbHJ1QkJaam1Ta3Q4d2RGVEMwMTlXcTVkeDh4dTQyT1VRdUN6MDI3M3ZEaU50Ni8rNnJhMkMyb2syeWFVVUxaRGJNNEVURlpNZEJ3N1RWbkg2eG5SRDdMK1djUGFqUHpBWS91aXpuWXVJdjlTOVNDQU1UNjBSM0Y2Q2gxZGRPRVlacUZmSGZpWHpZK2wxN1p6bHJUWWRkQTU5ZURrVm9xVk9UQ29kVWYySmp3SnFYQ2p1dnp1M01IYTZwMlR3OGE3dXE5R084eC9BS0tEWStPQkhQQ09tQkF0b3hhcUFVQ2FQMDNhRmtVSlYzdjU2aEpVY1J6VWo3SmJVaHljQzVSV1hienlrdVo4cjJ4cGUyY1V2RVFUSFdQZVZDVVZzVXhOaGVVcG8xdzVvOUtxTUNKOWFsOVJkMVlyMzM1TTdxakwzRi9EMFhIVXI5VnhPVDhaclpVNnVrckFLRDM4UW53WGIvUnRORzFrTjlIRXhManJDMkpGRTBJMzIxa2I1SEpOYlZTdUZHcFQ1TGtZbkJSbThNbloyVXBNejB1eUozZklOVTNPcktTMGpvL3MyMG5PL0FNSDJNRldBQ2dnRnZzelZMdE5qekRKK0IxTmkva0xjWlowdSs3a1BtTDA5UWJqVU9FUEFSRm95SFdWZlh3K0F2bjM2TUhDUy9DSlpMczQ0dGFNTnJqKzhsMGQ2czBtVnpUbm1PTFRwZmszSXRrSGN5ZXB6OUFMYmdKb1g0ZitIMXVITmNkMUV1enZYZDNSMTNlMGUvZVYxZDJVdWxWdzlTZGoydC9hKzdCdXRiN1RzMGN6TTRzMUE1bVorWWRiUHZmdG9IK2lWcmdkMXFMN21Qc3hwS29PRTNGNkJYY0cwSFRMRHYwN1NwRnhOYTFibTUwWlpMQlh1R25jcTBRemliRlZVbnpHVS94dTFOQ3VoZWJ1TEQvSTRSU1MwMmpVazRwZjR0RnJ6WDZPbXJCclQ2Tk9GcTUxR2FZRE5YVHZQLzJyWUJjRjhyb3RLbVdCMmR2VkV1ZHA0RHMvOWx0ZEloYUVIK3hYMTZzRjZkZGV1WHlrMXlUejNKVFNxcWNITmVLNnBLcUxRYzF4b2dxT1ROU3lXZlhYUG1FSWlRMEtSQVhBcFhrMkhSTURpZDhnYlFRVnJ6aXBKcWVqVG1jSiswMjJzU3ZYK1hjdEJpcGlnM2FvQ1dpTCtlL21NcVRxTGd3WEplbmI3L2hPaXdTUWRFZEdQYmN5cmlxNlp1QkVlUXREcno5ZHFYemQ2ODNIQjRhc09pYkR2YTQzVVlmbzFQZ3I3R3ZuY2RjOU5hVHNrbVNsVWFaSkJkREMrcGMzU21yeEV1dUdjc2pNTWpzdk1md2ptWFFaaWV3TEJsZG5lMWYyUm4wWjNRS0FRQzYyOFVPbmtVWURNdHlodWxBSXplbWhpSnUzdXVOVGZQZVQ5V1ZnUnNFNllsNXYxUHYvSWt2TGY2T3BvdURaVjFDSDNVK2pqWWtxUzRpei9tL01nMFZMdDZDRDlFUTRwMTN3cklNV25KOU1QSmhYMjdoS1RxOWZFT0UzY1puMFdrbjBQMXZBYS9BTVQ2R1lRREc2WlJlUktpSFRGamlmQ0VKcjNBc0h4MWwrY2ovQVFBQS8vOERBSXZOYzY0QUFBQUJBQUFBQVJoUlBtK1dFVjhQUFBVQUFRUG9BQUFBQU5oZG9Nd0FBQUFBM1dZdk4vNjkvdDBJSFFQSkFBSUFBd0FDQUFBQUFBQUFBQUVBQUFQWS91OEFBQWhBL3IzOXZBZ2RBK2dBd3YvUkFBQUFBQUFBQUFBQUFBQVlBblFBSkFESUFBQUNKZ0E1QVB3QUl3SE9BQ01CK2dBTUFoa0FKd0d6QUNVQjRRQWxBaE1BQVFJTEFCOEE3UUFmQVBnQUxBSU5BQjhDQXdBbkFoZi85Z0ZXQUI4Qmt2LzhBVVVBUEFJUUFEZ0J3UC9DQVNzQUl3RHRBQjhBQUFCSEFBQUFMZ0F1QUdBQWJnQitBTDRBOWdFa0FWNEJwZ0hRQWR3Qi9nSW9BbFlDa0FLdUF1b0RHQU5FQTNRRGdnT1FBNllBQUFBQkFBQUFHQUNNQUF3QVpnQUhBQUVBQUFBQUFBQUFBQUFBQUFBQUJBQURlSnljbE4xdUdsY1VoVDlpb0UzL0xpb3JjbTZzYzVsS3p1QkdjWlRFVitNNlZrWkZrREtrUDFKVmFZQXhJR0JteEF3NHpoUDB1bS9SdDhoVkg2TlBVZlc2MnBzTllTS3JWbEFVYXcxbi82eXo5dG9IMk9kZjlxaFU3d0ovMVplR0t4eldmelo4aHkvcVRjTjduTlUvTTF6bHFQYTM0UnFEMmx2RGRSN1VPb1kvNFYzMUQ4T2Y4cmo2bStHN0hGUXZESC9PbytxKzRTLzNIUDhZL29ySHZGdmhDanpsZDhNVkRzZ00zMkdmWHczdmNRK3JXYWx5ajJQRE5iN20wSENkUTZETG1JSXBZeEtHT0M0Wk0yVEJuSmlja0pnNVl5NkpHZUFJOEpsUzZLOEprU0xIOE1aZkkwSUs1a1JhY1VTQlkwcklsSWlja1ZWOHExa3ByN1NqOUprcmttNCtCU01pZXBveElTTEJrVElrSlNGbW9uVUtDaktlMDZCQlRsLzVaaFRrZU9TTW1lS1JNbWRJZ3pZWE5Pa3lZa3lPNDBJckNiT1FsRXNLcm9pMHY3TUlVYVpQVEVKdXJCWWtESlNuVTM2eFpnYzBjYlRKTkhhN2NyTlU0UWpIajVvdDNDVEc4UzJlL25kYnpNcDkxMndpbHFxbmFOaGpxanl2ZElJalZWejYrdnlndU9BNWJpZDl5a3h1MTJpZzdHVFdZM29zZFA0eVA4a1RKZ25PSGVBVHFvTkNkeC9IbVg0SGhLcklUd1IwZVVtYjEzVDEyNmREQjU4V1hRSmVhRzZiRG83dmFOUGlYRE1DeGF1ekMzVk1pMTl3ZkUrZ01WSTdObjFFYy9sNlEyYnVGdTdpRExuSGpFeTNRR1lzOXhmbnh6dE5XSFlvTGJralYxZjBkWThrVXZaQVZKRTlpeGlhS3pKMXhVeTFYSHNqTi8wRzVnZzVMWFMyNzg5bEc1YTJlK3N0dmliVkhYWXNqSk5NYnNYb3RxbDZIM2ptU3Y5NVJBeEk2V2xFbjVRWkRRcXU5VzZ2aUZnd3hYR3VQbjZwVzFMZ2IzS2t6N1c2SkdhbURBSVNyVE1uMDcrUitTWTA3djJTNzUyOUpiSjVNOTNSeWVaV3UzU1J5c25XakY2cmV1dXowRlNPdHliUXNLbW1saU1UbHNxcm00cjNKZG9yOFEvVi9ibStiaWtQQ2JTdVRMSi80eXR3ekROT09HV2tYYVI2d25KekpxK0VSSnlxQWhOaWpaSTM4NDFxOVFpUEV6eWVjTUlKejNqeWdaWnJOczc0dUJLZjdmNCs1NXpSNXZUVzI2eGkyNXp4b2xUdC96di9xV3lQOVQ2T2g1dXZwenRQODhGSHVQWWJqa3J2WmtkZkE5bWdwVlY3dngwdEltYkN4UjFzYStIdTQvMEhBQUQvL3dNQWNxRlJRQUFBQXdBQS8vVUFBUC9PQURJQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPT0iKTsKfV1dPjwvc3R5bGU+PHN0eWxlIHR5cGU9InRleHQvY3NzIj48IVtDREFUQVsuc2hhcGUgewogIHNoYXBlLXJlbmRlcmluZzogZ2VvbWV0cmljUHJlY2lzaW9uOwogIHN0cm9rZS1saW5lam9pbjogcm91bmQ7Cn0KLmNvbm5lY3Rpb24gewogIHN0cm9rZS1saW5lY2FwOiByb3VuZDsKICBzdHJva2UtbGluZWpvaW46IHJvdW5kOwp9Ci5ibGVuZCB7CiAgbWl4LWJsZW5kLW1vZGU6IG11bHRpcGx5OwogIG9wYWNpdHk6IDAuNTsKfQoKCQkuZDItMzg1OTcxODg2MSAuZmlsbC1OMXtmaWxsOiMwQTBGMjU7fQoJCS5kMi0zODU5NzE4ODYxIC5maWxsLU4ye2ZpbGw6IzY3NkM3RTt9CgkJLmQyLTM4NTk3MTg4NjEgLmZpbGwtTjd7ZmlsbDojRkZGRkZGO30KCQkuZDItMzg1OTcxODg2MSAuZmlsbC1CMXtmaWxsOiMwRDMyQjI7fQoJCS5kMi0zODU5NzE4ODYxIC5maWxsLUI1e2ZpbGw6I0VERjBGRDt9CgkJLmQyLTM4NTk3MTg4NjEgLnN0cm9rZS1CMXtzdHJva2U6IzBEMzJCMjt9CgkJLmQyLTM4NTk3MTg4NjEgLnN0cm9rZS1CMntzdHJva2U6IzBEMzJCMjt9LmFwcGVuZGl4IHRleHQudGV4dHtmaWxsOiMwQTBGMjV9Lm1key0tY29sb3ItZmctZGVmYXVsdDojMEEwRjI1Oy0tY29sb3ItZmctbXV0ZWQ6IzY3NkM3RTstLWNvbG9yLWZnLXN1YnRsZTojOTQ5OUFCOy0tY29sb3ItY2FudmFzLWRlZmF1bHQ6I0ZGRkZGRjstLWNvbG9yLWNhbnZhcy1zdWJ0bGU6I0VFRjFGODstLWNvbG9yLWJvcmRlci1kZWZhdWx0OiMwRDMyQjI7LS1jb2xvci1ib3JkZXItbXV0ZWQ6IzBEMzJCMjstLWNvbG9yLW5ldXRyYWwtbXV0ZWQ6I0VFRjFGODstLWNvbG9yLWFjY2VudC1mZzojMEQzMkIyOy0tY29sb3ItYWNjZW50LWVtcGhhc2lzOiMwRDMyQjI7LS1jb2xvci1hdHRlbnRpb24tc3VidGxlOiM2NzZDN0U7LS1jb2xvci1kYW5nZXItZmc6cmVkO30ubGlnaHQtY29kZXtkaXNwbGF5OiBibG9ja30uZGFyay1jb2Rle2Rpc3BsYXk6IG5vbmV9QG1lZGlhIHNjcmVlbiBhbmQgKHByZWZlcnMtY29sb3Itc2NoZW1lOmRhcmspewoJCS5kMi0zODU5NzE4ODYxIC5maWxsLU4xe2ZpbGw6I0NERDZGNDt9CgkJLmQyLTM4NTk3MTg4NjEgLmZpbGwtTjJ7ZmlsbDojQkFDMkRFO30KCQkuZDItMzg1OTcxODg2MSAuZmlsbC1ON3tmaWxsOiMxRTFFMkU7fQoJCS5kMi0zODU5NzE4ODYxIC5maWxsLUIxe2ZpbGw6I0NCQTZmNzt9CgkJLmQyLTM4NTk3MTg4NjEgLmZpbGwtQjV7ZmlsbDojNDU0NzVBO30KCQkuZDItMzg1OTcxODg2MSAuc3Ryb2tlLUIxe3N0cm9rZTojQ0JBNmY3O30KCQkuZDItMzg1OTcxODg2MSAuc3Ryb2tlLUIye3N0cm9rZTojQ0JBNmY3O30uYXBwZW5kaXggdGV4dC50ZXh0e2ZpbGw6I0NERDZGNH0ubWR7LS1jb2xvci1mZy1kZWZhdWx0OiNDREQ2RjQ7LS1jb2xvci1mZy1tdXRlZDojQkFDMkRFOy0tY29sb3ItZmctc3VidGxlOiNBNkFEQzg7LS1jb2xvci1jYW52YXMtZGVmYXVsdDojMUUxRTJFOy0tY29sb3ItY2FudmFzLXN1YnRsZTojMzEzMjQ0Oy0tY29sb3ItYm9yZGVyLWRlZmF1bHQ6I0NCQTZmNzstLWNvbG9yLWJvcmRlci1tdXRlZDojQ0JBNmY3Oy0tY29sb3ItbmV1dHJhbC1tdXRlZDojMzEzMjQ0Oy0tY29sb3ItYWNjZW50LWZnOiNDQkE2Zjc7LS1jb2xvci1hY2NlbnQtZW1waGFzaXM6I0NCQTZmNzstLWNvbG9yLWF0dGVudGlvbi1zdWJ0bGU6I0JBQzJERTstLWNvbG9yLWRhbmdlci1mZzpyZWQ7fS5saWdodC1jb2Rle2Rpc3BsYXk6IG5vbmV9LmRhcmstY29kZXtkaXNwbGF5OiBibG9ja319XV0+PC9zdHlsZT48ZyBjbGFzcz0iWjJsMGIzQnoiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjEyIiB5PSIxMiIgd2lkdGg9Ijc3OCIgaGVpZ2h0PSI0NzYiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtTjciIHN0eWxlPSJzdHJva2Utd2lkdGg6MDsiIC8+PC9nPjwvZz48ZyBjbGFzcz0iWjJsMGIzQnpMbVJsZGc9PSI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iMjQiIHk9IjgwIiB3aWR0aD0iMTEzIiBoZWlnaHQ9IjY2IiBjbGFzcz0iIHN0cm9rZS1CMSBmaWxsLUI1IiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSI4MC41IiB5PSIxMTguNSIgY2xhc3M9InRleHQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTZweCI+RGV2ZWxvcGVyPC90ZXh0PjwvZz48ZyBjbGFzcz0iWjJsMGIzQnpMbWRwZEE9PSI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iMTc3IiB5PSI4MCIgd2lkdGg9IjE0MyIgaGVpZ2h0PSI2NiIgY2xhc3M9IiBzdHJva2UtQjEgZmlsbC1CNSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iMjQ4LjUiIHk9IjExOC41IiBjbGFzcz0idGV4dCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNnB4Ij5HaXQtUmVwb3NpdG9yeTwvdGV4dD48L2c+PGcgY2xhc3M9IloybDBiM0J6TG1zNGN3PT0iPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjM2MCIgeT0iNjQiIHdpZHRoPSIxNDUiIGhlaWdodD0iODIiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjQzMi41IiB5PSIxMDIuNSIgY2xhc3M9InRleHQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTZweCI+PHRzcGFuIHg9IjQzMi41IiBkeT0iMCI+S3ViZXJuZXRlcyBBUEk8L3RzcGFuPjx0c3BhbiB4PSI0MzIuNSIgZHk9IjE4LjUiPihTb2xsLVp1c3RhbmQpPC90c3Bhbj48L3RleHQ+PC9nPjxnIGNsYXNzPSJaMmwwYjNCekxtTnNkWE4wWlhJPSI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iNjQ3IiB5PSI2NCIgd2lkdGg9IjEzMSIgaGVpZ2h0PSI4MiIgY2xhc3M9IiBzdHJva2UtQjEgZmlsbC1CNSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iNzEyLjUiIHk9IjEwMi41IiBjbGFzcz0idGV4dCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNnB4Ij48dHNwYW4geD0iNzEyLjUiIGR5PSIwIj5DbHVzdGVyPC90c3Bhbj48dHNwYW4geD0iNzEyLjUiIGR5PSIxOC41Ij4oSXN0LVp1c3RhbmQpPC90c3Bhbj48L3RleHQ+PC9nPjxnIGNsYXNzPSJLR2RwZEc5d2N5NWtaWFlnTFMwZ0tWc3dYUT09Ij48cGF0aCBkPSJNIDgwLjUgMTQ4IEwgODAuNSA0NzUiIGZpbGw9Im5vbmUiIGNsYXNzPSJjb25uZWN0aW9uIHN0cm9rZS1CMiIgc3R5bGU9InN0cm9rZS13aWR0aDoyO3N0cm9rZS1kYXNoYXJyYXk6MTIuMDAwMDAwLDExLjgzODc2NzsiIG1hc2s9InVybCgjZDItMzg1OTcxODg2MSkiIC8+PC9nPjxnIGNsYXNzPSJLR2RwZEc5d2N5NW5hWFFnTFMwZ0tWc3dYUT09Ij48cGF0aCBkPSJNIDI0OC41IDE0OCBMIDI0OC41IDQ3NSIgZmlsbD0ibm9uZSIgY2xhc3M9ImNvbm5lY3Rpb24gc3Ryb2tlLUIyIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7c3Ryb2tlLWRhc2hhcnJheToxMi4wMDAwMDAsMTEuODM4NzY3OyIgbWFzaz0idXJsKCNkMi0zODU5NzE4ODYxKSIgLz48L2c+PGcgY2xhc3M9IktHZHBkRzl3Y3k1ck9ITWdMUzBnS1Zzd1hRPT0iPjxwYXRoIGQ9Ik0gNDMyLjUgMTQ4IEwgNDMyLjUgNDc1IiBmaWxsPSJub25lIiBjbGFzcz0iY29ubmVjdGlvbiBzdHJva2UtQjIiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjtzdHJva2UtZGFzaGFycmF5OjEyLjAwMDAwMCwxMS44Mzg3Njc7IiBtYXNrPSJ1cmwoI2QyLTM4NTk3MTg4NjEpIiAvPjwvZz48ZyBjbGFzcz0iS0dkcGRHOXdjeTVqYkhWemRHVnlJQzB0SUNsYk1GMD0iPjxwYXRoIGQ9Ik0gNzEyLjUgMTQ4IEwgNzEyLjUgNDc1IiBmaWxsPSJub25lIiBjbGFzcz0iY29ubmVjdGlvbiBzdHJva2UtQjIiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjtzdHJva2UtZGFzaGFycmF5OjEyLjAwMDAwMCwxMS44Mzg3Njc7IiBtYXNrPSJ1cmwoI2QyLTM4NTk3MTg4NjEpIiAvPjwvZz48ZyBjbGFzcz0iWjJsMGIzQnpMaWhrWlhZZ0xTWm5kRHNnWjJsMEtWc3dYUT09Ij48bWFya2VyIGlkPSJtay1kMi0zODU5NzE4ODYxLTM0ODgzNzgxMzQiIG1hcmtlcldpZHRoPSIxMCIgbWFya2VySGVpZ2h0PSIxMiIgcmVmWD0iNyIgcmVmWT0iNiIgdmlld0JveD0iMCAwIDEwIDEyIiBvcmllbnQ9ImF1dG8iIG1hcmtlclVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+IDxwb2x5Z29uIHBvaW50cz0iMCwwIDEwLDYgMCwxMiIgY2xhc3M9ImNvbm5lY3Rpb24gZmlsbC1CMSIgc3Ryb2tlLXdpZHRoPSIyIiAvPiA8L21hcmtlcj48cGF0aCBkPSJNIDgyLjUgMjI2IEwgMjQ0LjUgMjI2IiBmaWxsPSJub25lIiBjbGFzcz0iY29ubmVjdGlvbiBzdHJva2UtQjEiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIG1hcmtlci1lbmQ9InVybCgjbWstZDItMzg1OTcxODg2MS0zNDg4Mzc4MTM0KSIgbWFzaz0idXJsKCNkMi0zODU5NzE4ODYxKSIgLz48dGV4dCB4PSIxNjQuNSIgeT0iMjMyIiBjbGFzcz0idGV4dC1pdGFsaWMgZmlsbC1OMiIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTZweCI+Z2l0IHB1c2g8L3RleHQ+PC9nPjxnIGNsYXNzPSJaMmwwYjNCekxpaG5hWFFnTFNabmREc2dhemh6S1Zzd1hRPT0iPjxwYXRoIGQ9Ik0gMjUwLjUgMzE2IEwgNDI4LjUgMzE2IiBmaWxsPSJub25lIiBjbGFzcz0iY29ubmVjdGlvbiBzdHJva2UtQjEiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIG1hcmtlci1lbmQ9InVybCgjbWstZDItMzg1OTcxODg2MS0zNDg4Mzc4MTM0KSIgbWFzaz0idXJsKCNkMi0zODU5NzE4ODYxKSIgLz48dGV4dCB4PSIzNDAuNSIgeT0iMzIyIiBjbGFzcz0idGV4dC1pdGFsaWMgZmlsbC1OMiIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTZweCI+b2MgYXBwbHk8L3RleHQ+PC9nPjxnIGNsYXNzPSJaMmwwYjNCekxpaHJPSE1nTFNabmREc2dZMngxYzNSbGNpbGJNRjA9Ij48cGF0aCBkPSJNIDQzNC41IDQwNiBMIDcwOC41IDQwNiIgZmlsbD0ibm9uZSIgY2xhc3M9ImNvbm5lY3Rpb24gc3Ryb2tlLUIxIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiBtYXJrZXItZW5kPSJ1cmwoI21rLWQyLTM4NTk3MTg4NjEtMzQ4ODM3ODEzNCkiIG1hc2s9InVybCgjZDItMzg1OTcxODg2MSkiIC8+PHRleHQgeD0iNTczIiB5PSI0MTIiIGNsYXNzPSJ0ZXh0LWl0YWxpYyBmaWxsLU4yIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNnB4Ij5Db250cm9sLUxvb3AgZ2xlaWNodCBJc3QgYW4gU29sbCBhbjwvdGV4dD48L2c+PG1hc2sgaWQ9ImQyLTM4NTk3MTg4NjEiIG1hc2tVbml0cz0idXNlclNwYWNlT25Vc2UiIHg9Ii04IiB5PSItOCIgd2lkdGg9IjgxOCIgaGVpZ2h0PSI1MTYiPgo8cmVjdCB4PSItOCIgeT0iLTgiIHdpZHRoPSI4MTgiIGhlaWdodD0iNTE2IiBmaWxsPSJ3aGl0ZSI+PC9yZWN0Pgo8cmVjdCB4PSIxMzYiIHk9IjIxNiIgd2lkdGg9IjU3IiBoZWlnaHQ9IjIxIiBmaWxsPSJibGFjayI+PC9yZWN0Pgo8cmVjdCB4PSIzMTAiIHk9IjMwNiIgd2lkdGg9IjYxIiBoZWlnaHQ9IjIxIiBmaWxsPSJibGFjayI+PC9yZWN0Pgo8cmVjdCB4PSI0NjEiIHk9IjM5NiIgd2lkdGg9IjIyNCIgaGVpZ2h0PSIyMSIgZmlsbD0iYmxhY2siPjwvcmVjdD4KPC9tYXNrPjwvc3ZnPjwvc3ZnPgo=" alt="Ablauf GitOps: push, apply, Control-Loop" /></p>
+<hr />
+<h2 id="arbeiten-mit-manifesten">Arbeiten mit Manifesten</h2>
+<h3 id="ressourcen-anzeigen">Ressourcen anzeigen</h3>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Manifest eines laufenden Objekts ausgeben</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get deployment demo <span class="at">-o</span> yaml</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Mehrere Ressourcentypen auf einmal</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get deployments,replicasets,pods,services</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Alle API-Ressourcentypen</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> api-resources</span></code></pre></div>
+<h3 id="labels-und-selektoren">Labels und Selektoren</h3>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ressourcen mit Label filtern</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods <span class="at">-l</span> app=demo</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Label hinzufügen</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> label deployment demo version=v2</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get deployments <span class="at">--show-labels</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Label entfernen</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> label deployment demo version-</span></code></pre></div>
+<h3 id="kustomize-eingebaut-in-kubectl">Kustomize (eingebaut in
+kubectl)</h3>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Verzeichnis mit kustomization.yaml anwenden (Details in Kapitel 9)</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-k</span> 09-kustomize/overlays/test</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Kustomize-Output anzeigen</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> kustomize 09-kustomize/overlays/test</span></code></pre></div>
+<hr />
+<h2 id="manifeste-in-diesem-kapitel">Manifeste in diesem Kapitel</h2>
+<ul>
+<li><code>deployment.yaml</code> – Deployment der Demo-Anwendung</li>
+</ul>
+<blockquote>
+<p>Die Manifeste enthalten bewusst <strong>keinen</strong>
+<code>namespace</code> – sie werden immer in das aktuell aktive Project
+angewendet (<code>oc project</code>).</p>
+</blockquote>
+<hr />
+<h2 id="weiterführende-links">Weiterführende Links</h2>
+<ul>
+<li><a href="https://kubernetes.io/docs/tasks/manage-kubernetes-objects/declarative-config/">Kubernetes:
+Deklaratives Management von Objekten</a></li>
+<li><a href="https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/">Kubernetes:
+Kustomization</a></li>
+<li><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/gitops/index">OpenShift
+4.22: GitOps</a></li>
+<li><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/cicd_overview/index">OpenShift
+4.22: CI/CD Overview</a></li>
+</ul>
+<p>Siehe auch <a href="../99-anhang/DOCUMENTATION.html">99-anhang/DOCUMENTATION.md</a>
+für die vollständige Liste.</p>
+<nav class="pager-bottom">
+  <a class="prev" href="../04-pods-on-kubernetes/README.html"><span>← Zurück</span>Kapitel 4: Container/Pods auf Kubernetes</a>
+
+  <a class="up" href="../README.html#inhaltsverzeichnis"><span>↑ Übersicht</span>Inhaltsverzeichnis</a>
+
+  <a class="next" href="../06-networking/README.html"><span>Weiter →</span>Kapitel 6: Networking – Services, Routes &amp; Port-Forward</a>
+
+</nav>
+</main>
+</div>
+<script>
+// Kopier-Button für Codeblöcke
+document.querySelectorAll("pre").forEach(function (pre) {
+  var button = document.createElement("button");
+  button.className = "copy";
+  button.type = "button";
+  button.textContent = "Kopieren";
+  button.addEventListener("click", function () {
+    navigator.clipboard.writeText(pre.innerText).then(function () {
+      button.textContent = "Kopiert ✓";
+      setTimeout(function () { button.textContent = "Kopieren"; }, 1500);
+    });
+  });
+  pre.appendChild(button);
+});
+</script>
+</body>
+</html>

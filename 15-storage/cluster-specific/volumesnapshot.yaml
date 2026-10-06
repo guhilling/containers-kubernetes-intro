@@ -1,0 +1,11 @@
+# Setzt einen CSI-Treiber mit Snapshot-Support voraus. Ohne volumeSnapshotClassName
+# wird die Default-VolumeSnapshotClass des Clusters verwendet (oc get volumesnapshotclass).
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+  name: demo-data-snapshot
+  labels:
+    app: demo
+spec:
+  source:
+    persistentVolumeClaimName: demo-data

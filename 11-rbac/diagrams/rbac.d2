@@ -1,0 +1,23 @@
+...@../../tools/diagrams/style
+
+direction: down
+
+sa: "ServiceAccount demo-reader (Wer?)" {class: component}
+rb: "RoleBinding\ndemo-reader-binding" {class: resource}
+role: "Role pod-and-configmap-reader\n(Was?)" {class: resource}
+res: "Ressourcen (Worauf?)" {
+  class: subgroup
+  grid-columns: 3
+  grid-gap: 12
+  pods: "Pods ✓" {class: component}
+  cms: "ConfigMaps ✓" {class: component}
+  secrets: "Secrets ✗" {class: component; style.stroke-dash: 4}
+}
+rb2: "RoleBinding\n(oc policy add-role-to-user view)" {class: resource; style.stroke-dash: 4}
+clusterrole: "ClusterRole view\n(clusterweit definiert,\nhier nur im Project gültig)" {class: resource; style.stroke-dash: 4}
+
+sa -> rb: subjects
+sa -> rb2: subjects {style.stroke-dash: 4}
+rb -> role: roleRef
+rb2 -> clusterrole: roleRef {style.stroke-dash: 4}
+role -> res: "get, list, watch\n(nur Pods und ConfigMaps)"

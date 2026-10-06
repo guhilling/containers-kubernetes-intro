@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anhang: Setup von Visual Studio
+Code – Container und Kubernetes/OpenShift</title>
+<style type="text/css">:root {
+--bg: #ffffff;
+--fg: #1f2328;
+--muted: #59636e;
+--border: #d1d9e0;
+--accent: #1a5fb4;
+--accent-soft: #e8f0fe;
+--code-bg: #f6f8fa;
+--topbar-bg: #f6f8fa;
+--warn: #9a6700;
+--warn-bg: #fff8c5;
+--rookie: #1a7f37;
+--rookie-bg: #dafbe1;
+--advanced: #8250df;
+--advanced-bg: #fbefff;
+--tok-comment: #6e7781;
+--tok-keyword: #cf222e;
+--tok-string: #0a3069;
+--tok-variable: #953800;
+--tok-function: #8250df;
+--tok-number: #0550ae;
+--tok-attr: #116329;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg: #0d1117;
+--fg: #e6edf3;
+--muted: #9198a1;
+--border: #30363d;
+--accent: #6cb6ff;
+--accent-soft: #15233a;
+--code-bg: #161b22;
+--topbar-bg: #161b22;
+--warn: #d29922;
+--warn-bg: #2b2111;
+--rookie: #3fb950;
+--rookie-bg: #12261e;
+--advanced: #d2a8ff;
+--advanced-bg: #221a33;
+--tok-comment: #9198a1;
+--tok-keyword: #ff7b72;
+--tok-string: #a5d6ff;
+--tok-variable: #ffa657;
+--tok-function: #d2a8ff;
+--tok-number: #79c0ff;
+--tok-attr: #7ee787;
+}
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 4.5rem; }
+body {
+margin: 0;
+background: var(--bg);
+color: var(--fg);
+font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.topbar {
+position: sticky; top: 0; z-index: 10;
+display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+padding: 0.6rem 1.5rem;
+background: var(--topbar-bg);
+border-bottom: 1px solid var(--border);
+}
+.topbar .course { font-weight: 600; color: var(--fg); }
+.pager { display: flex; gap: 1.25rem; font-size: 0.95rem; }
+.layout {
+display: grid;
+grid-template-columns: 16rem minmax(0, 52rem);
+gap: 3rem;
+justify-content: center;
+padding: 2rem 1.5rem 4rem;
+}
+.toc {
+position: sticky; top: 4.5rem;
+align-self: start;
+max-height: calc(100vh - 6rem);
+overflow-y: auto;
+font-size: 0.9rem;
+}
+.toc-title { margin: 0 0 0.5rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; }
+.toc ul { list-style: none; margin: 0; padding-left: 0; }
+.toc ul ul { padding-left: 1rem; }
+.toc li { margin: 0.3rem 0; }
+.toc a { color: var(--muted); }
+.toc a:hover { color: var(--accent); }
+main { min-width: 0; }
+h1, h2, h3, h4 { line-height: 1.25; margin: 2rem 0 1rem; }
+h1 { font-size: 2rem; margin-top: 0; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+h2 { font-size: 1.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.2rem; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 2rem 0; }
+img { max-width: 100%; height: auto; display: block; margin: 1.5rem auto; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.95rem; display: block; overflow-x: auto; }
+th, td { border: 1px solid var(--border); padding: 0.4rem 0.75rem; text-align: left; vertical-align: top; }
+th { background: var(--code-bg); }
+code { font: 0.875em/1.5 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+:not(pre) > code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.1em 0.35em; }
+pre {
+position: relative;
+background: var(--code-bg);
+border: 1px solid var(--border);
+border-radius: 8px;
+padding: 1rem 1.25rem;
+overflow-x: auto;
+}
+pre code { background: none; border: 0; padding: 0; }
+pre .copy {
+position: absolute; top: 0.5rem; right: 0.5rem;
+font: 0.75rem/1 inherit; font-family: inherit;
+padding: 0.3rem 0.55rem;
+color: var(--muted); background: var(--bg);
+border: 1px solid var(--border); border-radius: 6px;
+cursor: pointer; opacity: 0; transition: opacity 0.15s;
+}
+pre:hover .copy, pre .copy:focus { opacity: 1; }
+blockquote {
+margin: 1rem 0; padding: 0.5rem 1rem;
+color: var(--fg);
+background: var(--accent-soft);
+border-left: 4px solid var(--accent);
+border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0.4rem 0; }
+.pager-bottom { display: flex; justify-content: space-between; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.pager-bottom a { display: flex; flex-direction: column; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; max-width: 40%; }
+.pager-bottom a span { font-size: 0.8rem; color: var(--muted); }
+.pager-bottom .next { margin-left: auto; text-align: right; }
+.pager-bottom .up { text-align: center; }
+@media (max-width: 960px) {
+.layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; padding: 1.5rem 1rem 3rem; }
+.toc { position: static; max-height: none; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+.topbar { padding: 0.6rem 1rem; }
+}
+
+code span.co { color: var(--tok-comment); font-style: italic; }
+code span.kw, code span.cf { color: var(--tok-keyword); }
+code span.st, code span.ss, code span.ch, code span.vs { color: var(--tok-string); }
+code span.va { color: var(--tok-variable); }
+code span.fu, code span.bu { color: var(--tok-function); }
+code span.dv, code span.fl, code span.bn, code span.cn { color: var(--tok-number); }
+code span.at { color: var(--tok-attr); }
+code span.op, code span.ot { color: inherit; }
+div.sourceCode { margin: 1rem 0; }
+pre > code.sourceCode > span { display: inline; }
+
+.badge {
+display: inline-block;
+padding: 0.15em 0.6em;
+border-radius: 999px;
+font-size: 0.75rem;
+font-weight: 600;
+line-height: 1.5;
+vertical-align: middle;
+white-space: nowrap;
+}
+.badge-rookie { color: var(--rookie); background: var(--rookie-bg); border: 1px solid var(--rookie); }
+.badge-advanced { color: var(--advanced); background: var(--advanced-bg); border: 1px solid var(--advanced); }
+.chapter-level { margin: -0.5rem 0 1.5rem; }
+h1 + .chapter-level { margin-top: -0.25rem; }
+.advanced-section {
+margin: 1.5rem 0;
+padding: 0.25rem 1.25rem 0.75rem;
+border-left: 4px solid var(--advanced);
+background: var(--advanced-bg);
+border-radius: 0 8px 8px 0;
+}
+.toc .badge { font-size: 0.65rem; padding: 0 0.45em; margin-left: 0.25rem; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="course" href="../README.html">Container und Kubernetes/OpenShift</a>
+  <nav class="pager">
+    <a href="../README.html#inhaltsverzeichnis">↑ Inhaltsverzeichnis</a>
+
+    <a href="../21-quarkus/README.html" title="Kapitel 21: Quarkus: Kurze Wiederholung">← Zurück</a>
+
+
+  </nav>
+</header>
+<div class="layout">
+<aside class="toc">
+  <p class="toc-title">Inhalt</p>
+<ul>
+<li><a href="#anhang-setup-von-visual-studio-code" id="toc-anhang-setup-von-visual-studio-code">Anhang: Setup von Visual
+Studio Code</a>
+<ul>
+<li><a href="#installation" id="toc-installation">Installation</a></li>
+<li><a href="#empfohlene-extensions" id="toc-empfohlene-extensions">Empfohlene Extensions</a></li>
+<li><a href="#jdk-21-eclipse-temurin-konfigurieren" id="toc-jdk-21-eclipse-temurin-konfigurieren">JDK 21 (Eclipse Temurin)
+konfigurieren</a></li>
+<li><a href="#kubectl--oc-konfigurieren" id="toc-kubectl--oc-konfigurieren">kubectl / oc konfigurieren</a></li>
+<li><a href="#red-hat-openshift-sandbox" id="toc-red-hat-openshift-sandbox">Red Hat OpenShift Sandbox</a></li>
+<li><a href="#workspace-einstellungen" id="toc-workspace-einstellungen">Workspace-Einstellungen</a></li>
+<li><a href="#nützliche-tastenkürzel" id="toc-nützliche-tastenkürzel">Nützliche Tastenkürzel</a></li>
+<li><a href="#weiterführende-dokumentation" id="toc-weiterführende-dokumentation">Weiterführende
+Dokumentation</a></li>
+</ul></li>
+</ul>
+</aside>
+<main>
+<h1 id="anhang-setup-von-visual-studio-code">Anhang: Setup von Visual
+Studio Code</h1>
+<p>Dieser Anhang beschreibt die Einrichtung von <strong>Visual Studio
+Code</strong> (VS Code) für die Arbeit mit diesem Seminar.</p>
+<hr />
+<h2 id="installation">Installation</h2>
+<ol type="1">
+<li><p><strong>VS Code herunterladen und installieren</strong>: <a href="https://code.visualstudio.com/"><span>https://code.visualstudio.com/</span></a></p></li>
+<li><p><strong>Dieses Repository klonen</strong>:</p></li>
+</ol>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/guhilling/containers-kubernetes-intro.git</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> containers-kubernetes-intro</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">code</span> .</span></code></pre></div>
+<hr />
+<h2 id="empfohlene-extensions">Empfohlene Extensions</h2>
+<p>Folgende Extensions werden für die Arbeit mit diesem Seminar
+empfohlen:</p>
+<h3 id="java--quarkus">Java / Quarkus</h3>
+<table>
+<thead>
+<tr>
+<th>Extension</th>
+<th>ID</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Extension Pack for Java</td>
+<td><code>vscjava.vscode-java-pack</code></td>
+<td>JDT LS, Debugger, Maven, Test-Runner</td>
+</tr>
+<tr>
+<td>Quarkus</td>
+<td><code>redhat.vscode-quarkus</code></td>
+<td>Projekt-Generator, Dev Mode, Konfigurations-Unterstützung</td>
+</tr>
+</tbody>
+</table>
+<p>Installation per Kommandozeile:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">code</span> <span class="at">--install-extension</span> vscjava.vscode-java-pack</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">code</span> <span class="at">--install-extension</span> redhat.vscode-quarkus</span></code></pre></div>
+<h3 id="kubernetes--openshift">Kubernetes / OpenShift</h3>
+<table>
+<thead>
+<tr>
+<th>Extension</th>
+<th>ID</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Kubernetes</td>
+<td><code>ms-kubernetes-tools.vscode-kubernetes-tools</code></td>
+<td>YAML-Validierung, Cluster-Explorer, kubectl-Integration</td>
+</tr>
+<tr>
+<td>YAML</td>
+<td><code>redhat.vscode-yaml</code></td>
+<td>YAML-Schema-Validierung (Kubernetes CRDs)</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">code</span> <span class="at">--install-extension</span> ms-kubernetes-tools.vscode-kubernetes-tools</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">code</span> <span class="at">--install-extension</span> redhat.vscode-yaml</span></code></pre></div>
+<h3 id="container">Container</h3>
+<table>
+<thead>
+<tr>
+<th>Extension</th>
+<th>ID</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Docker</td>
+<td><code>ms-azuretools.vscode-docker</code></td>
+<td>Containerfile-Highlighting, Image- und Container-Verwaltung</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">code</span> <span class="at">--install-extension</span> ms-azuretools.vscode-docker</span></code></pre></div>
+<hr />
+<h2 id="jdk-21-eclipse-temurin-konfigurieren">JDK 21 (Eclipse Temurin)
+konfigurieren</h2>
+<p>VS Code benötigt eine lokale JDK-Installation für die
+Java-Entwicklung.</p>
+<h3 id="jdk-installieren-adoptium-temurin-21">JDK installieren (Adoptium
+Temurin 21)</h3>
+<ul>
+<li><strong>Linux</strong>: <code>sdk install java 21-tem</code> (via <a href="https://sdkman.io/">SDKMAN</a>)</li>
+<li><strong>macOS</strong>:
+<code>brew install --cask temurin@21</code></li>
+<li><strong>Windows</strong>: Installer von <a href="https://adoptium.net/temurin/releases/?version=21"><span>https://adoptium.net/</span></a></li>
+</ul>
+<h3 id="vs-code-auf-jdk-21-zeigen">VS Code auf JDK 21 zeigen</h3>
+<p>In <code>.vscode/settings.json</code> im Repository-Root:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;java.jdt.ls.java.home&quot;</span><span class="fu">:</span> <span class="st">&quot;/path/to/jdk-21&quot;</span><span class="fu">,</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;java.configuration.runtimes&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">{</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;JavaSE-21&quot;</span><span class="fu">,</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;path&quot;</span><span class="fu">:</span> <span class="st">&quot;/path/to/jdk-21&quot;</span><span class="fu">,</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;default&quot;</span><span class="fu">:</span> <span class="kw">true</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="ot">]</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<blockquote>
+<p><strong>Tipp</strong>: Den Pfad zum JDK findet man mit
+<code>java -XshowSettings:all -version 2&gt;&amp;1 | grep java.home</code>.</p>
+</blockquote>
+<hr />
+<h2 id="kubectl--oc-konfigurieren">kubectl / oc konfigurieren</h2>
+<p>Damit die Kubernetes-Extension funktioniert, muss
+<code>kubectl</code> oder <code>oc</code> im PATH sein und eine gültige
+<code>kubeconfig</code> vorhanden sein.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Aktuelle Kubeconfig prüfen</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> config view</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> config view</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Für OpenShift: Login</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> login https://<span class="op">&lt;</span>cluster-api<span class="op">&gt;</span>:6443 <span class="at">-u</span> <span class="op">&lt;</span>user<span class="op">&gt;</span></span></code></pre></div>
+<p>VS Code zeigt dann im <strong>Kubernetes</strong>-Explorer (linke
+Sidebar) alle verfügbaren Cluster, Namespaces, Pods usw.</p>
+<hr />
+<h2 id="red-hat-openshift-sandbox">Red Hat OpenShift Sandbox</h2>
+<p>Über <a href="https://sandbox.redhat.com">https://sandbox.redhat.com</a> erhält
+man einfach Zugriff auf ein eigenes Project in einem aktuellen
+OpenShift-Cluster. Dort kann man u.a. nutzen:</p>
+<ul>
+<li>(natürlich) OpenShift</li>
+<li>Mehrere Storage Classes/PersistentVolumeClaims (Quotas
+beachten)</li>
+<li>Netzwerkzugriff über Routen</li>
+<li>Direkten API-Zugriff vom eigenen Rechner</li>
+<li>(OpenShift Virtualization - nicht Teil dieses Kurses)</li>
+</ul>
+<hr />
+<h2 id="workspace-einstellungen">Workspace-Einstellungen</h2>
+<p>Empfohlene <code>.vscode/settings.json</code> für dieses
+Repository:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;editor.formatOnSave&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;editor.tabSize&quot;</span><span class="fu">:</span> <span class="dv">2</span><span class="fu">,</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;files.eol&quot;</span><span class="fu">:</span> <span class="st">&quot;</span><span class="ch">\n</span><span class="st">&quot;</span><span class="fu">,</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;yaml.schemas&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;kubernetes&quot;</span><span class="fu">:</span> <span class="st">&quot;**/*.yaml&quot;</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">},</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;java.compile.nullAnalysis.mode&quot;</span><span class="fu">:</span> <span class="st">&quot;automatic&quot;</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<hr />
+<h2 id="nützliche-tastenkürzel">Nützliche Tastenkürzel</h2>
+<table>
+<thead>
+<tr>
+<th>Aktion</th>
+<th>Shortcut (Linux/Windows)</th>
+<th>Shortcut (macOS)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Command Palette öffnen</td>
+<td><code>Ctrl+Shift+P</code></td>
+<td><code>Cmd+Shift+P</code></td>
+</tr>
+<tr>
+<td>Terminal öffnen</td>
+<td><code>Ctrl+</code> <code> </code></td>
+<td><code>Cmd+</code> <code> </code></td>
+</tr>
+<tr>
+<td>Datei suchen</td>
+<td><code>Ctrl+P</code></td>
+<td><code>Cmd+P</code></td>
+</tr>
+<tr>
+<td>Alle Dateien durchsuchen</td>
+<td><code>Ctrl+Shift+F</code></td>
+<td><code>Cmd+Shift+F</code></td>
+</tr>
+<tr>
+<td>Klasse/Symbol suchen</td>
+<td><code>Ctrl+T</code></td>
+<td><code>Cmd+T</code></td>
+</tr>
+<tr>
+<td>Refactoring-Menü</td>
+<td><code>Ctrl+Shift+R</code></td>
+<td><code>Cmd+Shift+R</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="weiterführende-dokumentation">Weiterführende Dokumentation</h2>
+<p>Siehe <a href="./DOCUMENTATION.html">DOCUMENTATION.md</a> für externe
+Referenzen zur Kubernetes-Dokumentation und zur
+OpenShift-4.22-Dokumentation.</p>
+<nav class="pager-bottom">
+  <a class="prev" href="../21-quarkus/README.html"><span>← Zurück</span>Kapitel 21: Quarkus: Kurze Wiederholung</a>
+
+  <a class="up" href="../README.html#inhaltsverzeichnis"><span>↑ Übersicht</span>Inhaltsverzeichnis</a>
+
+
+</nav>
+</main>
+</div>
+<script>
+// Kopier-Button für Codeblöcke
+document.querySelectorAll("pre").forEach(function (pre) {
+  var button = document.createElement("button");
+  button.className = "copy";
+  button.type = "button";
+  button.textContent = "Kopieren";
+  button.addEventListener("click", function () {
+    navigator.clipboard.writeText(pre.innerText).then(function () {
+      button.textContent = "Kopiert ✓";
+      setTimeout(function () { button.textContent = "Kopieren"; }, 1500);
+    });
+  });
+  pre.appendChild(button);
+});
+</script>
+</body>
+</html>

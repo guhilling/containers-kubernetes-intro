@@ -1,0 +1,36 @@
+# Stage 1: Build
+# --platform=$BUILDPLATFORM: Der Build läuft immer nativ auf dem Build-Rechner,
+# auch wenn ein Image für eine andere Architektur gebaut wird (Java-Bytecode
+# ist plattformunabhängig).
+FROM --platform=$BUILDPLATFORM registry.access.redhat.com/ubi10/openjdk-21:latest AS builder
+
+USER root
+WORKDIR /build
+
+COPY demo-app /build/
+
+RUN mvn -q -B package -DskipTests
+
+# Stage 2: Runtime (nur JRE + Anwendung)
+FROM registry.access.redhat.com/ubi10/openjdk-21-runtime:latest
+
+# Version der Anwendung, z. B. podman build --build-arg APP_VERSION=1.1 ...
+ARG APP_VERSION=dev
+ENV DEMO_VERSION=${APP_VERSION}
+
+WORKDIR /app
+
+USER root
+RUN mkdir -p /var/demo/html && \
+    echo "<html><body><h1>Hallo von Container!</h1><p>Version ${APP_VERSION}</p></body></html>" > /var/demo/html/index.html && \
+    chown -R 1001:0 /var/demo/html && \
+    chmod -R g=u /var/demo/html
+
+COPY --from=builder /build/target/quarkus-app/ /app/
+
+# Non-Root User (kompatibel mit restricted-v2 SCC)
+USER 1001
+
+EXPOSE 8080
+
+CMD ["java", "-jar", "/app/quarkus-run.jar"]

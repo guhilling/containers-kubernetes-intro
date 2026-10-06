@@ -1,0 +1,14 @@
+...@../../tools/diagrams/style
+
+direction: right
+
+client: "Internet /\nIntranet" {class: external}
+router: "OpenShift\nRouter" {class: component}
+route: Route {class: resource}
+service: Service {class: resource}
+pods: Pods {class: resource; style.multiple: true}
+
+client -> router: "HTTP(S)"
+router -> route: Hostname
+route -> service
+service -> pods

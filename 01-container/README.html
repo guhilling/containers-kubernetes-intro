@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kapitel 1: Container – Container und Kubernetes/OpenShift</title>
+<style type="text/css">:root {
+--bg: #ffffff;
+--fg: #1f2328;
+--muted: #59636e;
+--border: #d1d9e0;
+--accent: #1a5fb4;
+--accent-soft: #e8f0fe;
+--code-bg: #f6f8fa;
+--topbar-bg: #f6f8fa;
+--warn: #9a6700;
+--warn-bg: #fff8c5;
+--rookie: #1a7f37;
+--rookie-bg: #dafbe1;
+--advanced: #8250df;
+--advanced-bg: #fbefff;
+--tok-comment: #6e7781;
+--tok-keyword: #cf222e;
+--tok-string: #0a3069;
+--tok-variable: #953800;
+--tok-function: #8250df;
+--tok-number: #0550ae;
+--tok-attr: #116329;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg: #0d1117;
+--fg: #e6edf3;
+--muted: #9198a1;
+--border: #30363d;
+--accent: #6cb6ff;
+--accent-soft: #15233a;
+--code-bg: #161b22;
+--topbar-bg: #161b22;
+--warn: #d29922;
+--warn-bg: #2b2111;
+--rookie: #3fb950;
+--rookie-bg: #12261e;
+--advanced: #d2a8ff;
+--advanced-bg: #221a33;
+--tok-comment: #9198a1;
+--tok-keyword: #ff7b72;
+--tok-string: #a5d6ff;
+--tok-variable: #ffa657;
+--tok-function: #d2a8ff;
+--tok-number: #79c0ff;
+--tok-attr: #7ee787;
+}
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 4.5rem; }
+body {
+margin: 0;
+background: var(--bg);
+color: var(--fg);
+font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.topbar {
+position: sticky; top: 0; z-index: 10;
+display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+padding: 0.6rem 1.5rem;
+background: var(--topbar-bg);
+border-bottom: 1px solid var(--border);
+}
+.topbar .course { font-weight: 600; color: var(--fg); }
+.pager { display: flex; gap: 1.25rem; font-size: 0.95rem; }
+.layout {
+display: grid;
+grid-template-columns: 16rem minmax(0, 52rem);
+gap: 3rem;
+justify-content: center;
+padding: 2rem 1.5rem 4rem;
+}
+.toc {
+position: sticky; top: 4.5rem;
+align-self: start;
+max-height: calc(100vh - 6rem);
+overflow-y: auto;
+font-size: 0.9rem;
+}
+.toc-title { margin: 0 0 0.5rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; }
+.toc ul { list-style: none; margin: 0; padding-left: 0; }
+.toc ul ul { padding-left: 1rem; }
+.toc li { margin: 0.3rem 0; }
+.toc a { color: var(--muted); }
+.toc a:hover { color: var(--accent); }
+main { min-width: 0; }
+h1, h2, h3, h4 { line-height: 1.25; margin: 2rem 0 1rem; }
+h1 { font-size: 2rem; margin-top: 0; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+h2 { font-size: 1.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.2rem; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 2rem 0; }
+img { max-width: 100%; height: auto; display: block; margin: 1.5rem auto; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.95rem; display: block; overflow-x: auto; }
+th, td { border: 1px solid var(--border); padding: 0.4rem 0.75rem; text-align: left; vertical-align: top; }
+th { background: var(--code-bg); }
+code { font: 0.875em/1.5 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+:not(pre) > code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.1em 0.35em; }
+pre {
+position: relative;
+background: var(--code-bg);
+border: 1px solid var(--border);
+border-radius: 8px;
+padding: 1rem 1.25rem;
+overflow-x: auto;
+}
+pre code { background: none; border: 0; padding: 0; }
+pre .copy {
+position: absolute; top: 0.5rem; right: 0.5rem;
+font: 0.75rem/1 inherit; font-family: inherit;
+padding: 0.3rem 0.55rem;
+color: var(--muted); background: var(--bg);
+border: 1px solid var(--border); border-radius: 6px;
+cursor: pointer; opacity: 0; transition: opacity 0.15s;
+}
+pre:hover .copy, pre .copy:focus { opacity: 1; }
+blockquote {
+margin: 1rem 0; padding: 0.5rem 1rem;
+color: var(--fg);
+background: var(--accent-soft);
+border-left: 4px solid var(--accent);
+border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0.4rem 0; }
+.pager-bottom { display: flex; justify-content: space-between; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.pager-bottom a { display: flex; flex-direction: column; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; max-width: 40%; }
+.pager-bottom a span { font-size: 0.8rem; color: var(--muted); }
+.pager-bottom .next { margin-left: auto; text-align: right; }
+.pager-bottom .up { text-align: center; }
+@media (max-width: 960px) {
+.layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; padding: 1.5rem 1rem 3rem; }
+.toc { position: static; max-height: none; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+.topbar { padding: 0.6rem 1rem; }
+}
+
+code span.co { color: var(--tok-comment); font-style: italic; }
+code span.kw, code span.cf { color: var(--tok-keyword); }
+code span.st, code span.ss, code span.ch, code span.vs { color: var(--tok-string); }
+code span.va { color: var(--tok-variable); }
+code span.fu, code span.bu { color: var(--tok-function); }
+code span.dv, code span.fl, code span.bn, code span.cn { color: var(--tok-number); }
+code span.at { color: var(--tok-attr); }
+code span.op, code span.ot { color: inherit; }
+div.sourceCode { margin: 1rem 0; }
+pre > code.sourceCode > span { display: inline; }
+
+.badge {
+display: inline-block;
+padding: 0.15em 0.6em;
+border-radius: 999px;
+font-size: 0.75rem;
+font-weight: 600;
+line-height: 1.5;
+vertical-align: middle;
+white-space: nowrap;
+}
+.badge-rookie { color: var(--rookie); background: var(--rookie-bg); border: 1px solid var(--rookie); }
+.badge-advanced { color: var(--advanced); background: var(--advanced-bg); border: 1px solid var(--advanced); }
+.chapter-level { margin: -0.5rem 0 1.5rem; }
+h1 + .chapter-level { margin-top: -0.25rem; }
+.advanced-section {
+margin: 1.5rem 0;
+padding: 0.25rem 1.25rem 0.75rem;
+border-left: 4px solid var(--advanced);
+background: var(--advanced-bg);
+border-radius: 0 8px 8px 0;
+}
+.toc .badge { font-size: 0.65rem; padding: 0 0.45em; margin-left: 0.25rem; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="course" href="../README.html">Container und Kubernetes/OpenShift</a>
+  <nav class="pager">
+    <a href="../README.html#inhaltsverzeichnis">↑ Inhaltsverzeichnis</a>
+
+    <a href="../README.html" title="Seminarunterlagen: Container und Kubernetes/OpenShift">← Zurück</a>
+
+    <a href="../02-kubernetes-basics/README.html" title="Kapitel 2: Kubernetes Basics">Weiter →</a>
+
+  </nav>
+</header>
+<div class="layout">
+<aside class="toc">
+  <p class="toc-title">Inhalt</p>
+<ul>
+<li><a href="#kapitel-1-container" id="toc-kapitel-1-container">Kapitel
+1: Container</a>
+<ul>
+<li><a href="#warum-container-vergleich-zu-vms" id="toc-warum-container-vergleich-zu-vms">Warum Container? Vergleich zu
+VMs</a></li>
+<li><a href="#podman-oder-docker" id="toc-podman-oder-docker">Podman
+oder Docker?</a></li>
+<li><a href="#podman-basics" id="toc-podman-basics">Podman
+Basics</a></li>
+<li><a href="#ephemeral--was-bedeutet-das-bei-containern" id="toc-ephemeral--was-bedeutet-das-bei-containern">Ephemeral – Was
+bedeutet das bei Containern?</a></li>
+<li><a href="#container-konfigurieren" id="toc-container-konfigurieren">Container konfigurieren</a></li>
+<li><a href="#image-build--containerfile" id="toc-image-build--containerfile">Image Build – Containerfile</a></li>
+<li><a href="#image-registries-und-image-tags" id="toc-image-registries-und-image-tags">Image Registries und Image
+Tags</a></li>
+<li><a href="#weiterführende-links" id="toc-weiterführende-links">Weiterführende Links</a></li>
+</ul></li>
+</ul>
+</aside>
+<main>
+<h1 id="kapitel-1-container">Kapitel 1: Container</h1>
+<div class="chapter-level">
+<span class="badge badge-rookie">Rookie · Tag 1–2</span>
+</div>
+<h2 id="warum-container-vergleich-zu-vms">Warum Container? Vergleich zu
+VMs</h2>
+<table>
+<thead>
+<tr>
+<th>Merkmal</th>
+<th>Virtuelle Maschine</th>
+<th>Container</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Isolation</td>
+<td>Vollständige OS-Isolation</td>
+<td>Prozess-Isolation (Kernel shared)</td>
+</tr>
+<tr>
+<td>Startzeit</td>
+<td>Minuten</td>
+<td>Sekunden / Millisekunden (nur die Anwendung)</td>
+</tr>
+<tr>
+<td>Overhead</td>
+<td>Hoch (komplettes Gast-OS)</td>
+<td>Gering (nur Prozess + Libs)</td>
+</tr>
+<tr>
+<td>Image-Größe</td>
+<td>GB</td>
+<td>MB</td>
+</tr>
+<tr>
+<td>Portabilität</td>
+<td>Eingeschränkt</td>
+<td>Sehr hoch (OCI-Standard)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="schlüsselkonzepte">Schlüsselkonzepte</h3>
+<ul>
+<li><strong>Namespaces</strong> (Linux): Isolieren PID, Network, Mount,
+UTS, IPC, User</li>
+<li><strong>cgroups</strong> (Linux): Begrenzen CPU, Speicher, I/O</li>
+<li><strong>Union Filesystems</strong>: Layer-basierte Images
+(overlayfs)</li>
+</ul>
+<p><img role="img" aria-label="Container teilen sich den Kernel des Hosts" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiICBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWluWU1pbiBtZWV0IiB2aWV3Qm94PSIwIDAgNjU0IDM3NyI+PHN2ZyBjbGFzcz0iZDItMjE2MDE3NzQyOSBkMi1zdmciIHdpZHRoPSI2NTQiIGhlaWdodD0iMzc3IiB2aWV3Qm94PSItOSAtOSA2NTQgMzc3Ij48cmVjdCB4PSItOSIgeT0iLTkiIHdpZHRoPSI2NTQiIGhlaWdodD0iMzc3IiByeD0iMCIgZmlsbD0idHJhbnNwYXJlbnQiIHN0cm9rZS13aWR0aD0iMCIgLz48c3R5bGUgdHlwZT0idGV4dC9jc3MiPjwhW0NEQVRBWwouZDItMjE2MDE3NzQyOSAudGV4dC1ib2xkIHsKCWZvbnQtZmFtaWx5OiAiZDItMjE2MDE3NzQyOS1mb250LWJvbGQiLCAiU291cmNlIFNhbnMgUHJvIiwgIlNvdXJjZSBTYW5zIDMiLCAtYXBwbGUtc3lzdGVtLCBCbGlua01hY1N5c3RlbUZvbnQsICJTZWdvZSBVSSIsIEhlbHZldGljYSwgQXJpYWwsIHNhbnMtc2VyaWY7Cn0KQGZvbnQtZmFjZSB7Cglmb250LWZhbWlseTogZDItMjE2MDE3NzQyOS1mb250LWJvbGQ7Cglmb250LWRpc3BsYXk6IHN3YXA7CglzcmM6IHVybCgiZGF0YTpmb250L3dvZmY7YmFzZTY0LGQwOUdSZ0FCQUFBQUFCQWNBQW9BQUFBQUdDZ0FBZ3VGQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFCUFV5OHlBQUFBOUFBQUFHQUFBQUJnWHhIWHJtTnRZWEFBQUFGVUFBQUF4Z0FBQVJwRk5lZUhaMng1WmdBQUFod0FBQWtzQUFBTUtHMVNUYTVvWldGa0FBQUxTQUFBQURZQUFBQTJHMzhlMUdob1pXRUFBQXVBQUFBQUpBQUFBQ1FLZndYc2FHMTBlQUFBQzZRQUFBQ3BBQUFBdEZjSUNFRnNiMk5oQUFBTVVBQUFBRndBQUFCY1I2WksybTFoZUhBQUFBeXNBQUFBSUFBQUFDQUFSUUQzYm1GdFpRQUFETXdBQUFNdkFBQUlLZ2p3VmtGd2IzTjBBQUFQL0FBQUFDQUFBQUFnLzlFQU1nQURBaW9DdkFBRkFBQUNpZ0pZQUFBQVN3S0tBbGdBQUFGZUFESUJLUUFBQWdzSEF3TUVBd0lDQkdBQUF2Y0FBQUFEQUFBQUFBQUFBQUJCUkVKUEFDQUFJUC8vQXU3L0JnQUFBOWdCRVNBQUFaOEFBQUFBQWZBQ2xBQUFBQ0FBQTNpY2pNN0pLa1VCSE1meHozR3Y2YnF1NFpqSFk3NkQ0Um1rVzJRakMzc0xTVmxJaVR5Uklhd1Y0azE0Q0NXYnZ4d3Y0UGZiZmhaZkpBb1NsQldUQ3VveVJTV1ptb1lWcTlac2FOcXlZOWVlQTRlT25EaHo0VEpMSTVDcGFsak83YnFtVGR1NTNjL3RzVlBuZnpZKzRuZGY4Um5mOFJhdjhSTFA4UlNQOFJEM2NSZTNjUlBYY2ZXZTVrWC9mV0pKVmQyOEJYTnFXaFFVdFdyVHJrT25raTVsM1NwNjlPclRMelZnMEpCaEkwYU5HVGRoMHBScG1SbXpGdmtCQUFELy93TUFpVmMydmdBQWVKeUVsbXRzVytYOXgzL1A0eE9meG5VdTl2SHhzWjA0dmp6eE9YYWNPSW1QejNFdVRoMDNkcEttZHE3L3B2bVBYTm9JdGFGcFU5YTZhMkRkbUxUQ05qQ0R6YVZyS2VJeURXbWJxRmJFa0FwYWVZRUdyS0pDYkVYTEt3cE1VNmNKaVhvb1F5dE5qcWR6N0RTaGIvYm1QTmJ4OC95dW4rL3ZQRkFCb3dCNEhwOEJIVlJDRFppQkJSQk5IcE5QRkFSQ1I4Vm9sSEM2cUlCTTlDZzJLeS8vU2doUWdRRFY1RDduZW5odURtVm04Wm4xdy9kbDV1ZS9tdXZ1VnA1LzQwM2xTWFQ4VFFCYy9Cb0E5K0VjVklJSmdLRkZnZWNGb3RmckdKRWhBcUZ2MWo1UlUxVlhSUm50WDE5NzlkcHovdmY4YUNnV2ExOFNJMGVVUjNGdVBYdmhBZ0NBRGpJQU9JWnpZQUlIZU5YWXhMRFZ5bHIwTktzdGVxSVR3N0lVNFFreGlXRnR6WHlTUE56YjRnLzNKWThOektYazluQ2tmK0toV004RXpqbjc0OEdKR3FwcWQ2THYvd0xvUjAyRWR5dFRVMEVmQUlKUWNSVzM0WE5RQjFEaDVYa3BJc3RpMk1yUlBFKzhlajFyc1lwaE9jcnAwY3o0NHhON25oeVAzKzhadGtkSjg2N2c1S0EvYmhzZU42YWZPWEw0L0pqb25lV2M0ZG1kOXovWWFKL2VCd2d5QU9nV3pzRjJyYTZzaHhWWnducllERHFuM0xseEE5WGczS2tmZnZmc0tWQmp5QURnUFJ0N1JWYVVSQk14RVZNbS85bVpNNS9oM0owNzYxbFVxeFEyOXNLbk9BYzZyU2FtVEI3bjFyTmxHNGR4RG95bDl5SWo2aGlpbzlsTW5ucjdsKy84ODZVWDBqaW4vQnR0VjlhVVpjVGMvN3V5TGZRM25JT0swaGtQbThrampIUHJoVk53TjY2TE9BY3U3WC9HYXVWRVdZNHlvb21vWllvU21pYUNRQm93eTJaZWVzQmdObEFHaytIZ2k0L1JsVHBLbWhtYmlWRFVOaHJubEJ2MU94b2FkdFFqNzNyMmxudGsxSFhoOXUwTHJ0RVI5NjBOSDJtY0E2YmtneE41WGxMejF3bkVhbVhaekM5KzIwdFIxVGwxcWFqQ09lVVBUMGQrMEhWelBZdFNQNVZQZGYwREFMRFd3Ky9qYzFCelR4YzFVSVFTSmw2MWwyaHk2dEhkdXgrZEtqMzdob2Y3K29hSGplUG5EeTArTXpKeTl0Q2g4K09QWk9mbmw1Ym01N09xWFRXMk5xMm1saTBFNmdsaDd6TDM2ZUNKL3Y1c2FteHd1VGVXeERsaGVpUTkzL294R2w4UW05UWFsbXhNNEJ4VUE3ZVZZbFVNcWhVdE5wTDVQSFVzR1pmT3ZQeTlzWFJYVDA5WEd1ZDhVOE9ETTV4eTUvUFAwYjcydGpZZUFCVnZBMkFSNTZBS1FOUnQ2WWZ1clhlZUc2N2hhcWhxVzNYbTdCOXhUdmxRT2lETEJ5VFV0cDRGREUzRlZmUVJXZ003RUFET3EwSWUxZmltQmExT3JJbW9HbzJHNWFpa01mOVdjdlIwSHBPQXE3ZFJhbDNzbWp1d2JLQmNBOXZzUG1ZNDVqTHVqUTlQMVhnRUc3dmYyYmgwVFBtN1dFK09jY3hlUTlCcDQ3U2NFOFZWYk1WWHdLS1NVK0hsQlVJVGs4alM5elNGZUZVeG81U256MGtaaitjcFo5SWJtMnFOelUzeDhtUnp3T0kzZXR3U3Z2SksydUhjOGUzMG5vZml5LzNweDFyZU4xZHJiRFlXVjlFVnRBYU9lM1ZMdkp1cTFTTjc2bWhpOER2SjBFQjlpcmlsZUx6TkZtSzZmSlBHbmhQakU5bWVCbTdPbVU3MFp0aWFmZTY2VXIrRTRpcGF3MWVBQWZkR3JkU29PVUVTdDFTSkw3djVjdnBvOTF3azBHSFg1NWNObEtNZjJ3UXpFN1FRdWRYNHhFTmpKM2JVMjlLL1dlOXJkNUJsaS8xOWMzWGZ3SzRVWUMzMno5QWEyTUQxamVoVlhtbVAxU3FHMWRoMVlrVDFnbHdEeDNiMkhlNGVtR21sc0xKaTZHK1g1SForOXRuWGhHYXZiTnlSSFIvTHh1T0xTY1pYS1l1ZS8zYzBvSzZBMUtybW9nTnZzUVhUYUExYW9SdUd0R3g0S1JLVk5IL2xSUmJEbk1pU010aGVRVTFLVkpHdzZQVzZMY3BoeXFSNmVXM0xsMTJ6SFFOTW5kdm1DSFROU3MyZTEwZm95c2hVMU9reWV3T2owL3VUcDRhY2d1QjBDa0lnM0N2NFJMdkhXTmR6M2RIUkhQTlRWWDVYWGJpV01pZURzUkcvY1hHNzE5STUxR2lvc1RMbTdqNXhMSVN1TmdXRWdOOGZhRkx5alhhdVZxZXoyZXVkQUZBc1FoUUFQc2JYTVE5QkFLQ2hHUjdYV0VnVVY1RVpYNEVhTFVmSkpKcnVBdkNuZEhmZVZGbEI2ODFHbi9HKzNaaXNyM0JtaEk1VTBJQWdBYUJ6b2pYd2FNcFVoNXZhNlExSm1OVHkwM2ZYaEtxQi9uWXB3WGlHMmtkMzU1MXVYNXY2YUVXRlhsZEwwTzl0WDV4UnJpR1A3RzlUWGkwdkpSOFkwQnBZdHZyWXNLNHZtWFZud21PNzhrNTN2ZCtHQ3ZHR2xnMURkazU1VlQzZVdGelYrdmkvNTVzMWZqU1pQQnFQTHlXVFMvR1dVS2dsMU5KU1pyMG5PekYrb3Vka3BqZVJWcEZYN1NhS2c5aUsxb0NCQmdCdU16b05CVjdnV0daVHBtcWN6bDNDdHhaaWM3STc1cWdZNGVYSllKUEZmeG4vdXQxQmZuSjh6M0s4emo3eU05UjRWNlJhN3VncHRBYm1iOVNYNWpjenIwdnpiTDNCVm1XdnJlK3hvTUxlY0h0RnhTTVVGUWdybndJQ3RyaUtYa0JySUdoOUZhS3FNbFFNZVNHRXBjaW1NZFppNVJvd2E5RmZiei9JNy9UR1haNEdaOGpSME8xL1lFL25YdGRPUjhUUjJjbTdld0lMUnQ0MWJhL2pHSk9WTVJnYk93T3BTY0UyWmJFS05udjFkdElaNnB0UmRZUEFWRnhGU3ppclR1d0tMeTlKUklwR1JlMER2amxZWUhva21UWTlmUElrY1JydEJvNkpHZzlOWGoyaVAzMzYrSHROUGoyMXFEZVdiTVdLcStnL3FBQ1dlOWcwbGNmSlg4ZDI1UnZjOWJ3MXY3eGQ1eG95THM2Z2lQS0pGSEE0MGFCU20vSTFBd0liQUM2Z2dzYXBUdVRLY3orNjVaZU9sTzlaTkgzbTFNL2I5QVk5UlZkVlJoL3BxS3loS2JxU2J2M3h5VmRhNkNxYW9yZlR6YWh3MHpmSTgwUGtwcllPK200cXRlK1Nmcisvbjd5cnhhdzJieFVWd0E0Z01zSVdOelMzNmFmNjNGUFBOeHVzQm1xYmVadjMzTlBubjI4emNrYXEwbElwSVB6RktCdGsyU0E3V3Z6WE9Odk1za0hydUdwWC9ZajlIaFdnRWtDVUdDSjVXSjNJOGgrK2dSNzhjR1VFaFk0UEszOCtydTdyS2E3Q0xiaW8zb2ZVbWtYS1VKN2xSWkhuUmRFb0NYNUo4Z3VTdWpkVTNJRUFMcXFNY1lJc0MxNHYyWElrM2REUmhUQ0ZpU3p6NGNqMDI4T1doQy9vNTBORGlmSGxVbitDY0JWNVVMdDZuNHBLSWh2ODZ1ckNRdW45QitoMTFGeDY3MkdENlBFUFptY0J3V0F4Zy96NEUvVWJ6R2tUVkIzVktvRFg0cWxVZkRvYURrZGZPM2pqOU9rYkIvbjlLNHVIVnVZQlFWc3hnMnJMWndSWmxpSWF5NnhGbjV2dUNJYzdwdU9wMUd2OC9NcWh4Wlg5dkhZV0VGUVY5eUVadjZ2NjV4aFJWM1YxMzlVWGRRZldubFZqODhJcytnTExhbjJpRXBGRXFRVG5YeTVkT256cDB1emxoY3VYRnk2WDlRY2ZvY0xHWFRHUlJ3V2xGbER4SXU2RUNYeGRQVy9hVWl4ZktPVHpoVUs0czRtUXBpWkNtdUMvQUFBQS8vOERBUEpFbTk4QUFRQUFBQUlMaGViK1p3RmZEenoxQUFFRDZBQUFBQURZWGFDRUFBQUFBTjFtTHpiK04vN0VDRzBEOFFBQkFBTUFBZ0FBQUFBQUFBQUJBQUFEMlA3dkFBQUltUDQzL2pjSWJRQUJBQUFBQUFBQUFBQUFBQUFBQUFBQUxYaWNCTUF0VHNSUUdJWGg5NXdtRFlhL3BCQVVvcm1CaEpZR0I2SlhYRU1RZkFrSmlDS1FzQTEyZ01laXdXRFpBQUxIQm1ZYlU5TjUvTTBkditDOHpINGlmTTNnUlBpRDBEbmhGOEkxNFpud08rRlBCajhRZmliY0wydnZjdVpNMFQvSm1WUFhKQi9TcXVGU3g1VHFrZUtSNG83a1RORWJSVDhjNkpWOVh6RldXeHpaN09pUEUvVms5UXk2cGRPS1RoTTNtcmpRUGR2ZW8xVkRnZVZyQXdBQS8vOERBSHlESFl3QUFBQUFBQUFzQUN3QVVBQ0VBTEFBeGdEY0FPZ0JBZ0VTQVVRQlpnR1NBYlFCMmdIMkFpNENZQUtNQXI0QzhnTmFBMllEZ2dPMEE5WUVBZ1F5QkZJRWpnUzBCTllGRGdVNkJVNEZaQVdFQlpBRm5BVzJCZEFGM2dYeUJmNEdGQUFCQUFBQUxRQ1FBQXdBWXdBSEFBRUFBQUFBQUFBQUFBQUFBQUFBQkFBRGVKeWNsTTl1RzJVVXhYOU9iTk1Ld1FKRlZicUp2Z1dMSXJWalV5VlYyNndtcEZaR1JISHd1Q0FraERTMko3Ymw4Y3pJTTNZYW5vQTFiOEZiZE1WRDhCeUlOYnJYMTY1ZEVBVXJpblZtNXY0NTM3bm5mc0FCZjdKUHBYb2YrSzJlR3E1d1ZMODJ2TWU5K29YaGZWcjFQY05WSHRWK04xeGpVRnNZcnZONXJXUDRJOTVXZnpGOGorUHFqNGJ2YzFodEdmNllwOVVEdzUvc08vNHcvQ25IdkYzaUNqem5aOE1WRHNrTjczSEFENGIzZVlEVnJGUjVRTk53amM4NE1sem5DT2d5cGlSaFRNb1F4dzFqaHN5WkVWTVFFak5qekEweEF4d0JQZ21sdmsySkZEbUcvL2cySXFSa1JxUVZSNVE0RWtJU0lncEdWdkVuemNxNDFvN1NaNlpJdXZtVWpJam9hY2FFaUJSSHhwQ01sSmlKMWlrcHlYbEpnd1lGZmVXYlUxTGdVVEFtd1NOanhwQUdiVnBjMG1YRW1BSkhTeXNKczVDTUcwcHVpYlMvc3doUnBrOU1TbUdzNXFRTWxLZFRmckZtQjF6aWFKTnI3R2JseTYwS2ozRjhxOW5DVFdJY1grTHB2OXRndHQxM3hTWmlvWHFLaGowUzVYbXJFeHlwNHRMWDV4dkZKUzl4TyttenplVERHZzJVbmN4NlRJKzV6bC9tSjNuQ0pNVzVRM3hDZFZEb0h1STQwK2VBVUJYNWpvQXVGN1I1VFZlZmZUcDA4TG1pUzhBcnpXM1R3ZkVWYmE0NDE0eEE4ZkpiU3gxenhmYzR2aWJRR0trZG16Nml1VHk5SVRkM0MzZHhocHhqU3E1YklET1c4NHZ6NDUwbUxEdVViYm1qVUZmMGRZOGtVdlpBVkpFOWl4aWFLM0oxeFZTMVhIbWpNUDBHNWdqNVd1cHMzMzJYYlZqWTdxMjIrSTVNZDlneE4wNHl1U1dqRDAzVmU4OHp0L3JuRVRFZ282Y1JmVEttTkNpNTA3TmRFekVud1hHdVByN1FMU254MXpuUzUwNWRFak5WQmdHcDFwbVI2MjlrdmdtTmUzL0w5ODd1RXRtOHFlN29aSDJxWGJwSTVYUmpScTlWdmRXMzBGU09OeWJRc0tsbWxpTVRsc3JMazRyM0pkcmI0aCtxK3d1OTNUS2VjRVpHd3VCdk44QlRQSm9jYzhJcEkrMGdsVk1XZGpzMDlZWm84b0pUUGYyRVdLUGt2bnlqT2ttRkV6eWVjY0lKTDNqMm5vNHJKczY0dURXWHpkNCs1NXpSNXZRL25XSVozK2FNVit0My85NzFWMlhhMUxNNG5xeWZudTg4eFVmL3c2MWY4SGpydnV6b0xTQ2JzN0JxNzdiaWlvaXBjSEdIbTFxNGgzaC9BUUFBLy84REFQUzNUMUVBQUFNQUFBQUFBQUQvemdBeUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQT0iKTsKfV1dPjwvc3R5bGU+PHN0eWxlIHR5cGU9InRleHQvY3NzIj48IVtDREFUQVsuc2hhcGUgewogIHNoYXBlLXJlbmRlcmluZzogZ2VvbWV0cmljUHJlY2lzaW9uOwogIHN0cm9rZS1saW5lam9pbjogcm91bmQ7Cn0KLmNvbm5lY3Rpb24gewogIHN0cm9rZS1saW5lY2FwOiByb3VuZDsKICBzdHJva2UtbGluZWpvaW46IHJvdW5kOwp9Ci5ibGVuZCB7CiAgbWl4LWJsZW5kLW1vZGU6IG11bHRpcGx5OwogIG9wYWNpdHk6IDAuNTsKfQoKCQkuZDItMjE2MDE3NzQyOSAuZmlsbC1OMXtmaWxsOiMwQTBGMjU7fQoJCS5kMi0yMTYwMTc3NDI5IC5maWxsLUI1e2ZpbGw6I0VERjBGRDt9CgkJLmQyLTIxNjAxNzc0MjkgLnN0cm9rZS1CMXtzdHJva2U6IzBEMzJCMjt9CgkJLmQyLTIxNjAxNzc0MjkgLnN0cm9rZS1CMntzdHJva2U6IzBEMzJCMjt9LmFwcGVuZGl4IHRleHQudGV4dHtmaWxsOiMwQTBGMjV9Lm1key0tY29sb3ItZmctZGVmYXVsdDojMEEwRjI1Oy0tY29sb3ItZmctbXV0ZWQ6IzY3NkM3RTstLWNvbG9yLWZnLXN1YnRsZTojOTQ5OUFCOy0tY29sb3ItY2FudmFzLWRlZmF1bHQ6I0ZGRkZGRjstLWNvbG9yLWNhbnZhcy1zdWJ0bGU6I0VFRjFGODstLWNvbG9yLWJvcmRlci1kZWZhdWx0OiMwRDMyQjI7LS1jb2xvci1ib3JkZXItbXV0ZWQ6IzBEMzJCMjstLWNvbG9yLW5ldXRyYWwtbXV0ZWQ6I0VFRjFGODstLWNvbG9yLWFjY2VudC1mZzojMEQzMkIyOy0tY29sb3ItYWNjZW50LWVtcGhhc2lzOiMwRDMyQjI7LS1jb2xvci1hdHRlbnRpb24tc3VidGxlOiM2NzZDN0U7LS1jb2xvci1kYW5nZXItZmc6cmVkO30ubGlnaHQtY29kZXtkaXNwbGF5OiBibG9ja30uZGFyay1jb2Rle2Rpc3BsYXk6IG5vbmV9QG1lZGlhIHNjcmVlbiBhbmQgKHByZWZlcnMtY29sb3Itc2NoZW1lOmRhcmspewoJCS5kMi0yMTYwMTc3NDI5IC5maWxsLU4xe2ZpbGw6I0NERDZGNDt9CgkJLmQyLTIxNjAxNzc0MjkgLmZpbGwtQjV7ZmlsbDojNDU0NzVBO30KCQkuZDItMjE2MDE3NzQyOSAuc3Ryb2tlLUIxe3N0cm9rZTojQ0JBNmY3O30KCQkuZDItMjE2MDE3NzQyOSAuc3Ryb2tlLUIye3N0cm9rZTojQ0JBNmY3O30uYXBwZW5kaXggdGV4dC50ZXh0e2ZpbGw6I0NERDZGNH0ubWR7LS1jb2xvci1mZy1kZWZhdWx0OiNDREQ2RjQ7LS1jb2xvci1mZy1tdXRlZDojQkFDMkRFOy0tY29sb3ItZmctc3VidGxlOiNBNkFEQzg7LS1jb2xvci1jYW52YXMtZGVmYXVsdDojMUUxRTJFOy0tY29sb3ItY2FudmFzLXN1YnRsZTojMzEzMjQ0Oy0tY29sb3ItYm9yZGVyLWRlZmF1bHQ6I0NCQTZmNzstLWNvbG9yLWJvcmRlci1tdXRlZDojQ0JBNmY3Oy0tY29sb3ItbmV1dHJhbC1tdXRlZDojMzEzMjQ0Oy0tY29sb3ItYWNjZW50LWZnOiNDQkE2Zjc7LS1jb2xvci1hY2NlbnQtZW1waGFzaXM6I0NCQTZmNzstLWNvbG9yLWF0dGVudGlvbi1zdWJ0bGU6I0JBQzJERTstLWNvbG9yLWRhbmdlci1mZzpyZWQ7fS5saWdodC1jb2Rle2Rpc3BsYXk6IG5vbmV9LmRhcmstY29kZXtkaXNwbGF5OiBibG9ja319XV0+PC9zdHlsZT48ZyBjbGFzcz0iYzNSaFkycz0iPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjEyIiB5PSIxMiIgd2lkdGg9IjYxMiIgaGVpZ2h0PSIzMzUiIHN0cm9rZT0idHJhbnNwYXJlbnQiIGZpbGw9InRyYW5zcGFyZW50IiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48L2c+PGcgY2xhc3M9ImMzUmhZMnN1WTI5dWRHRnBibVZ5Y3c9PSI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iMjQiIHk9IjI0IiB3aWR0aD0iNTg4IiBoZWlnaHQ9Ijk4IiBzdHJva2U9InRyYW5zcGFyZW50IiBmaWxsPSJ0cmFuc3BhcmVudCIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PC9nPjxnIGNsYXNzPSJjM1JoWTJzdVpXNW5hVzVsIGNvbXBvbmVudCI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iMjQiIHk9IjEzNCIgd2lkdGg9IjU4OCIgaGVpZ2h0PSI1OSIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjMxOCIgeT0iMTY5IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPkNvbnRhaW5lciBFbmdpbmUgKHouIEIuIFBvZG1hbiwgQ1JJLU8pPC90ZXh0PjwvZz48ZyBjbGFzcz0iYzNSaFkyc3VhMlZ5Ym1WcyBjb21wb25lbnQiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjI0IiB5PSIyMDUiIHdpZHRoPSI1ODgiIGhlaWdodD0iNTkiIHJ4PSI2IiBjbGFzcz0iIHN0cm9rZS1CMSBmaWxsLUI1IiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSIzMTgiIHk9IjI0MCIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNXB4Ij5MaW51eCBLZXJuZWwg4oCTIGdlbWVpbnNhbSBnZW51dHp0IChOYW1lc3BhY2VzLCBjZ3JvdXBzKTwvdGV4dD48L2c+PGcgY2xhc3M9ImMzUmhZMnN1YUdGeVpIZGhjbVU9IGNvbXBvbmVudCI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iMjQiIHk9IjI3NiIgd2lkdGg9IjU4OCIgaGVpZ2h0PSI1OSIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjMxOCIgeT0iMzExIiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPkhhcmR3YXJlIC8gVk08L3RleHQ+PC9nPjxnIGNsYXNzPSJjM1JoWTJzdVkyOXVkR0ZwYm1WeWN5NWpNUT09IHJlc291cmNlIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSIzNiIgeT0iMzYiIHdpZHRoPSIxODAiIGhlaWdodD0iNzQiIHJ4PSI2IiBzdHJva2U9IiMxQTczRTgiIGZpbGw9IiNFOEYwRkUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjEyNiIgeT0iNzEiIGNsYXNzPSJ0ZXh0LWJvbGQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTVweCI+PHRzcGFuIHg9IjEyNiIgZHk9IjAiPkNvbnRhaW5lcjwvdHNwYW4+PHRzcGFuIHg9IjEyNiIgZHk9IjE3Ij5BcHAgKyBMaWJzPC90c3Bhbj48L3RleHQ+PC9nPjxnIGNsYXNzPSJjM1JoWTJzdVkyOXVkR0ZwYm1WeWN5NWpNZz09IHJlc291cmNlIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSIyMjgiIHk9IjM2IiB3aWR0aD0iMTgwIiBoZWlnaHQ9Ijc0IiByeD0iNiIgc3Ryb2tlPSIjMUE3M0U4IiBmaWxsPSIjRThGMEZFIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSIzMTgiIHk9IjcxIiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPjx0c3BhbiB4PSIzMTgiIGR5PSIwIj5Db250YWluZXI8L3RzcGFuPjx0c3BhbiB4PSIzMTgiIGR5PSIxNyI+QXBwICsgTGliczwvdHNwYW4+PC90ZXh0PjwvZz48ZyBjbGFzcz0iYzNSaFkyc3VZMjl1ZEdGcGJtVnljeTVqTXc9PSByZXNvdXJjZSI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iNDIwIiB5PSIzNiIgd2lkdGg9IjE4MCIgaGVpZ2h0PSI3NCIgcng9IjYiIHN0cm9rZT0iIzFBNzNFOCIgZmlsbD0iI0U4RjBGRSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iNTEwIiB5PSI3MSIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNXB4Ij48dHNwYW4geD0iNTEwIiBkeT0iMCI+Q29udGFpbmVyPC90c3Bhbj48dHNwYW4geD0iNTEwIiBkeT0iMTciPkFwcCArIExpYnM8L3RzcGFuPjwvdGV4dD48L2c+PG1hc2sgaWQ9ImQyLTIxNjAxNzc0MjkiIG1hc2tVbml0cz0idXNlclNwYWNlT25Vc2UiIHg9Ii05IiB5PSItOSIgd2lkdGg9IjY1NCIgaGVpZ2h0PSIzNzciPgo8cmVjdCB4PSItOSIgeT0iLTkiIHdpZHRoPSI2NTQiIGhlaWdodD0iMzc3IiBmaWxsPSJ3aGl0ZSI+PC9yZWN0PgoKPC9tYXNrPjwvc3ZnPjwvc3ZnPgo=" alt="Container teilen sich den Kernel des Hosts" /></p>
+<hr />
+<h2 id="podman-oder-docker">Podman oder Docker?</h2>
+<p>Die Beispiele in diesem Seminar verwenden <strong>Podman</strong>.
+Sie funktionieren genauso mit <strong>Docker</strong> – einfach
+<code>podman</code> durch <code>docker</code> ersetzen: Podman ist
+bewusst kommandozeilenkompatibel zu Docker, beide erzeugen und starten
+dieselben (OCI-)Images.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Podman</th>
+<th>Docker</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Architektur</td>
+<td>kein Daemon – jeder Container ist ein eigener Prozess</td>
+<td>zentraler Daemon (<code>dockerd</code>)</td>
+</tr>
+<tr>
+<td>Rechte</td>
+<td>standardmäßig ohne root (rootless)</td>
+<td>Daemon läuft als root (Rootless-Modus optional)</td>
+</tr>
+<tr>
+<td>macOS / Windows</td>
+<td>Podman Desktop bzw. <code>podman machine</code> (Linux-VM)</td>
+<td>Docker Desktop (Linux-VM; Lizenzbedingungen für Unternehmen
+beachten)</td>
+</tr>
+<tr>
+<td>Mehrere Container gemeinsam</td>
+<td><code>podman pod</code> – wie ein Pod in Kubernetes</td>
+<td>Docker Compose</td>
+</tr>
+<tr>
+<td>Image-Format</td>
+<td>OCI</td>
+<td>OCI</td>
+</tr>
+</tbody>
+</table>
+<p>Kleine Unterschiede, die in den Übungen auffallen können:</p>
+<ul>
+<li><strong>Containerfile vs. Dockerfile:</strong> Docker sucht ohne
+Angabe nur nach einer Datei <code>Dockerfile</code>. Die Beispiele geben
+die Datei deshalb immer mit <code>-f 01-container/Containerfile</code>
+an.</li>
+<li><strong><code>:Z</code> bei Volumes</strong> setzt SELinux-Labels
+und ist nur auf Linux-Systemen mit SELinux (Fedora, RHEL) nötig. Mit
+Docker Desktop auf macOS/Windows kann es entfallen.</li>
+<li><strong>Multi-Architektur-Build:</strong>
+<code>FROM --platform=$BUILDPLATFORM</code> im Containerfile benötigt
+bei Docker BuildKit (Standard seit Docker 23).</li>
+<li><strong>Kurze Image-Namen</strong> (<code>ubi-minimal</code>) löst
+Docker immer gegen Docker Hub auf, Podman fragt nach der Registry –
+daher verwenden die Beispiele immer den vollständigen Namen.</li>
+</ul>
+<p>Wer nur Docker installiert hat, kann sich die Umstellung mit einem
+Alias sparen: <code>alias podman=docker</code>.</p>
+<h2 id="podman-basics">Podman Basics</h2>
+<p>Podman ist eine Container-Engine ohne Daemon (kein root nötig) und
+stellt dieselben Kommandos bereit wie Docker:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Image herunterladen</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> pull registry.access.redhat.com/ubi10/ubi-minimal:latest</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Container starten (führt einen Befehl aus und beendet sich wieder)</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> run <span class="at">--rm</span> registry.access.redhat.com/ubi10/ubi-minimal:latest cat /etc/os-release</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Container interaktiv</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> run <span class="at">--rm</span> <span class="at">-it</span> registry.access.redhat.com/ubi10/ubi-minimal:latest /bin/bash</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Demo-Anwendung im Hintergrund starten</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Port-Mapping: Host-Port 8080 → Container-Port 8080</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> run <span class="at">-d</span> <span class="at">-p</span> 8080:8080 <span class="at">--name</span> demo quay.io/ghilling/quarkus-demo:1.0</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Laufende Container anzeigen</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> ps</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Alle Container (inkl. gestoppter)</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> ps <span class="at">-a</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Anwendung aufrufen (--retry: wartet, bis die Anwendung gestartet ist)</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">--retry</span> 10 <span class="at">--retry-all-errors</span> <span class="at">--retry-delay</span> 2 http://localhost:8080/</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Logs anzeigen</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> logs demo</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="co"># In laufenden Container einloggen</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> exec <span class="at">-it</span> demo /bin/bash</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Container stoppen und entfernen</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> stop demo</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> rm demo</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Images anzeigen</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> images</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a><span class="co"># Image entfernen</span></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> rmi quay.io/ghilling/quarkus-demo:1.0</span></code></pre></div>
+<hr />
+<h2 id="ephemeral--was-bedeutet-das-bei-containern">Ephemeral – Was
+bedeutet das bei Containern?</h2>
+<p>Container sind <strong>vergänglich</strong> (ephemeral):</p>
+<ul>
+<li>Alles, was in einen Container geschrieben wird, geht beim Löschen
+des Containers verloren (was nicht verwunderlich ist.).</li>
+<li>Der Container-Prozess schreibt in das Container-eigene Dateisystem
+(oberste Layer).</li>
+<li>Beim <code>podman stop &amp;&amp; podman rm</code> gehen alle Daten
+verloren.</li>
+</ul>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Beispiel: Daten gehen verloren</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> run <span class="at">--name</span> ephemeral registry.access.redhat.com/ubi10/ubi-minimal:latest <span class="dt">\</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  sh <span class="at">-c</span> <span class="st">&quot;echo hallo &gt; /tmp/test.txt &amp;&amp; cat /tmp/test.txt&quot;</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># → /tmp/test.txt existiert, solange der Container existiert.</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   Stoppen und erneutes Starten behält die Datei bei!</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> rm ephemeral</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># → Container gelöscht, Datei weg.</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Lösung: Volumes mounten für persistente Daten</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> ~/demo-daten</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;Ich überlebe den Container&quot;</span> <span class="op">&gt;</span> ~/demo-daten/test.txt</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> run <span class="at">--rm</span> <span class="at">-v</span> ~/demo-daten:/daten:Z registry.access.redhat.com/ubi10/ubi-minimal:latest cat /daten/test.txt</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Das &#39;:Z&#39; setzt passende SELinux-Labels für das gemountete Verzeichnis.</span></span></code></pre></div>
+<h3 id="konsequenzen-für-anwendungen">Konsequenzen für Anwendungen:</h3>
+<ul>
+<li>Konfiguration <strong>nicht</strong> in Container einbauen →
+Umgebungsvariablen/Konfigurationsdateien.</li>
+<li>Logs auf <strong>stdout/stderr</strong> schreiben (nicht in
+Dateien): Diese werden von der Runtime &quot;eingesammelt&quot;.</li>
+<li>Zustand (State) <strong>extern</strong> speichern:
+Host-Verzeichnisse (podman) oder PersistentVolumeClaims
+(Kubernetes)</li>
+</ul>
+<hr />
+<h2 id="container-konfigurieren">Container konfigurieren</h2>
+<h3 id="1-umgebungsvariablen-empfohlen-für-geheimnisse--konfiguration">1.
+Umgebungsvariablen (empfohlen für Geheimnisse &amp; Konfiguration)</h3>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> run <span class="at">--rm</span> <span class="at">-e</span> MY_VAR=value <span class="at">-e</span> DB_URL=jdbc:postgresql://host/db <span class="dt">\</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  registry.access.redhat.com/ubi10/ubi-minimal:latest printenv MY_VAR DB_URL</span></code></pre></div>
+<h3 id="2-dateien-via-volume-mounten">2. Dateien via Volume mounten</h3>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;greeting: Hallo&quot;</span> <span class="op">&gt;</span> ~/demo-daten/config.yml</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> run <span class="at">--rm</span> <span class="at">-v</span> ~/demo-daten/config.yml:/app/config.yml:ro,Z <span class="dt">\</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  registry.access.redhat.com/ubi10/ubi-minimal:latest cat /app/config.yml</span></code></pre></div>
+<h3 id="3-kommandozeilenargumente">3. Kommandozeilenargumente</h3>
+<p>Alles nach dem Image-Namen ersetzt das im Image hinterlegte
+<code>CMD</code>:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> run <span class="at">--rm</span> registry.access.redhat.com/ubi10/ubi-minimal:latest echo <span class="st">&quot;Hallo aus dem Container&quot;</span></span></code></pre></div>
+<hr />
+<h2 id="image-build--containerfile">Image Build – Containerfile</h2>
+<p>Ein <strong>Containerfile</strong> (= Dockerfile) beschreibt den
+Build-Prozess eines Images.</p>
+<h3 id="beispiel-demo-anwendung">Beispiel: Demo-Anwendung</h3>
+<p>Das <a href="./Containerfile">Containerfile</a> baut die
+Demo-Anwendung in zwei Stufen (Multi-Stage-Build): Die erste Stufe
+enthält Maven und JDK zum Bauen, die zweite nur noch die Java-Runtime
+und die fertige <a href="https://quarkus.io/">Quarkus</a>-Anwendung.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 1: Build</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co"># --platform=$BUILDPLATFORM: Der Build läuft immer nativ auf dem Build-Rechner,</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co"># auch wenn ein Image für eine andere Architektur gebaut wird (Java-Bytecode</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ist plattformunabhängig).</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> <span class="op">--platform=$BUILDPLATFORM</span> registry.access.redhat.com/ubi10/openjdk-21:latest <span class="kw">AS</span> builder</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="kw">USER</span> root</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /build</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> demo-app /build/</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">mvn</span> <span class="at">-q</span> <span class="at">-B</span> package <span class="at">-DskipTests</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 2: Runtime (nur JRE + Anwendung)</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> registry.access.redhat.com/ubi10/openjdk-21-runtime:latest</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Version der Anwendung, z. B. podman build --build-arg APP_VERSION=1.1 ...</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="kw">ARG</span> APP_VERSION=dev</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="kw">ENV</span> DEMO_VERSION=${APP_VERSION}</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="kw">USER</span> root</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="fu">mkdir</span> <span class="at">-p</span> /var/demo/html <span class="kw">&amp;&amp;</span> <span class="dt">\</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>    <span class="bu">echo</span> <span class="st">&quot;&lt;html&gt;&lt;body&gt;&lt;h1&gt;Hallo von Container!&lt;/h1&gt;&lt;p&gt;Version </span><span class="va">${APP_VERSION}</span><span class="st">&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;&quot;</span> <span class="op">&gt;</span> /var/demo/html/index.html <span class="kw">&amp;&amp;</span> <span class="dt">\</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">chown</span> <span class="at">-R</span> 1001:0 /var/demo/html <span class="kw">&amp;&amp;</span> <span class="dt">\</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">chmod</span> <span class="at">-R</span> g=u /var/demo/html</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> /build/target/quarkus-app/ /app/</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Non-Root User (kompatibel mit restricted-v2 SCC)</span></span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a><span class="kw">USER</span> 1001</span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a><span class="kw">EXPOSE</span> 8080</span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;java&quot;</span>, <span class="st">&quot;-jar&quot;</span>, <span class="st">&quot;/app/quarkus-run.jar&quot;</span>]</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Image bauen (aus dem Repository-Root)</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> build <span class="at">-t</span> demo-app:1.0 <span class="at">-f</span> 01-container/Containerfile 01-container</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Image starten</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> run <span class="at">-d</span> <span class="at">-p</span> 8080:8080 <span class="at">--name</span> demo-local demo-app:1.0</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">--retry</span> 10 <span class="at">--retry-all-errors</span> <span class="at">--retry-delay</span> 2 http://localhost:8080/</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Aufräumen</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> rm <span class="at">-f</span> demo-local</span></code></pre></div>
+<hr />
+<h2 id="image-registries-und-image-tags">Image Registries und Image
+Tags</h2>
+<h3 id="registry">Registry</h3>
+<p>Eine Registry ist ein zentrales Repository für Container-Images.</p>
+<table>
+<thead>
+<tr>
+<th>Registry</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>registry.access.redhat.com</code></td>
+<td>Red Hat offizielle Images</td>
+</tr>
+<tr>
+<td><code>quay.io</code></td>
+<td>Red Hat Quay (öffentlich + privat)</td>
+</tr>
+<tr>
+<td><code>docker.io</code></td>
+<td>Docker Hub</td>
+</tr>
+<tr>
+<td><code>ghcr.io</code></td>
+<td>GitHub Container Registry</td>
+</tr>
+</tbody>
+</table>
+<h3 id="image-namen-und-tags">Image-Namen und Tags</h3>
+<pre><code>registry.example.com/namespace/image-name:tag
+│──────────────────│ │───────│ │────────│ │──│
+       Registry      Namespace   Image-Name  Tag</code></pre>
+<h3 id="tags-sind-nicht-immutable">Tags sind <strong>nicht
+immutable</strong>!</h3>
+<p>❗ Nur zur Illustration (<code>myimage</code> ist ein
+Platzhalter):</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Gleicher Tag, unterschiedlicher Inhalt möglich:</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> pull myimage:latest  <span class="co"># heute = Version 1.5</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># nächste Woche:</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> pull myimage:latest  <span class="co"># latest = jetzt Version 2.0 !</span></span></code></pre></div>
+<p><strong>Besser:</strong>:</p>
+<ul>
+<li><strong>Digest</strong>: <code>myimage@sha256:abc123...</code>
+(unveränderbar)</li>
+<li><strong>Versionierte Tags</strong>: <code>myimage:1.5.2</code>
+(Konvention, aber keine Garantie!)</li>
+</ul>
+<p>❗ Nur mit eigenem Registry-Account (<code>quay.io/myorg</code> durch
+eigene Organisation ersetzen, vorher
+<code>podman login quay.io</code>):</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Image taggen</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> tag demo-app:1.0 quay.io/myorg/demo-app:1.0</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Image pushen</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> push quay.io/myorg/demo-app:1.0</span></code></pre></div>
+<hr />
+<h2 id="weiterführende-links">Weiterführende Links</h2>
+<ul>
+<li><a href="https://kubernetes.io/docs/concepts/containers/images/">Kubernetes:
+Container-Images</a></li>
+<li><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/images/index">OpenShift
+4.22: Images</a></li>
+</ul>
+<p>Siehe auch <a href="../99-anhang/DOCUMENTATION.html">99-anhang/DOCUMENTATION.md</a>
+für die vollständige Liste.</p>
+<nav class="pager-bottom">
+  <a class="prev" href="../README.html"><span>← Zurück</span>Seminarunterlagen: Container und Kubernetes/OpenShift</a>
+
+  <a class="up" href="../README.html#inhaltsverzeichnis"><span>↑ Übersicht</span>Inhaltsverzeichnis</a>
+
+  <a class="next" href="../02-kubernetes-basics/README.html"><span>Weiter →</span>Kapitel 2: Kubernetes Basics</a>
+
+</nav>
+</main>
+</div>
+<script>
+// Kopier-Button für Codeblöcke
+document.querySelectorAll("pre").forEach(function (pre) {
+  var button = document.createElement("button");
+  button.className = "copy";
+  button.type = "button";
+  button.textContent = "Kopieren";
+  button.addEventListener("click", function () {
+    navigator.clipboard.writeText(pre.innerText).then(function () {
+      button.textContent = "Kopiert ✓";
+      setTimeout(function () { button.textContent = "Kopieren"; }, 1500);
+    });
+  });
+  pre.appendChild(button);
+});
+</script>
+</body>
+</html>

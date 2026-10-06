@@ -1,0 +1,26 @@
+# Diese Regel kann kein Node erfüllen → Pod bleibt Pending
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo-unmoeglich
+  labels:
+    app: demo-debug
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values: ["s390x"]       # IBM-Mainframe-Architektur – gibt es im Cluster nicht
+  containers:
+    - name: demo
+      image: quay.io/ghilling/quarkus-demo:1.0
+      resources:
+        requests:
+          cpu: "50m"
+          memory: "128Mi"
+        limits:
+          cpu: "500m"
+          memory: "256Mi"

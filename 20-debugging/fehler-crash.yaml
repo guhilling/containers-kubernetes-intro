@@ -1,0 +1,24 @@
+# Fehlerbild 2: Anwendung beendet sich sofort mit Fehler → CrashLoopBackOff
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-fehler-crash
+  labels:
+    app: demo-debug
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-debug
+      fehler: crash
+  template:
+    metadata:
+      labels:
+        app: demo-debug
+        fehler: crash
+    spec:
+      containers:
+        - name: demo
+          image: quay.io/ghilling/quarkus-demo:1.0
+          # Simuliert eine Anwendung, die wegen fehlender Konfiguration nicht startet
+          command: ["sh", "-c", "echo 'FEHLER: Datenbank-URL DB_URL ist nicht gesetzt' >&2; exit 1"]

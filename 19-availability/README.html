@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kapitel 19: Verfügbarkeit – Rolling Updates, PodDisruptionBudget,
+Autoscaling – Container und Kubernetes/OpenShift</title>
+<style type="text/css">:root {
+--bg: #ffffff;
+--fg: #1f2328;
+--muted: #59636e;
+--border: #d1d9e0;
+--accent: #1a5fb4;
+--accent-soft: #e8f0fe;
+--code-bg: #f6f8fa;
+--topbar-bg: #f6f8fa;
+--warn: #9a6700;
+--warn-bg: #fff8c5;
+--rookie: #1a7f37;
+--rookie-bg: #dafbe1;
+--advanced: #8250df;
+--advanced-bg: #fbefff;
+--tok-comment: #6e7781;
+--tok-keyword: #cf222e;
+--tok-string: #0a3069;
+--tok-variable: #953800;
+--tok-function: #8250df;
+--tok-number: #0550ae;
+--tok-attr: #116329;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg: #0d1117;
+--fg: #e6edf3;
+--muted: #9198a1;
+--border: #30363d;
+--accent: #6cb6ff;
+--accent-soft: #15233a;
+--code-bg: #161b22;
+--topbar-bg: #161b22;
+--warn: #d29922;
+--warn-bg: #2b2111;
+--rookie: #3fb950;
+--rookie-bg: #12261e;
+--advanced: #d2a8ff;
+--advanced-bg: #221a33;
+--tok-comment: #9198a1;
+--tok-keyword: #ff7b72;
+--tok-string: #a5d6ff;
+--tok-variable: #ffa657;
+--tok-function: #d2a8ff;
+--tok-number: #79c0ff;
+--tok-attr: #7ee787;
+}
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 4.5rem; }
+body {
+margin: 0;
+background: var(--bg);
+color: var(--fg);
+font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.topbar {
+position: sticky; top: 0; z-index: 10;
+display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+padding: 0.6rem 1.5rem;
+background: var(--topbar-bg);
+border-bottom: 1px solid var(--border);
+}
+.topbar .course { font-weight: 600; color: var(--fg); }
+.pager { display: flex; gap: 1.25rem; font-size: 0.95rem; }
+.layout {
+display: grid;
+grid-template-columns: 16rem minmax(0, 52rem);
+gap: 3rem;
+justify-content: center;
+padding: 2rem 1.5rem 4rem;
+}
+.toc {
+position: sticky; top: 4.5rem;
+align-self: start;
+max-height: calc(100vh - 6rem);
+overflow-y: auto;
+font-size: 0.9rem;
+}
+.toc-title { margin: 0 0 0.5rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; }
+.toc ul { list-style: none; margin: 0; padding-left: 0; }
+.toc ul ul { padding-left: 1rem; }
+.toc li { margin: 0.3rem 0; }
+.toc a { color: var(--muted); }
+.toc a:hover { color: var(--accent); }
+main { min-width: 0; }
+h1, h2, h3, h4 { line-height: 1.25; margin: 2rem 0 1rem; }
+h1 { font-size: 2rem; margin-top: 0; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+h2 { font-size: 1.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.2rem; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 2rem 0; }
+img { max-width: 100%; height: auto; display: block; margin: 1.5rem auto; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.95rem; display: block; overflow-x: auto; }
+th, td { border: 1px solid var(--border); padding: 0.4rem 0.75rem; text-align: left; vertical-align: top; }
+th { background: var(--code-bg); }
+code { font: 0.875em/1.5 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+:not(pre) > code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.1em 0.35em; }
+pre {
+position: relative;
+background: var(--code-bg);
+border: 1px solid var(--border);
+border-radius: 8px;
+padding: 1rem 1.25rem;
+overflow-x: auto;
+}
+pre code { background: none; border: 0; padding: 0; }
+pre .copy {
+position: absolute; top: 0.5rem; right: 0.5rem;
+font: 0.75rem/1 inherit; font-family: inherit;
+padding: 0.3rem 0.55rem;
+color: var(--muted); background: var(--bg);
+border: 1px solid var(--border); border-radius: 6px;
+cursor: pointer; opacity: 0; transition: opacity 0.15s;
+}
+pre:hover .copy, pre .copy:focus { opacity: 1; }
+blockquote {
+margin: 1rem 0; padding: 0.5rem 1rem;
+color: var(--fg);
+background: var(--accent-soft);
+border-left: 4px solid var(--accent);
+border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0.4rem 0; }
+.pager-bottom { display: flex; justify-content: space-between; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.pager-bottom a { display: flex; flex-direction: column; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; max-width: 40%; }
+.pager-bottom a span { font-size: 0.8rem; color: var(--muted); }
+.pager-bottom .next { margin-left: auto; text-align: right; }
+.pager-bottom .up { text-align: center; }
+@media (max-width: 960px) {
+.layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; padding: 1.5rem 1rem 3rem; }
+.toc { position: static; max-height: none; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+.topbar { padding: 0.6rem 1rem; }
+}
+
+code span.co { color: var(--tok-comment); font-style: italic; }
+code span.kw, code span.cf { color: var(--tok-keyword); }
+code span.st, code span.ss, code span.ch, code span.vs { color: var(--tok-string); }
+code span.va { color: var(--tok-variable); }
+code span.fu, code span.bu { color: var(--tok-function); }
+code span.dv, code span.fl, code span.bn, code span.cn { color: var(--tok-number); }
+code span.at { color: var(--tok-attr); }
+code span.op, code span.ot { color: inherit; }
+div.sourceCode { margin: 1rem 0; }
+pre > code.sourceCode > span { display: inline; }
+
+.badge {
+display: inline-block;
+padding: 0.15em 0.6em;
+border-radius: 999px;
+font-size: 0.75rem;
+font-weight: 600;
+line-height: 1.5;
+vertical-align: middle;
+white-space: nowrap;
+}
+.badge-rookie { color: var(--rookie); background: var(--rookie-bg); border: 1px solid var(--rookie); }
+.badge-advanced { color: var(--advanced); background: var(--advanced-bg); border: 1px solid var(--advanced); }
+.chapter-level { margin: -0.5rem 0 1.5rem; }
+h1 + .chapter-level { margin-top: -0.25rem; }
+.advanced-section {
+margin: 1.5rem 0;
+padding: 0.25rem 1.25rem 0.75rem;
+border-left: 4px solid var(--advanced);
+background: var(--advanced-bg);
+border-radius: 0 8px 8px 0;
+}
+.toc .badge { font-size: 0.65rem; padding: 0 0.45em; margin-left: 0.25rem; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="course" href="../README.html">Container und Kubernetes/OpenShift</a>
+  <nav class="pager">
+    <a href="../README.html#inhaltsverzeichnis">↑ Inhaltsverzeichnis</a>
+
+    <a href="../18-scheduling/README.html" title="Kapitel 18: Scheduling – Affinity, Anti-Affinity und Topology Spread">← Zurück</a>
+
+    <a href="../20-debugging/README.html" title="Kapitel 20: Debugging und Observability">Weiter →</a>
+
+  </nav>
+</header>
+<div class="layout">
+<aside class="toc">
+  <p class="toc-title">Inhalt</p>
+<ul>
+<li><a href="#kapitel-19-verfügbarkeit--rolling-updates-poddisruptionbudget-autoscaling" id="toc-kapitel-19-verfügbarkeit--rolling-updates-poddisruptionbudget-autoscaling">Kapitel
+19: Verfügbarkeit – Rolling Updates, PodDisruptionBudget,
+Autoscaling</a>
+<ul>
+<li><a href="#rolling-updates-ohne-ausfall" id="toc-rolling-updates-ohne-ausfall">Rolling Updates ohne
+Ausfall</a></li>
+<li><a href="#poddisruptionbudget" id="toc-poddisruptionbudget">PodDisruptionBudget</a></li>
+<li><a href="#pods-auf-nodes-verteilen" id="toc-pods-auf-nodes-verteilen">Pods auf Nodes verteilen</a></li>
+<li><a href="#horizontal-pod-autoscaler" id="toc-horizontal-pod-autoscaler">Horizontal Pod Autoscaler</a></li>
+<li><a href="#manifeste-in-diesem-kapitel" id="toc-manifeste-in-diesem-kapitel">Manifeste in diesem
+Kapitel</a></li>
+<li><a href="#weiterführende-links" id="toc-weiterführende-links">Weiterführende Links</a></li>
+</ul></li>
+</ul>
+</aside>
+<main>
+<h1 id="kapitel-19-verfügbarkeit--rolling-updates-poddisruptionbudget-autoscaling">Kapitel
+19: Verfügbarkeit – Rolling Updates, PodDisruptionBudget,
+Autoscaling</h1>
+<div class="chapter-level">
+<span class="badge badge-advanced">Advanced · Tag 3–4</span>
+</div>
+<p>Mit Probes (Kapitel 10) weiß Kubernetes, ob ein Pod Anfragen annehmen
+kann. Dieses Kapitel zeigt, wie man darauf aufbauend <strong>Updates
+ohne Ausfall</strong> durchführt, Pods bei Wartungsarbeiten schützt und
+eine Anwendung <strong>automatisch skaliert</strong>.</p>
+<p>Alle Manifeste liegen in diesem Kapitel; <code>deployment.yaml</code>
+enthält bereits Probes, Requests/Limits und die hier besprochenen
+Einstellungen.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 19-availability/deployment.yaml</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 19-availability/service.yaml</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> rollout status deployment/demo</span></code></pre></div>
+<hr />
+<h2 id="rolling-updates-ohne-ausfall">Rolling Updates ohne Ausfall</h2>
+<p><img role="img" aria-label="Ablauf eines Rolling Updates mit maxSurge 1 und maxUnavailable 0" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiICBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWluWU1pbiBtZWV0IiB2aWV3Qm94PSIwIDAgMTA3NyAzMTciPjxzdmcgY2xhc3M9ImQyLTIwMjUzMDI2NiBkMi1zdmciIHdpZHRoPSIxMDc3IiBoZWlnaHQ9IjMxNyIgdmlld0JveD0iLTkgLTkgMTA3NyAzMTciPjxyZWN0IHg9Ii05IiB5PSItOSIgd2lkdGg9IjEwNzciIGhlaWdodD0iMzE3IiByeD0iMCIgZmlsbD0idHJhbnNwYXJlbnQiIHN0cm9rZS13aWR0aD0iMCIgLz48c3R5bGUgdHlwZT0idGV4dC9jc3MiPjwhW0NEQVRBWwouZDItMjAyNTMwMjY2IC50ZXh0LWJvbGQgewoJZm9udC1mYW1pbHk6ICJkMi0yMDI1MzAyNjYtZm9udC1ib2xkIiwgIlNvdXJjZSBTYW5zIFBybyIsICJTb3VyY2UgU2FucyAzIiwgLWFwcGxlLXN5c3RlbSwgQmxpbmtNYWNTeXN0ZW1Gb250LCAiU2Vnb2UgVUkiLCBIZWx2ZXRpY2EsIEFyaWFsLCBzYW5zLXNlcmlmOwp9CkBmb250LWZhY2UgewoJZm9udC1mYW1pbHk6IGQyLTIwMjUzMDI2Ni1mb250LWJvbGQ7Cglmb250LWRpc3BsYXk6IHN3YXA7CglzcmM6IHVybCgiZGF0YTpmb250L3dvZmY7YmFzZTY0LGQwOUdSZ0FCQUFBQUFBNjRBQW9BQUFBQUZkUUFBZ3VGQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFCUFV5OHlBQUFBOUFBQUFHQUFBQUJnWHhIWHJtTnRZWEFBQUFGVUFBQUF0UUFBQU80bGkwdnZaMng1WmdBQUFnd0FBQWdWQUFBS1NFd3dJOUpvWldGa0FBQUtKQUFBQURZQUFBQTJHMzhlMUdob1pXRUFBQXBjQUFBQUpBQUFBQ1FLZndYZ2FHMTBlQUFBQ29BQUFBQ0VBQUFBaEVKbUJWQnNiMk5oQUFBTEJBQUFBRVFBQUFCRUxSSXdBRzFoZUhBQUFBdElBQUFBSUFBQUFDQUFPUUQzYm1GdFpRQUFDMmdBQUFNdkFBQUlLZ2p3VmtGd2IzTjBBQUFPbUFBQUFDQUFBQUFnLzlFQU1nQURBaW9DdkFBRkFBQUNpZ0pZQUFBQVN3S0tBbGdBQUFGZUFESUJLUUFBQWdzSEF3TUVBd0lDQkdBQUF2Y0FBQUFEQUFBQUFBQUFBQUJCUkVKUEFDQUFJUC8vQXU3L0JnQUFBOWdCRVNBQUFaOEFBQUFBQWZBQ2xBQUFBQ0FBQTNpY2hNMUxLa1poSElEeDMvRzlMaC9mY1R2dTExY3BURTRHTm1BRFVsWkFkQ1pLR1loRm1CaVRBVFlnRm1BWkpzTEF6TkQ0cnhSVFBkTmZQU2kwRk9oSTNyRXNTNUpzVFczRHBpM2JkdXc1MERoeTRpeFhTeGNyVlFTeVZiWDFQN1ZyWCtQUXNkTmZGVy94RloveEVVL3hHQTl4SDNkeEd6ZHhIVmR4K2RwK09YOHVmLzcvVjVpM1lOYUVTVk9temVqU2tuVHIwYXRQVzc4QkhhVkJRNGFOR0ZVWk0yN09vc3czQUFBQS8vOERBSDZqTGNrQUFBQjRuR1JXYlV4YjEvMytuZU9MamMzbHhTLzNYdHY0QmZ2YTkxNWp3TmpYMXhld2phSFlKcUc0dk9RRi9vMEJCU212SkpCL1FnUnBrcVVmV0RPMVpLMUVsTEZseXFabzBiU29reFpsbGJhcTJhUjk2YXBHbGFhdVk1clVwdE9xYnVwZXlqcHZxaXF3cDNPQmxIUWY3T01QNXp6UDczbCt6L2tkUXhVTUErQnBmQjEwWUlSNnNBQURJSnQ5NXFBc2lyeEJsVldWNTNTcWlNeUdZV3dwMy9tQkdLSkNJYXE1YWRYNzNOUVVLa3ppNjV1bkRoV21wLzh6bFV5V2IvMzg5ZkkxZE81MUFGejVBZ0QzNFdVd2dobkFhcEJGUVJCNXZWNW5sYTI4eUJzK2JuaXB2cmF4bHFJZFh6eTg5L0M3MHBzU0draWxvck55L0hUNTYzaDVjLzdtVFFBQUJBVUFQSWlYd1VycWtxMmNMQWlLSXB0NW5jaXpMTU1Vdm5XM2g2THFsc2xTVll1WHkyKzhFbisrNitQTmVaVDdadUpTMTU4QkFHc1k3WGdaYUxCcEtER1daV3g2UGM4elpqbW14QVdlTDN5NDUzdytQNThiMmJQWWs4cmlaYkU0TkRnZGVSK05IcGVidCtyZ0t5VnN3cXZRREZEbEYwU1ZaZVZZUW9rTG90aUdsWGdpSWNkWXppQUl2Ri9QMkZpTzIySkF0cDRyc2YzOFFhbXRWUTRmOEtXRTVJbHN4NW5tcDV0NlJLRzFzM2wvTXQ4MVM3ZTNIZkVJZnJmWGJRblVSZktSeEhpOHBYbkMwZWgxZVR4bXYzMS9MbEhzQUF6TmxSTDZMZG9BQi9BQW5GOVE0Z2xWb3pPSUdqbGo1b20vYWl5aEtucFN3eSt5dzBzcm1BOTVld0pLWktacjZ1aWlpZkwyVnp1QzFtZFNYbm9zODh4NHZVKzBNNGZkZ2RtejVZOWtGMytXczQ2WndtNDdwM25XV3lsaEZqOEFHM2kzRlBNRzNpd3pCbzFNRXljUy9iemZ3TEFzeXZuNjNCUjlib1Z5Wi8ycDhVaHFhbHhJSEd3SjJTVGExNlRnQjY4T090M2Qvejk0NEVKbU1ULzRRdXZibGpxTlE2eVUwQVorQUZabzJ0RkUwRGxSa1hlcDJUSDFzK0pjY2lvZTZuRG9WeFpObERPUDdhTEZHcmJ4aVFqOTBvV1I4OTB1KytDUE52dWlUbjdSNW5qYlV0Zlh2emNIR0FLVkV2b2oyZ0Q3dG80ZEVpTEI0Q05kVkRtOVhpZkhDUXZ5OXA5OXF1OVVzbjhpUXVIeW1pa2ZWUkpSWWZJNzk4VVdmNEx1bmg4ZG1jOWtackxXb0RFaCsvN1A2VUZkSVNWQzhxRURmNlVWRzlBR1JDQUpBNW9hUVltcmlzYTN2U1RrR0Njei9IYjQvQ0lSSlpQVzJmUjZIVEZ6VzZoMTZ6ZnZGN1F0bjNWTmR2UmJHNXZzemxEWHBOTGllMjNJWUl5UHEyNnZ4UjhhTGg3T1hocHdpNkxiTFlxaFdJOFlsQjArdWpIOXJyT2pKU1ZSdFpLM01kWkFXYkxoMUpCRXo5VDRiWjBEQVZNOWE3VWsrK1NSTnZSV2MwZ01TVktvdWJ3U2NIQU5PcDNkNFhJVFBRaDZLeVZrd1ErZ1h0T2ltR1d6alNTZW1QWHJ3ZVNLMlZobDBGdm9JSDNvYWN4dnJuRVdoRTVYR1FCQkw0RE9qVGJBcDkwMFR0Ynl3dTFFMUV4c05qeGVlMGttODFHbDErb2JpQTQvdmVKdUNyYVRyd2hhNy9HMmhpVi9kR2FpL0JENUVsSjcrZDcyc3NXQkFXMkFiVGZIRHJwK0M3YXBFQnZadStKdWNrbDJ0Sjd4dE80QU9ianlQWEk4VUNscC9hcUh4di9KaFY3YzFRM0VadWF5MmJsTVpqYWJuYzIwdHJXMXRyVzIwdW56by92bTArbjVmYVBuMHd1Rm50N0J3ZDZlZ3VZYkFIb1piWURsQ2YwRzRjdktHZ2NGeG1XeTF6b2FYR2tiV2grTFJhdXFybEJVS0ZiK0VCQXdsUkw2SHRvQVVmUDl5emtqYk0yWngyQmt5bmd3WTlPL0d6MG1QT1hQZUgwZWQ1dlRrNVJPSE9nYzh6N2xqRHM3TzRXbWRPZzRMWGlMamtiT2FtYXRKanJRR2NvZEZPM2pObGEwTytwcStNNjJ2b210ZnBzckpUU0w1NEhUM0ZBVVhsRlZtWkVabm5uY2R3VEZvZXlnK2JtRkJkNU5PMHljVmFWUEhuenJ0SDVwNmR5YnpVRTlOYU9udDdCU2xSTDZISzJEN1N2Wk1XOWY2OStON0YzeE5Ma0VkbVd4UnVjZG9HY21VTHo4U0FrNTNXaFB1U0VYYkFFRU5BQ3FvSFdvQlpCMU1zZXlKRXFxS3V2dS8vQjZqOGxxb294V1UrKzEyMmo5azJCQkZBdkJUOG9OR25jZEFDcWhkWEFBeUZaeDEwRUR4MisvUVFaRDNlckx0MXBNckltcXRsVDdWMS81OXExMm1xTXBvODBvSXZ5UFlTYk1NR0ZtdVBMUFVhYUZZY0xzS01HbEs5MW9FNjFENCs2K3FPb1RwZFhoUmRaWDd6Ullxb09TeWZETDYvMDFGaE5WYlRhbXJyM0tkUXo5U2srZFFWVUJ0eFA5NlQxL1BzajM4KytWYTdvUGFPOExobUNsaFA2S3IwTE5kaDYzZXMzWVNCWVRTbHpMRDRramk2cVBYcjU4bEh3Y0VzZEpEcnRrdDB2MDNkdTM3OXk1ZmZ2dTJlRGsyRmpSN3krT2pVMEdTZDE1QVBRSGZKSDRLWk94cWlRU3FteVdtZnlMQy9FOS9sTUxDMmp1a01sbDI5eFlJSFVnOEFDZ2ovQlZjSkg5M1ZpSjczcGp0RWxGWGdDWkNZNWN6a2REZnRVK0hKbk9aaWFWWkRGdVQ3SFA3eTljUHRFYWlZck9vWmdjTzVSVzV1WVN1cXBMQkpldGxOQWpmQlZDWDgwMXI4UVNUN0F3TmoxNVV3alh2d3FuK2F3N0wwVTZYQU81Z3oyUzRGYzlBeTNUWGRNWFZGbnQ3NTJoWTlLRUt5QUdYQ0gyZUVUd0JUM09aNFh3b1gzUlBFczFGTHFUKzhKRUV5Yi9IZERuK0NJWVNTS3RNcG5JSkFaV3hhZFlpUmM4OC8wWHFoQkZPK3RpNWIvLzVhZDc5NkxxWTk0Ump6UFJXSjVkUFlLK1ZyNTJacFZvU0ZkSzhDbjhHR3AyWHF1dGFtOElzaXdJc2t3cm9xUW9rcWlRdldGNEI3MkdXa0FIb0NvK0pveGVmR2R5RWhEc3FSU1FoQitSWEhQYTBDRTNpMXptaDVsY0xsTlVZekgxL3JFUGxwWStPQ1ljWHBzNXVUWU5DTm9yQmRTd2ZVWk1FTGZJWEdCcyt1VmlSeXpXVWN6a2N2ZUY2YldUTTJ1SEJlMHNJSkFxbitKOTJBaEdnQ3BSOVNrK1VVVU1TdWR2bEcraUl6ZnlpRFVQTGMwdkRaWC9UUkdQRUJncWY4UGZ3RCtCQnEwdWdzL0ozVmpsOU5od3h6dWdUSXBwQnhVNGNqSDc3SkdmcFd3SGxnZlM2U3ZkaSsrL2tYdG1xdnliMy84WEFBRC8vd01BS1JJcDdnQUFBQUFCQUFBQUFndUZ4eHcvYzE4UFBQVUFBUVBvQUFBQUFOaGRvSVFBQUFBQTNXWXZOdjQzL3NRSWJRUHhBQUVBQXdBQ0FBQUFBQUFBQUFFQUFBUFkvdThBQUFpWS9qZitOd2h0QUFFQUFBQUFBQUFBQUFBQUFBQUFBQUFoQXJJQVVBRElBQUFDUGYvNkFwa0FUUUpVQUUwQ0xBQWpBZzhBS2dJOUFFRUNQUUFuQWdZQUpBSVdBQ0lCSGdCQkExa0FRUUk4QUVFQ0t3QWtBWTRBUVFHN0FCVUJmd0FSQWpnQVBBSUxBQXdDQWdBT0Fna0FEQUlRQUNVQ0VBQkdBaEFBSGdJUUFCWUNFQUFUQVN3QVBRSGdBQ3NCV0FCSUFWZ0FNQUpwQUNnQ2h3QUhBQUFBTEFBc0FGQUFjZ0NVQU5RQkRBRStBWEFCcEFJTUFpZ0NXZ0o4QXFnQ3lBTUVBeW9EVEFOb0E1UUR4QVB3QkFnRU5BUnlCSllFckFTNEJOSUU3QVVFQlNRQUFRQUFBQ0VBa0FBTUFHTUFCd0FCQUFBQUFBQUFBQUFBQUFBQUFBUUFBM2ljbkpUUGJodGxGTVYvVG16VENzRUNSVlc2aWI0Rml5SzFZMU1sVmR1c0pxUldSa1J4OExnZ0pJUTB0aWUyNWZITXlETjJHcDZBTlcvQlczVEZRL0FjaURXNjE5ZXVYUkFGSzRwMVp1YitPZCs1NTM3QUFYK3lUNlY2SC9pdG5ocXVjRlMvTnJ6SHZmcUY0WDFhOVQzRFZSN1ZmamRjWTFCYkdLN3plYTFqK0NQZVZuOHhmSS9qNm8rRzczTlliUm4rbUtmVkE4T2Y3RHYrTVB3cHg3eGQ0Z284NTJmREZRN0pEZTl4d0ErRzkzbUExYXhVZVVEVGNJM1BPREpjNXdqb01xWWtZVXpLRU1jTlk0Yk1tUkZURUJJelk4d05NUU1jQVQ0SnBiNU5pUlE1aHYvNE5pS2taRWFrRlVlVU9CSkNFaUlLUmxieEo4M0t1TmFPMG1lbVNMcjVsSXlJNkduR2hJZ1VSOGFRakpTWWlkWXBLY2w1U1lNR0JYM2xtMU5TNEZFd0pzRWpZOGFRQm0xYVhOSmx4SmdDUjBzckNiT1FqQnRLYm9tMHY3TUlVYVpQVEVwaHJPYWtESlNuVTM2eFpnZGM0bWlUYSt4bTVjdXRDbzl4Zkt2WndrMWlIRi9pNmIvYllMYmRkOFVtWXFGNmlvWTlFdVY1cXhNY3FlTFMxK2NieFNVdmNUdnBzODNrd3hvTmxKM01la3lQdWM1ZjVpZDV3aVRGdVVOOFFuVlE2QjdpT05QbmdGQVYrWTZBTGhlMGVVMVhuMzA2ZFBDNW9rdkFLODF0MDhIeEZXMnVPTmVNUVBIeVcwc2RjOFgzT0w0bTBCaXBIWnMrb3JrOHZTRTNkd3QzY1lhY1kwcXVXeUF6bHZPTDgrT2RKaXc3bEcyNW8xQlg5SFdQSkZMMlFGU1JQWXNZbWl0eWRjVlV0Vng1b3pEOUJ1WUkrVnJxYk45OWwyMVkyTzZ0dHZpT1RIZllNVGRPTXJrbG93OU4xWHZQTTdmNjV4RXhJS09uRVgweXBqUW91ZE96WFJNeEo4RnhyajYrMEMwcDhkYzUwdWRPWFJJelZRWUJxZGFaa2V0dlpMNEpqWHQveS9mTzdoTFp2S251NkdSOXFsMjZTT1YwWTBhdlZiM1Z0OUJVampjbTBMQ3BacFlqRTViS3k1T0s5eVhhMitJZnF2c0x2ZDB5bm5CR1JzTGdiemZBVXp5YUhIUENLU1B0SUpWVEZuWTdOUFdHYVBLQ1V6MzloRmlqNUw1OG96cEpoUk04bm5IQ0NTOTQ5cDZPS3liT3VMZzFsODNlUHVlYzBlYjBQNTFpR2QvbWpGZnJkLy9lOVZkbDJ0U3pPSjZzbjU3dlBNVkgvOE90WC9CNDY3N3M2QzBnbTdPd2F1KzI0b3FJcVhCeGg1dGF1SWQ0ZndFQUFQLy9Bd0QwdDA5UkFBQURBQUFBQUFBQS84NEFNZ0FBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBIik7Cn1dXT48L3N0eWxlPjxzdHlsZSB0eXBlPSJ0ZXh0L2NzcyI+PCFbQ0RBVEFbLnNoYXBlIHsKICBzaGFwZS1yZW5kZXJpbmc6IGdlb21ldHJpY1ByZWNpc2lvbjsKICBzdHJva2UtbGluZWpvaW46IHJvdW5kOwp9Ci5jb25uZWN0aW9uIHsKICBzdHJva2UtbGluZWNhcDogcm91bmQ7CiAgc3Ryb2tlLWxpbmVqb2luOiByb3VuZDsKfQouYmxlbmQgewogIG1peC1ibGVuZC1tb2RlOiBtdWx0aXBseTsKICBvcGFjaXR5OiAwLjU7Cn0KCgkJLmQyLTIwMjUzMDI2NiAuZmlsbC1OMXtmaWxsOiMwQTBGMjU7fQoJCS5kMi0yMDI1MzAyNjYgLmZpbGwtQjF7ZmlsbDojMEQzMkIyO30KCQkuZDItMjAyNTMwMjY2IC5maWxsLUI0e2ZpbGw6I0UzRTlGRDt9CgkJLmQyLTIwMjUzMDI2NiAuZmlsbC1CNXtmaWxsOiNFREYwRkQ7fQoJCS5kMi0yMDI1MzAyNjYgLnN0cm9rZS1CMXtzdHJva2U6IzBEMzJCMjt9CgkJLmQyLTIwMjUzMDI2NiAuc3Ryb2tlLUIye3N0cm9rZTojMEQzMkIyO30uYXBwZW5kaXggdGV4dC50ZXh0e2ZpbGw6IzBBMEYyNX0ubWR7LS1jb2xvci1mZy1kZWZhdWx0OiMwQTBGMjU7LS1jb2xvci1mZy1tdXRlZDojNjc2QzdFOy0tY29sb3ItZmctc3VidGxlOiM5NDk5QUI7LS1jb2xvci1jYW52YXMtZGVmYXVsdDojRkZGRkZGOy0tY29sb3ItY2FudmFzLXN1YnRsZTojRUVGMUY4Oy0tY29sb3ItYm9yZGVyLWRlZmF1bHQ6IzBEMzJCMjstLWNvbG9yLWJvcmRlci1tdXRlZDojMEQzMkIyOy0tY29sb3ItbmV1dHJhbC1tdXRlZDojRUVGMUY4Oy0tY29sb3ItYWNjZW50LWZnOiMwRDMyQjI7LS1jb2xvci1hY2NlbnQtZW1waGFzaXM6IzBEMzJCMjstLWNvbG9yLWF0dGVudGlvbi1zdWJ0bGU6IzY3NkM3RTstLWNvbG9yLWRhbmdlci1mZzpyZWQ7fS5saWdodC1jb2Rle2Rpc3BsYXk6IGJsb2NrfS5kYXJrLWNvZGV7ZGlzcGxheTogbm9uZX1AbWVkaWEgc2NyZWVuIGFuZCAocHJlZmVycy1jb2xvci1zY2hlbWU6ZGFyayl7CgkJLmQyLTIwMjUzMDI2NiAuZmlsbC1OMXtmaWxsOiNDREQ2RjQ7fQoJCS5kMi0yMDI1MzAyNjYgLmZpbGwtQjF7ZmlsbDojQ0JBNmY3O30KCQkuZDItMjAyNTMwMjY2IC5maWxsLUI0e2ZpbGw6IzU4NUI3MDt9CgkJLmQyLTIwMjUzMDI2NiAuZmlsbC1CNXtmaWxsOiM0NTQ3NUE7fQoJCS5kMi0yMDI1MzAyNjYgLnN0cm9rZS1CMXtzdHJva2U6I0NCQTZmNzt9CgkJLmQyLTIwMjUzMDI2NiAuc3Ryb2tlLUIye3N0cm9rZTojQ0JBNmY3O30uYXBwZW5kaXggdGV4dC50ZXh0e2ZpbGw6I0NERDZGNH0ubWR7LS1jb2xvci1mZy1kZWZhdWx0OiNDREQ2RjQ7LS1jb2xvci1mZy1tdXRlZDojQkFDMkRFOy0tY29sb3ItZmctc3VidGxlOiNBNkFEQzg7LS1jb2xvci1jYW52YXMtZGVmYXVsdDojMUUxRTJFOy0tY29sb3ItY2FudmFzLXN1YnRsZTojMzEzMjQ0Oy0tY29sb3ItYm9yZGVyLWRlZmF1bHQ6I0NCQTZmNzstLWNvbG9yLWJvcmRlci1tdXRlZDojQ0JBNmY3Oy0tY29sb3ItbmV1dHJhbC1tdXRlZDojMzEzMjQ0Oy0tY29sb3ItYWNjZW50LWZnOiNDQkE2Zjc7LS1jb2xvci1hY2NlbnQtZW1waGFzaXM6I0NCQTZmNzstLWNvbG9yLWF0dGVudGlvbi1zdWJ0bGU6I0JBQzJERTstLWNvbG9yLWRhbmdlci1mZzpyZWQ7fS5saWdodC1jb2Rle2Rpc3BsYXk6IG5vbmV9LmRhcmstY29kZXtkaXNwbGF5OiBibG9ja319XV0+PC9zdHlsZT48ZyBjbGFzcz0iY3pFPSBncm91cCI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iMTIiIHk9IjEyIiB3aWR0aD0iMjA2IiBoZWlnaHQ9IjI3NSIgcng9IjgiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjQiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjExNSIgeT0iMzUiIGNsYXNzPSJ0ZXh0LWJvbGQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MThweCI+MS4gQXVzZ2FuZ3NsYWdlPC90ZXh0PjwvZz48ZyBjbGFzcz0iY3pJPSBncm91cCI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iMjg4IiB5PSIzMiIgd2lkdGg9IjIwNyIgaGVpZ2h0PSIyMzQiIHJ4PSI4IiBjbGFzcz0iIHN0cm9rZS1CMSBmaWxsLUI0IiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSIzOTEuNSIgeT0iNTUiIGNsYXNzPSJ0ZXh0LWJvbGQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MThweCI+Mi4gTmV1ZXIgUG9kIChtYXhTdXJnZSk8L3RleHQ+PC9nPjxnIGNsYXNzPSJjek09IGdyb3VwIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSI1NjUiIHk9IjMyIiB3aWR0aD0iMjA2IiBoZWlnaHQ9IjIzNCIgcng9IjgiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjQiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjY2OCIgeT0iNTUiIGNsYXNzPSJ0ZXh0LWJvbGQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MThweCI+My4gTmV1IHJlYWR5IOKGkiBhbHQgZW5kZXQ8L3RleHQ+PC9nPjxnIGNsYXNzPSJjelE9IGdyb3VwIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSI4NDEiIHk9IjEyIiB3aWR0aD0iMjA2IiBoZWlnaHQ9IjI3NSIgcng9IjgiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjQiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9Ijk0NCIgeT0iMzUiIGNsYXNzPSJ0ZXh0LWJvbGQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MThweCI+NC4gQWxsZSBQb2RzIG5ldTwvdGV4dD48L2c+PGcgY2xhc3M9ImN6RXVZUT09IGNvbXBvbmVudCI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iMjAiIHk9IjQ1IiB3aWR0aD0iMTkwIiBoZWlnaHQ9IjU5IiByeD0iNiIgY2xhc3M9IiBzdHJva2UtQjEgZmlsbC1CNSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iMTE1IiB5PSI4MCIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNXB4Ij5Qb2QgdjEuMCDinJM8L3RleHQ+PC9nPjxnIGNsYXNzPSJjekV1WWc9PSBjb21wb25lbnQiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjIwIiB5PSIxMTIiIHdpZHRoPSIxOTAiIGhlaWdodD0iNTkiIHJ4PSI2IiBjbGFzcz0iIHN0cm9rZS1CMSBmaWxsLUI1IiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSIxMTUiIHk9IjE0NyIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNXB4Ij5Qb2QgdjEuMCDinJM8L3RleHQ+PC9nPjxnIGNsYXNzPSJjekV1WXc9PSIgc3R5bGU9J29wYWNpdHk6MCc+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iMjAiIHk9IjE3OSIgd2lkdGg9IjE5MCIgaGVpZ2h0PSIxMDAiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjwvZz48ZyBjbGFzcz0iY3pJdVlRPT0gY29tcG9uZW50Ij48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSIyOTYiIHk9IjY1IiB3aWR0aD0iMTkwIiBoZWlnaHQ9IjU5IiByeD0iNiIgY2xhc3M9IiBzdHJva2UtQjEgZmlsbC1CNSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iMzkxIiB5PSIxMDAiIGNsYXNzPSJ0ZXh0LWJvbGQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTVweCI+UG9kIHYxLjAg4pyTPC90ZXh0PjwvZz48ZyBjbGFzcz0iY3pJdVlnPT0gY29tcG9uZW50Ij48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSIyOTYiIHk9IjEzMiIgd2lkdGg9IjE5MCIgaGVpZ2h0PSI1OSIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjM5MSIgeT0iMTY3IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPlBvZCB2MS4wIOKckzwvdGV4dD48L2c+PGcgY2xhc3M9ImN6SXVZdz09IHJlc291cmNlIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSIyOTYiIHk9IjE5OSIgd2lkdGg9IjE5MCIgaGVpZ2h0PSI1OSIgcng9IjYiIHN0cm9rZT0iIzFBNzNFOCIgZmlsbD0iI0U4RjBGRSIgc3R5bGU9InN0cm9rZS13aWR0aDoyO3N0cm9rZS1kYXNoYXJyYXk6OC4wMDAwMDAsNy44OTI1MTE7IiAvPjwvZz48dGV4dCB4PSIzOTEiIHk9IjIzNCIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNXB4Ij5Qb2QgdjEuMSDigJMgc3RhcnRldDwvdGV4dD48L2c+PGcgY2xhc3M9ImN6TXVZUT09IGNvbXBvbmVudCI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iNTczIiB5PSI2NSIgd2lkdGg9IjE5MCIgaGVpZ2h0PSI1OSIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjY2OCIgeT0iMTAwIiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPlBvZCB2MS4wIOKckzwvdGV4dD48L2c+PGcgY2xhc3M9ImN6TXVZZz09IGNvbXBvbmVudCI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iNTczIiB5PSIxMzIiIHdpZHRoPSIxOTAiIGhlaWdodD0iNTkiIHJ4PSI2IiBjbGFzcz0iIHN0cm9rZS1CMiBmaWxsLUI1IiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7c3Ryb2tlLWRhc2hhcnJheTo4LjAwMDAwMCw3Ljg5MjUxMTsiIC8+PC9nPjx0ZXh0IHg9IjY2OCIgeT0iMTY3IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPlBvZCB2MS4wIOKAkyBiZWVuZGV0PC90ZXh0PjwvZz48ZyBjbGFzcz0iY3pNdVl3PT0gcmVzb3VyY2UiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjU3MyIgeT0iMTk5IiB3aWR0aD0iMTkwIiBoZWlnaHQ9IjU5IiByeD0iNiIgc3Ryb2tlPSIjMUE3M0U4IiBmaWxsPSIjRThGMEZFIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSI2NjgiIHk9IjIzNCIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNXB4Ij5Qb2QgdjEuMSDinJM8L3RleHQ+PC9nPjxnIGNsYXNzPSJjelF1WVE9PSByZXNvdXJjZSI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iODQ5IiB5PSI0NSIgd2lkdGg9IjE5MCIgaGVpZ2h0PSI1OSIgcng9IjYiIHN0cm9rZT0iIzFBNzNFOCIgZmlsbD0iI0U4RjBGRSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iOTQ0IiB5PSI4MCIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNXB4Ij5Qb2QgdjEuMSDinJM8L3RleHQ+PC9nPjxnIGNsYXNzPSJjelF1WWc9PSByZXNvdXJjZSI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iODQ5IiB5PSIxMTIiIHdpZHRoPSIxOTAiIGhlaWdodD0iNTkiIHJ4PSI2IiBzdHJva2U9IiMxQTczRTgiIGZpbGw9IiNFOEYwRkUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9Ijk0NCIgeT0iMTQ3IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPlBvZCB2MS4xIOKckzwvdGV4dD48L2c+PGcgY2xhc3M9ImN6UXVZdz09IiBzdHlsZT0nb3BhY2l0eTowJz48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSI4NDkiIHk9IjE3OSIgd2lkdGg9IjE5MCIgaGVpZ2h0PSIxMDAiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjwvZz48ZyBjbGFzcz0iS0hNeElDMG1aM1E3SUhNeUtWc3dYUT09Ij48bWFya2VyIGlkPSJtay1kMi0yMDI1MzAyNjYtMzQ4ODM3ODEzNCIgbWFya2VyV2lkdGg9IjEwIiBtYXJrZXJIZWlnaHQ9IjEyIiByZWZYPSI3IiByZWZZPSI2IiB2aWV3Qm94PSIwIDAgMTAgMTIiIG9yaWVudD0iYXV0byIgbWFya2VyVW5pdHM9InVzZXJTcGFjZU9uVXNlIj4gPHBvbHlnb24gcG9pbnRzPSIwLDAgMTAsNiAwLDEyIiBjbGFzcz0iY29ubmVjdGlvbiBmaWxsLUIxIiBzdHJva2Utd2lkdGg9IjIiIC8+IDwvbWFya2VyPjxwYXRoIGQ9Ik0gMjIwIDE0OS41IEwgMjg0IDE0OS41IiBmaWxsPSJub25lIiBjbGFzcz0iY29ubmVjdGlvbiBzdHJva2UtQjEiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIG1hcmtlci1lbmQ9InVybCgjbWstZDItMjAyNTMwMjY2LTM0ODgzNzgxMzQpIiBtYXNrPSJ1cmwoI2QyLTIwMjUzMDI2NikiIC8+PC9nPjxnIGNsYXNzPSJLSE15SUMwbVozUTdJSE16S1Zzd1hRPT0iPjxwYXRoIGQ9Ik0gNDk3IDE0OS41IEwgNTYxIDE0OS41IiBmaWxsPSJub25lIiBjbGFzcz0iY29ubmVjdGlvbiBzdHJva2UtQjEiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIG1hcmtlci1lbmQ9InVybCgjbWstZDItMjAyNTMwMjY2LTM0ODgzNzgxMzQpIiBtYXNrPSJ1cmwoI2QyLTIwMjUzMDI2NikiIC8+PC9nPjxnIGNsYXNzPSJLSE16SUMwbVozUTdJSE0wS1Zzd1hRPT0iPjxwYXRoIGQ9Ik0gNzczIDE0OS41IEwgODM3IDE0OS41IiBmaWxsPSJub25lIiBjbGFzcz0iY29ubmVjdGlvbiBzdHJva2UtQjEiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIG1hcmtlci1lbmQ9InVybCgjbWstZDItMjAyNTMwMjY2LTM0ODgzNzgxMzQpIiBtYXNrPSJ1cmwoI2QyLTIwMjUzMDI2NikiIC8+PC9nPjxtYXNrIGlkPSJkMi0yMDI1MzAyNjYiIG1hc2tVbml0cz0idXNlclNwYWNlT25Vc2UiIHg9Ii05IiB5PSItOSIgd2lkdGg9IjEwNzciIGhlaWdodD0iMzE3Ij4KPHJlY3QgeD0iLTkiIHk9Ii05IiB3aWR0aD0iMTA3NyIgaGVpZ2h0PSIzMTciIGZpbGw9IndoaXRlIj48L3JlY3Q+Cgo8L21hc2s+PC9zdmc+PC9zdmc+Cg==" alt="Ablauf eines Rolling Updates mit maxSurge 1 und maxUnavailable 0" /></p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">minReadySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span><span class="co">          # neuer Pod muss 5 s &quot;ready&quot; sein, bevor es weitergeht</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">strategy</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RollingUpdate</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">rollingUpdate</span><span class="kw">:</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">maxSurge</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co">             # höchstens 1 Pod mehr als gewünscht</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">maxUnavailable</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="co">       # nie weniger Pods als gewünscht</span></span></code></pre></div>
+<p>Damit dabei wirklich <strong>keine</strong> Anfrage verloren geht,
+müssen drei Dinge zusammenpassen:</p>
+<ol type="1">
+<li><strong>Readiness-Probe:</strong> Ein neuer Pod bekommt erst
+Traffic, wenn er bereit ist.</li>
+<li><strong><code>maxUnavailable: 0</code>:</strong> Ein alter Pod wird
+erst beendet, wenn ein neuer bereit ist.</li>
+<li><strong><code>preStop</code>-Hook:</strong> Beim Beenden wartet der
+Pod kurz, bis er aus allen Service-Endpoints entfernt ist – erst dann
+beendet sich die Anwendung.</li>
+</ol>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">lifecycle</span><span class="kw">:</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">preStop</span><span class="kw">:</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">exec</span><span class="kw">:</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;sleep&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;5&quot;</span><span class="kw">]</span></span></code></pre></div>
+<p>Ausprobieren: Ein &quot;Watcher&quot;-Pod fragt eine Minute lang jede Sekunde
+die Version der Demo-App ab, während das Deployment von <code>1.0</code>
+auf <code>1.1</code> aktualisiert wird:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> run watcher <span class="at">--image</span><span class="op">=</span>quay.io/ghilling/ubi-tools:10-latest <span class="at">--restart</span><span class="op">=</span>Never <span class="at">--labels</span><span class="op">=</span>app=demo-job <span class="dt">\</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--</span> sh <span class="at">-c</span> <span class="st">&#39;for i in $(seq 1 60); do curl -sf http://demo:8080/info | grep -o &quot;\&quot;version\&quot;:\&quot;[^\&quot;]*\&quot;&quot; || echo FEHLER; sleep 1; done&#39;</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> wait <span class="at">--for</span><span class="op">=</span>condition=Ready pod/watcher <span class="at">--timeout</span><span class="op">=</span>120s</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Update starten und abwarten</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> set image deployment/demo demo=quay.io/ghilling/quarkus-demo:1.1</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> rollout status deployment/demo</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Ergebnis: erst Version 1.0, dann 1.1 – und kein einziger Fehler</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> wait <span class="at">--for</span><span class="op">=</span>jsonpath=<span class="st">&#39;{.status.phase}&#39;</span>=Succeeded pod/watcher <span class="at">--timeout</span><span class="op">=</span>120s</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> logs watcher <span class="kw">|</span> <span class="fu">sort</span> <span class="kw">|</span> <span class="fu">uniq</span> <span class="at">-c</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Kontrolle: keine Zeile &quot;FEHLER&quot; – grep findet nichts und endet mit Exit-Code 1</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> logs watcher <span class="kw">|</span> <span class="fu">grep</span> FEHLER   <span class="co"># → keine Ausgabe (Fehler erwartet)</span></span></code></pre></div>
+<blockquote>
+<p>Zum Vergleich: Ohne <code>preStop</code>-Hook und mit
+<code>maxUnavailable: 1</code> tauchen im Log meist einzelne
+<code>FEHLER</code>-Zeilen auf.</p>
+</blockquote>
+<hr />
+<h2 id="poddisruptionbudget">PodDisruptionBudget</h2>
+<p>Neben Abstürzen gibt es <strong>freiwillige Unterbrechungen</strong>:
+Ein Admin wartet einen Node (<code>oc adm drain</code>), der Cluster
+wird aktualisiert, Nodes werden verkleinert. Ein
+<strong>PodDisruptionBudget</strong> (PDB) legt fest, wie viele Pods
+dabei mindestens laufen müssen:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">minAvailable</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> demo</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 19-availability/pdb.yaml</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 2 Pods laufen, 2 müssen laufen → ALLOWED DISRUPTIONS 0</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pdb demo</span></code></pre></div>
+<p>Ein <code>oc adm drain</code> darf nur die Cluster-Administration
+ausführen – dieselbe Prüfung lässt sich aber auch im eigenen Project
+beobachten, indem man einen Pod über die <strong>Eviction-API</strong>
+&quot;freiwillig&quot; entfernen lässt (genau das macht <code>drain</code> für
+jeden Pod):</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="va">POD</span><span class="op">=</span><span class="va">$(</span><span class="ex">oc</span> get pod <span class="at">-l</span> app=demo <span class="at">-o</span> jsonpath=<span class="st">&#39;{.items[0].metadata.name}&#39;</span><span class="va">)</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="bu">printf</span> <span class="st">&#39;{&quot;apiVersion&quot;:&quot;policy/v1&quot;,&quot;kind&quot;:&quot;Eviction&quot;,&quot;metadata&quot;:{&quot;name&quot;:&quot;%s&quot;}}&#39;</span> <span class="st">&quot;</span><span class="va">$POD</span><span class="st">&quot;</span> <span class="op">&gt;</span> /tmp/eviction.json</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Abgelehnt: &quot;Cannot evict pod as it would violate the pod&#39;s disruption budget&quot;</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> create <span class="at">--raw</span> <span class="st">&quot;/api/v1/namespaces/</span><span class="va">$(</span><span class="ex">oc</span> project <span class="at">-q</span><span class="va">)</span><span class="st">/pods/</span><span class="va">$POD</span><span class="st">/eviction&quot;</span> <span class="at">-f</span> /tmp/eviction.json   <span class="co"># (Fehler erwartet)</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Mit 3 Pods ist eine Unterbrechung erlaubt</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> scale deployment demo <span class="at">--replicas</span><span class="op">=</span>3</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> rollout status deployment/demo</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pdb demo</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> create <span class="at">--raw</span> <span class="st">&quot;/api/v1/namespaces/</span><span class="va">$(</span><span class="ex">oc</span> project <span class="at">-q</span><span class="va">)</span><span class="st">/pods/</span><span class="va">$POD</span><span class="st">/eviction&quot;</span> <span class="at">-f</span> /tmp/eviction.json</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Der Pod wurde beendet, das Deployment startet einen Ersatz</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> rollout status deployment/demo</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Zurück auf 2 Replicas für den nächsten Abschnitt</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> scale deployment demo <span class="at">--replicas</span><span class="op">=</span>2</span></code></pre></div>
+<blockquote>
+<p><code>oc delete pod</code> umgeht das PDB – es gilt nur für die
+Eviction-API (Node-Wartung, Cluster-Updates, Autoscaler).</p>
+</blockquote>
+<hr />
+<h2 id="pods-auf-nodes-verteilen">Pods auf Nodes verteilen</h2>
+<p>Zwei Pods auf demselben Node helfen wenig, wenn genau dieser Node
+ausfällt. <code>deployment.yaml</code> verteilt die Pods deshalb mit
+<code>topologySpreadConstraints</code> möglichst auf verschiedene Nodes
+– Details und Alternativen (Pod Anti-Affinity) in Kapitel 18.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Spalte NODE: die Pods laufen auf verschiedenen Nodes (sofern genug Nodes vorhanden sind)</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pods <span class="at">-l</span> app=demo <span class="at">-o</span> wide</span></code></pre></div>
+<hr />
+<h2 id="horizontal-pod-autoscaler">Horizontal Pod Autoscaler</h2>
+<p><img role="img" aria-label="Der HorizontalPodAutoscaler passt die Anzahl der Replicas an den CPU-Verbrauch an" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiICBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWluWU1pbiBtZWV0IiB2aWV3Qm94PSIwIDAgMTQ1MyAxODYiPjxzdmcgY2xhc3M9ImQyLTI5MzY1MjYzMiBkMi1zdmciIHdpZHRoPSIxNDUzIiBoZWlnaHQ9IjE4NiIgdmlld0JveD0iLTkgLTkgMTQ1MyAxODYiPjxyZWN0IHg9Ii05IiB5PSItOSIgd2lkdGg9IjE0NTMiIGhlaWdodD0iMTg2IiByeD0iMCIgZmlsbD0idHJhbnNwYXJlbnQiIHN0cm9rZS13aWR0aD0iMCIgLz48c3R5bGUgdHlwZT0idGV4dC9jc3MiPjwhW0NEQVRBWwouZDItMjkzNjUyNjMyIC50ZXh0LWJvbGQgewoJZm9udC1mYW1pbHk6ICJkMi0yOTM2NTI2MzItZm9udC1ib2xkIiwgIlNvdXJjZSBTYW5zIFBybyIsICJTb3VyY2UgU2FucyAzIiwgLWFwcGxlLXN5c3RlbSwgQmxpbmtNYWNTeXN0ZW1Gb250LCAiU2Vnb2UgVUkiLCBIZWx2ZXRpY2EsIEFyaWFsLCBzYW5zLXNlcmlmOwp9CkBmb250LWZhY2UgewoJZm9udC1mYW1pbHk6IGQyLTI5MzY1MjYzMi1mb250LWJvbGQ7Cglmb250LWRpc3BsYXk6IHN3YXA7CglzcmM6IHVybCgiZGF0YTpmb250L3dvZmY7YmFzZTY0LGQwOUdSZ0FCQUFBQUFCQ2dBQW9BQUFBQUdOQUFBZ3VGQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFCUFV5OHlBQUFBOUFBQUFHQUFBQUJnWHhIWHJtTnRZWEFBQUFGVUFBQUF5d0FBQVJwRkwrY0RaMng1WmdBQUFpQUFBQW1YQUFBTXZEUWJzT1JvWldGa0FBQUx1QUFBQURZQUFBQTJHMzhlMUdob1pXRUFBQXZ3QUFBQUpBQUFBQ1FLZndYdmFHMTBlQUFBREJRQUFBQzFBQUFBd0Z1RkIzVnNiMk5oQUFBTXpBQUFBR0lBQUFCaVZReFNKRzFoZUhBQUFBMHdBQUFBSUFBQUFDQUFTQUQzYm1GdFpRQUFEVkFBQUFNdkFBQUlLZ2p3VmtGd2IzTjBBQUFRZ0FBQUFDQUFBQUFnLzlFQU1nQURBaW9DdkFBRkFBQUNpZ0pZQUFBQVN3S0tBbGdBQUFGZUFESUJLUUFBQWdzSEF3TUVBd0lDQkdBQUF2Y0FBQUFEQUFBQUFBQUFBQUJCUkVKUEFDQUFJUC8vQXU3L0JnQUFBOWdCRVNBQUFaOEFBQUFBQWZBQ2xBQUFBQ0FBQTNpY2pNNjlLNFFCSE1EeHorT2U4M0xPZVg5L2U3emN1YnNTS1l0TkRBekt3bkNiVVJta0RQdy9pa3pLSUtYNFMyUTF5TXJ5a3lkL2dMN3JaL2dpVVpDZ0xFMHFhTXFrU2pKVkRjdFdyRm0zWWRPMlhYdjJIV281ZHVyY1pWYUxJTGYxM0s3KzJTMDd1VDNRY3VURW1ZdGZHMitLRWZFVjMvRVpIL0VlTC9FY1QvRVlEM0VmZDNFYk4zRWRWNitSSC8yM1JOT1N1cHFHekp4NUN4YTFLVWdWdGV2UXFVdEp0N0llRmIzNjlCc3dhTWl3RWFQR2pKc3dhY3EwR2JPcS9BQUFBUC8vQXdCRDl6VTFBSGljWEZadFRGdlgrWC9POFZ0aUxnRy9YRi9iK1AzaWUyM0FCdnY2K2tJd21CZGpJTFY1eXg4SWpYa0ppcEkwRU1nL2tFSGJSSjNVck5WYWQ5WHFOTXFhYXV1aWROcTY1a1BWVFd1cnBaT21iUjFxUG5SS082UkpiUk90bWpUdFExbGxkV3NMdnRPNUdFTDZ3VDVYVitlZTUvbjludC96ZXc1b1lBZ0F6K0xMb0lMOVVBVkdvQUVFZzlmZ0YzaWUxVW1DSkxHTVN1S1JRVGVFamFWWGIvQkJkVENvcnZOY2RUODJQWTJ5VS9qeTF2elI3T3pzbDlPdHJhVWZ2LzFPNlRtMDlBNEFscjhHd04wNEQvdkJBR0RTQ1R6SDhheFdxeklKSnBabmRmK29mcmFxc3FaU1RkbSt2djNHN1pjRDd3WFFvVVFpc2lERXpwUytoL05ieTlldUFRQWdDTXRGM0lTdlFnMkF4c2R4WWl3ZUY2SVdSc2R4ckUrcnBjMFdJUnFYR0MyYUhIbm04T2h6SThuajNnR2J4RGIwMTQvMUJaTFdnUkVxOCtLWitSOE5DNzRweGhtZDZqcCt0dGFXbXdFTVdRQ2N3WG5RYnlNV29oWUxiZFpxV1Y2SXh1TmlqT05ZTnZ2VzhSZUdoNTZmQ1RtYUQ0ZkRoNXNkT0o5Ni91elpGM3BYQXJtQmdRbS9rbDhXQUkvaVBGUW9wOUNDS0JoWUEydklGdTVkdm53UDU3LzVabXNaVlpjMmR2YkNYWndIbGJMWGtDM2cvTlp5K1l5Yk9BOXU1YjNKWW1HRWVGd3lDUWFXd0pWWW5ZN2xlZGFGYVRyNzAwZjBScjFhYjlDZmZPVXAzWDZWV3B3Y25veXAxZnQwT0YvNnhOSHVjclU3a0c5citYUFA0SkQ3MmxkZlhYTVBEWG8raHpMZUpwd0hDc3dQNEdWcGd4QVZZd1R1M2I3ejZmUnl6M0RmYWtjaWhmTjhiakF6Mi9neEdqa2wxSUdTZjc5Y3hJTTRUeXFxOFhHaVFUQW85Q3NQV2pUd3hGT1hEMHBTNGdkUFVsZHVvS2xTWVNhVG1VRm5TdGR2WEFFa2Z3V0FCWnlIU2dCQnRRZWo2dDAvdmp4UXhWU3BEMWdQWksvOEFlZExINGduNHZFVEltcFN1S2tGUUp1S2prQVFrVmYwMHNoTDF5SlA2UnYwVHVrdVlpZlFieTVNbFBvdkVJeDFjaEY5aURiQkJpd0E0K1BFV0Z4U2RLTGpGZFhRQnBab1VJckdKVkhSenJ1cG9Vc0Z6QWJkSGJWaTQ5ekI2Uk9yZXJXN2Q1L05ieHBJdUtueDVNQ1JLaTl2cFk4NWF4Zk9sVDRUSE93NXhqU3VyM2RhR1NEeE91VWl0dUJiWUNhVjAvZzRudFd4Qm9IV0tjRVVPZkhSdUJoamZUcmFZa0U5M202bm1sb3FxSjBwWCtKSVkyTDZDQmNmYXdpYUE1VFhJK0picjJmc3p2Yi96NHcrbWx4Tlo1NEt2Vzg4b0hCZUt4ZlJMYlFKOW0vcm4vWGRWNzhXMlhvV08vdStrd3IzT25wWWo1aE1ObG5EcG9QK01hcnQvTWpoNVRZWE0rM01kSFprNmFvWlR3MnBKUVplTHFKTmZBdE00Tm5oaW1UTjhLS3doeVd1SE9hTDNHTHJkQ3pZYk5NV1Z2VnFleHBiZWFPcDNzekdHNmxuSHgwKzMrNndabjZ4MVIyeHM2dG0yL3ZHQTkyOS9UMkFsZHp2b1Uyd2d2dUI3QWsxT3EvRklrUWxScXRWQ1RFU0JibDd6M1YxejdmMlRqYXFjV2xkbjQ2SThRZzM5ZEtiZklNdlRyVXZqd3d2SjVOektaTi9mMXp3VHRoZDZHQlFiQ1JZRUZnQjBESmVJeXZwR1drSHk3WkowTFJBczRhSHU3cHFoN3Jkc2VxYVNqdFY0NXFZUUJmUGFHckVzUmlsbmRkb3ZKeHJxZlFrZ0FwOGNnanIwQ1kwUWlzY1Vwamh4SmdrS3JtWGw3Z1FaUVNhTFRlUWp5Y0VDVVJlWnExV1JRcGVKczIwL2N6Nk9HWExGd2VubW50Tk5SNnJQWGh3U216dy9ucFF0ejkyUkhLNmpiN2dVTzVZNnNJaEo4ODduVHdmakhid2ZzSG1wV3JhN3RpYkd4SUJkV1hBWFJPdFZodFQ5WW5CQURWWDRUTzNIS3JWVjFsTXh0WnVZVGlNMXVxQ2ZEQVFDTmFWQ3JVMnBscWxzdG9jem0xdU9rbXhGWTJDc0t0TjJzQWFGTkoxaHM2Q3p2RlFkTGkvNFBRNEFsWjg2L1VKVy8zY1pPazI4c1lETnFiMEJzZ3lTQUR3TWI2RE9hZ0hBQjAwd0RQYlo4dEZaTVMzb0VyaGFkY1BTRkgvbkdrdEdQWnJkRm9qNWFlT1BvVFpyWFhHaU5BWmpZNThCNkJ5b2szd2tub0p4T3hJdFI3SVRMZTdkcEtlVEVmRVRwUDNVR1Rvb1lMVDQyOGlmNDFvbzhNZHFnLzRJanZwTnBYZUtDODd1TkVtbVBmRzJJdDdWYS8yWkhlQm80MmtLL1FBN20zOUtscW8rdGIwdWQvYTVVb2pTM0l4bFZwTUpoZFNxWVZrS0J3T2hVT2hjdSsxTFI4ZU9kKzJrdTNvekpBV0pHbDF5bjNZZ2piQkJDNEE1bjUyWlA3NE9KNmhUZmR0ZzhCMzl2TVBuMHBNeHowSnUyYVFpNC9WMTVrRGIrR2ZSK3pzOTVkR1Y1TTF0c0Vmb3RwZDAxQ3dvK2ZSSmhnZjRGZkgzVWRlaytGb2g5NWFhYXQydEpuUnhuZzBvdEU4b1ZZSG82VzdnSUNXaStnbmFCTjRwYTY4UkRxVlNKbmp3MWlNM1QrTU5sc1lGNmJOMmp1UmsxeVhMK24ydXB4aHU2czE4TWhveTdpN3l4Nnp0N1J3bnJiZ0tZcHo1Mncxak1sZ01lbXAycFpnenhodlBXSzI4RmJiZ1FxMkpkdzl1YTFWZzF4RUMzZ1pHSVZ0VVdSRlNSSkk5KzR4T3NnTnBqS0d4MVpXV0NkbDB6TW1pVG85dG5aR2UrblMwbnQxZnExNlRrdHRuNVdRaStpL2FBUE0zOUttb1d4dmZ4M3VMN2c4RHM1U1dLMVF1UTlSYzVNb1Z2cFVETnFkcUs5VTNlTnZBQVNVM0k2MjBBYlU3T1ZCa2xRQ1V4NWZrcUE2Z0ZjdDNpcTd6cmpQSDlEcmZuZTV0OEtvVis4ejdFODg5enJUUFBoN3Jmb3MwdFE2N2VqdkgvblNmcmFYL2FoVTBUNWFucWNjQVBvVjJ0aWViU1pXOU5JcWdlWStlQnVkL1dCOUVJV1hCa3AvV1NKNjhjdEY5Qy84TkZTVWRiaGRBOXBNTktqVXBYd1ZzcUI5Snk1ZVBFRit0Z0REQkd6V2dOVWFvRjY3ZnYzVlY2OWZmKzJjZjJwOFBPZno1Y2JIcC95RW96UUEraHQrSENnU256aG5QQzRSazBnL3N4THI4ODJ2cktERm8zcUhlV3R6WlR0ZkZ3RDZERDhORHJLL0hZdXhQYk5WVVMrWmZBTHRINzZZamdSOWtuV29jVGFWbkJKYmN6RnJ3dkxkLzh0ZWZDVFVHT0h0ZzFFaGVyUk5YRnlNcXpRWHlMbU1YRVIzOGVQZzNzdnp6dWttTDgzcWRpUDhaMkNlNjNLbUFwR0R6UTBPdjdQTGlFNzlzOExMU1VlYk8wOVRNZitrM1IrTk5FVVBHT3RRNTRXVnFycnhWUHA0RElpSHRjbEYrQno5Ry9NUUFrQXAwSkpWbGlFakYxVXZ3azNnSUZRRndFTUlIVlU4TG9SL3BtQ3VoelhrUlJGeVo1TkVnYTcvY3UzVUtmSytUODZpQVA2VTNHY1l4UmlJT2tsRDNFNzI5Q1J6VWpRcXZYbnlrMHVYUGpuSkhWdWZPNzArQ3dpYTVDeXFMbi9ESzdkTTBsdTBXWnZQTlVlanpibGtUOCtiM096NjZibjFZNXp5TFNDb2xHZFFIUCtKeEdkTWdxcHliV2J0RmRXSnpaY0lKcnRjVkhYZ3E4QkRHQUJwZ1lkR2RGSEpQb3p1d2E3L3c0ZG9ZK2ZPMlZsQUc2VnFRUEpOM0FLSDhSMXlielhzVVpRL0hQYjd3MkhjVXNleWRlUkhzQ3Jjd1UyeWw5bXo5d29uQ0J3bkNKVElCMFF4d0l0RXEzYTVpS2JSQzFBQnpJTzc5L3JsYjlPNVhMbzNsK3Uxc2F6TnhyTFV3dXpzL1B6czdNSkljem9kajZmVHpTUjNlVlF1SWoyK1NuTFhJUUg5RXMyTWxsNmg4STJ0SEFEOER3QUEvLzhEQUVrY3VQUUFBQUVBQUFBQ0M0VTFxNCtoWHc4ODlRQUJBK2dBQUFBQTJGMmdoQUFBQUFEZFppODIvamYreEFodEEvRUFBUUFEQUFJQUFBQUFBQUFBQVFBQUE5ais3d0FBQ0pqK04vNDNDRzBBQVFBQUFBQUFBQUFBQUFBQUFBQUFBREI0bkFUQVAwb0RRUnpGOGU5N0M0S2d1RUw4UThBVU1pcVlWZXdVekJTL0ppaGtRTkJBMG5rTXdjSWIyTnZhMjloNkFRc3JQWTNiVEQ3KzVJNXZjSzY5cDV6N21lSjNpczRvN2lsK29QaU5XM2YxM3dja2IzSHFUT2lQNU15SjEwaWFzKzlkRG4xTmFNQ2xSa1N6SkR3aFBDWTVFM29sOU1XT1h0ajJGUk92czZFZmp0MXk1SmFwVzBadTJWTkhibjZaYWNaWUMyNjA0RUwzYkRaTGhob1FVRC9Va2ZYRWtNYzZYd0VBQVAvL0F3Q2Q3QjgvQUFBQUFBQUFMQUFzQUZBQWZBQ2dBTFlBd2dEMEFSWUJOQUZRQVdZQm5nSFFBZndDTGdKaUFvZ0M4QU1TQXg0RE9nTnNBNDREdWdQcUJBb0VSZ1JzQkk0RXZnVFNCUDRGRmdWQ0JYUUZnQVdRQlp3RnRnWFFCZDRGOEFYOEJoSUdLQVpPQmw0QUFBQUJBQUFBTUFDUUFBd0FZd0FIQUFFQUFBQUFBQUFBQUFBQUFBQUFCQUFEZUp5Y2xNOXVHMlVVeFg5T2JOTUt3UUpGVmJxSnZnV0xJclZqVXlWVjI2d21wRlpHUkhId3VDQWtoRFMySjdibDhjeklNM1lhbm9BMWI4RmJkTVZEOEJ5SU5iclgxNjVkRUFVcmluVm01djQ1MzdubmZzQUJmN0pQcFhvZitLMmVHcTV3Vkw4MnZNZTkrb1hoZlZyMVBjTlZIdFYrTjF4alVGc1lydk41cldQNEk5NVdmekY4aitQcWo0YnZjMWh0R2Y2WXA5VUR3NS9zTy80dy9Dbkh2RjNpQ2p6blo4TVZEc2tONzNIQUQ0YjNlWURWckZSNVFOTndqYzg0TWx6bkNPZ3lwaVJoVE1vUXh3MWpoc3laRVZNUUVqTmp6QTB4QXh3QlBnbWx2azJKRkRtRy8vZzJJcVJrUnFRVlI1UTRFa0lTSWdwR1Z2RW56Y3E0MW83U1o2Wkl1dm1Vaklqb2FjYUVpQlJIeHBDTWxKaUoxaWtweVhsSmd3WUZmZVdiVTFMZ1VUQW13U05qeHBBR2JWcGMwbVhFbUFKSFN5c0pzNUNNRzBwdWliUy9zd2hScGs5TVNtR3M1cVFNbEtkVGZyRm1CMXppYUpOcjdHYmx5NjBLajNGOHE5bkNUV0ljWCtMcHY5dGd0dDEzeFNaaW9YcUtoajBTNVhtckV4eXA0dExYNXh2RkpTOXhPK216emVUREdnMlVuY3g2VEkrNXpsL21KM25DSk1XNVEzeENkVkRvSHVJNDArZUFVQlg1am9BdUY3UjVUVmVmZlRwMDhMbWlTOEFyelczVHdmRVZiYTQ0MTR4QThmSmJTeDF6eGZjNHZpYlFHS2tkbXo2aXVUeTlJVGQzQzNkeGhweGpTcTViSURPVzg0dno0NTBtTER1VWJibWpVRmYwZFk4a1V2WkFWSkU5aXhpYUszSjF4VlMxWEhtak1QMEc1Z2o1V3VwczMzMlhiVmpZN3EyMitJNU1kOWd4TjA0eXVTV2pEMDNWZTg4enQvcm5FVEVnbzZjUmZUS21OQ2k1MDdOZEV6RW53WEd1UHI3UUxTbngxem5TNTA1ZEVqTlZCZ0dwMXBtUjYyOWt2Z21OZTMvTDk4N3VFdG04cWU3b1pIMnFYYnBJNVhSalJxOVZ2ZFczMEZTT055YlFzS2xtbGlNVGxzckxrNHIzSmRyYjRoK3Erd3U5M1RLZWNFWkd3dUJ2TjhCVFBKb2NjOElwSSswZ2xWTVdkanMwOVlabzhvSlRQZjJFV0tQa3ZueWpPa21GRXp5ZWNjSUpMM2oybm80ckpzNjR1RFdYemQ0KzU1elI1dlEvbldJWjMrYU1WK3QzLzk3MVYyWGExTE00bnF5Zm51ODh4VWYvdzYxZjhIanJ2dXpvTFNDYnM3QnE3N2JpaW9pcGNIR0htMXE0aDNoL0FRQUEvLzhEQVBTM1QxRUFBQU1BQUFBQUFBRC96Z0F5QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIpOwp9Ci5kMi0yOTM2NTI2MzIgLnRleHQtaXRhbGljIHsKCWZvbnQtZmFtaWx5OiAiZDItMjkzNjUyNjMyLWZvbnQtaXRhbGljIiwgIlNvdXJjZSBTYW5zIFBybyIsICJTb3VyY2UgU2FucyAzIiwgLWFwcGxlLXN5c3RlbSwgQmxpbmtNYWNTeXN0ZW1Gb250LCAiU2Vnb2UgVUkiLCBIZWx2ZXRpY2EsIEFyaWFsLCBzYW5zLXNlcmlmOwp9CkBmb250LWZhY2UgewoJZm9udC1mYW1pbHk6IGQyLTI5MzY1MjYzMi1mb250LWl0YWxpYzsKCWZvbnQtZGlzcGxheTogc3dhcDsKCXNyYzogdXJsKCJkYXRhOmZvbnQvd29mZjtiYXNlNjQsZDA5R1JnQUJBQUFBQUJEVUFBb0FBQUFBR2J3QUFSaFJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUJQVXk4eUFBQUE5QUFBQUdBQUFBQmdXMVNWZUdOdFlYQUFBQUZVQUFBQXl3QUFBUnBGTCtjRFoyeDVaZ0FBQWlBQUFBblVBQUFOb0kxYWdBMW9aV0ZrQUFBTDlBQUFBRFlBQUFBMkc3VXIybWhvWldFQUFBd3NBQUFBSkFBQUFDUUxlQWpVYUcxMGVBQUFERkFBQUFDekFBQUF3RlBnQS9Cc2IyTmhBQUFOQkFBQUFHSUFBQUJpV21SWEpHMWhlSEFBQUExb0FBQUFJQUFBQUNBQVNBRDJibUZ0WlFBQURZZ0FBQU1yQUFBSU1nbnRWek53YjNOMEFBQVF0QUFBQUNBQUFBQWcvOFlBTWdBREFlRUJrQUFGQUFBQ2lnSlkvL0VBU3dLS0FsZ0FSQUZlQURJQkl3QUFBZ3NGQXdNRUF3a0NCQ0FBQUhjQUFBQURBQUFBQUFBQUFBQkJSRUpQQUFFQUlQLy9BdTcvQmdBQUE5Z0JFU0FBQVpNQUFBQUFBZVlDbEFBQUFDQUFBM2ljak02OUs0UUJITUR4eitPZTgzTE9lWDkvZTd6Y3Vic1NLWXROREF6S3duQ2JVUm1rRFB3L2lrektJS1g0UzJRMXlNcnlreWQvZ0w3clovZ2lVWkNnTEUwcWFNcWtTakpWRGN0V3JGbTNZZE8yWFh2MkhXbzVkdXJjWlZhTElMZjEzSzcrMlMwN3VUM1FjdVRFbVl0ZkcyK0tFZkVWMy9FWkgvRWVML0VjVC9FWUQzRWZkM0ViTjNFZFY2K1JILzIzUk5PU3VwcUd6Sng1Q3hhMUtVZ1Z0ZXZRcVV0SnQ3SWVGYjM2OUJzd2FNaXdFYVBHakpzd2FjcTBHYk9xL0FBQUFQLy9Bd0JEOXpVMUFIaWNmRlpwYkJ2WHRUNzNEalVqeWRSQ0Rqa1VhVWtVT2VTTVJBMUppVU55S0V2Y1JPMGlyY1dXYkN2VzRrM3hsa1RPZ3NTeG5jVkcvQnkvRjRQUE1CN3dnalp4a3haSWtLSUluQlpvMmpSRms2QlEwenBvVWJkSTRTWXRtdFJKN1FKSkJTSklnMmltdUVOS3BseWdmeTRJenIzbm51ODczL25PaFFyd0FPQjc4U1dnb0FycXdBeFdBSmwxVVpTc0tMeU5ra1dSWnhoRlpGbkdjeG90bjM3V2tKbjVhK3ZsZjBwT3crQ1RMNC8rZmVFVmZHbjFLSHBpOXZISDFidk9IVGl3NDlZdDFZZCtmd3NBQUd1L0JFQy93M21vQWhNQXk4aWlJSWc4VFNNa3M3eklNeDl0ZWJ2YVVHMHdPR1QxVjJqL1RIYkMvT2toZEh4cEtYdzQxblczT29IenEwdFhyd0lnNk5JSzJJKy9BVTZBQ3JjZ1JNSUpMSWM0R3lNSXZMc1dXeTBjSjRlaWlvMm1rWHYwWUxSajVsUTJOdEVRWmFQQ2x2bGVqM3VrdXpYVHdudG1qWmxIdHVZdVBUeW8rTnBheFBqK1IzcTZaeU10bTBOT1A4a1ZlQUFjMVhObENRTnlpTE5hYUpvWDVWQTBHZ2tMUE0rZmVmVHBaNmFldjI5NmV1cGs1dTU5VVp6L3IrTVBmLzlBYXZ2LzdaazlSUEFpUGNZaG5JZE5lZ1RLeGNvVXo3b28vc3pXR0dxTjVjNXNUYXJ2SjNCZXZZV3NxMHNvcGk0WHowQUI1NEVxbnVIUGJEMkQ4NnRMNi9IZXdIbXc2OTlZbTZ6b0VhTlJoV2NvbmlKY01oUi9acmFMTXd5OFBYdG1ORnZsTUJyR2ZpYkZPUU5kV3ptQzgrcHo1ODZodmF0TDZIN3BjUHRGOWR0bzkwWHBrS1JlS09IMTY3bGF5dkh5RkN1SDFnQy92dnYra1NlM0h3cW41dzhjemc0ZHdQbVI2Zkc3TzlVdjBlRDRXSmRjeER5bUZmQWl6Z09uMXlZU2pwSWNhYXRGTHduNVNhUG0vVWRvdzhqVzBhcFVmMnpHT3BHZGJEeHRQTFJvRGRyUmt2cTAzejJRMjMwRVhWU1BYRGhPNGswQzREVE9RdzJBVE1rc3g5bmtLSW1KbnVrZTIxeFJTUm5zRWNjUHRxc3Y0N3g2S1hKUE5ISmZHQjNWNlFLa2FRQzRTYThoOEFweUtTNEd1UmhValY1V3I5V2lwNnZWR1RSYUY4UXQ2Y0RxbjNzQk1JaGFBWDJKVnNCQzJMQzUxNFVsS3pMRkt6eE5pNkdvb3F5cjdMVlVWaHFaazhXNHljQW05aVFyRGZ4T3N6RG1rYXloUms4bTR1dzAzalUxY0h5MzNPcUtxNDRoYnpBVkNQNUJjUHVHWjBQSk9Na1BnMU1yb00veE1saEoxOW5jZ3NnelBDc3pqQnlONnZ6WFlqR1V3SVI4Tjgwd0hIZFRqSnNvUy9KQ1R1U3daN3Rmdno3aXlVU2FPOXJjRTN6QUlodGJYWEc4L09aQ1Uvdk1OTGs2NVJ1ZWxSTnhuL2NUd1EwSXZGb0JYVUVyMExnQm5kNDI5RnFKYkRUOS90aCtLYmNuSXZWd2ZsWm82cGlPZG0xcGlYSnVSODY0T052M3dGVFFiZSt3V2Z1V01yMEREbFBJNGkxaUViVUNGc3V3M09idVA1TzN4VXpWQzdsOGliMnQzanZaRTF2bTMxeU4zVWtmMXJIOEZLMkFBN3psOXhIVk1pNmFXOE5DeVZHaVhvTHc0K2xEL3RIZEhVcTYyVmlodmxQVmt2RTFkZG1hbXliK1g4T1V1WTJQekJrUDcrbGZtcFFDNDZGR3VUWTU3cldiWktzVGVUYzExRFIyT3FjQVFUc0FlZ1pmQXh2cEVENko5VEtWK0dNWW1lR3A5cW5rcG5SOTNkYTR3MmZlWEwzWjVHcXJOTzAxN3B0Q0wzVlZUSXhzcTlta01OV2g5bTBKZFNmaERHa2V0SUpXd0FrQkhZT29GUE5XYUpvdlo1QjBEYldCdlZjNnAzbFBZMzlyWXFUV0xtd1B4c2ZiaDNkM0Nna1R4U1lYMlFlNitBbDNPOWZaeUtmbDV1QWZoYWFJeloxTkhSU2s2YW5NZzd0Q1JJL1UvQ0p5dGZ0K0xiamJCbloyZEhlVEdpTGlwK2g5dkZ6eWw5czZaSFNUaVlSNU44MVF6Z3U1am5wRDI2U1VpRlFtc2owR3cxRGpVS0FmTDkrSzg4RjB6T2xSMzBXU3BhRm0xQmRRWDlJMEVoTyt3bGV3UU5nREdxU2g0bDJTVm9DdjhES1lDZkpJV0hjSjJtb3BsZTJlTkgwaWR3b2hFMFV6cUpvekprMTJmR1QxZjVrcXlveHd0OEd3bmkrK2lWYkFWOHkzbUs2dGxEUzlJZXR5QUh1U2pFSFlKbXpwckFqdTlNYWpCa01pRnpjWUJxMURVai9CTThBTnRmZWpHOE9lVHFWVmt0TXhVN09sSE5QdFg3YzVReXZRVUo3RG5aU1JHOXNtQXhzWTAyKzRrN0QxWGtMWDBRclVRVk81dG91R1FLS3VOZXkxc1RscFpDNDBOaStOenZuOEUzSTBSQmJqd2J2Nkg1Z0tGTmRVNzFKZjcyQm1xYTkzZ01UV3Z0Qms5RGxhS2ZZcFU1WnhMZVoxQjJMWURaNVRmVDVKVTk2cGdHNDJJYUdIeFdibmQ4bzk1eXArTGVYMGw1clZlZkI1aEVxbUkzenFkZDNXMVVtMEF2VmxITmtZWVkyYlRZYW1yTjl1M1Z6djhHU2RjWFJqVm9wWDlWVW11OVdyZ0xTdnRRSTZoVlpBTE8rUVNGZ1F5ZHd2YjBDcmhiTnhwTzcwaTUyejlnNWJTdkRGMjJLQkxtbFlDb3cwQmxqWkpYUkdXeExoamtsanVGVnd0Z1o0aCtoMEpOcmEwMTVQYzZ2RjRYYzJDMlozaitUdjg1S2NlN1FDMm9tUHJudGxWR0g1SkpiMUxpL3p5dGRUWVFQcUd0eVU5YVEzbnpDZTZxSWEzYldPVGFiNm9ESHByM1BVSUhOWHhkbXpDZldtMmR6Y1hGMmhNSFVrZGt3cm9NL1FEYkRmam4xYi9XekpMbDlaVitaUTA2RFVueVVEcG5XN3NWY3hPVmtVVmEreGRpSVp0Rk4xalBERjJhdTlwUVhSUitnR09BQVluU3NTVDlrd05Xc3hYZDFTYXplYnZXbTdlVnRXSUJQVTVEWC9UMWI5aTcxNzZEY00wMVVWRC9Ib0UvVXpWNDduczI1a1d2MUhNQ2NWNDM4QmdMNkhicFRtS1UvbXFjeFVWNkxNQnpVb1hxbitSRFZLNkdUQ3J6NlZJUHN4K0xRQ2VnK2ZCeE80ZEtSclF0NDQyblJEV3c0TmVuM0RDNUhRZ0tkdGVMNVR6SVNicElDK0dtUDdFcnUrZFhKd3k3N0V6T1VUQS9HK1krZjZNanY2ajUzcjY5MEJpR0JGVCtESDlEZVdJck84RWxWa1NtWWNOZis5Y0t4NlN1bCs4TFF4aFQ0TUdkMnJiNlhXTUx5RHo1Tnp2SktnU2tJWDE1dUFjVEhWbFFzWDVvSnlwQ1h0RnFVZEhaTTdmWk1udHlHTE1UQnhZdSt1Z05UamNuWUliYnY2SW5NTFMwTzlwSjZnRmRCMS9CaTBsR3UwMUthTXlMb1luaW5GcCtrMzBuTk5JUzRkOHcxSnliQlRhbkdOby9hYXY0Vk5QdnZRZk9aZVk5TGY1Z3I3Y25LaXA5N2tRUDdlTnlxTlU5dXk5OFVCTkExc1dnR1cwUWRZQkQrazBER2d3YS8vdjAwclVOTndGQVR3OXdDSTRFZFBBUUFEZnZ4ZTZkMzRJYXBHZHZLbVZCU1o0WTNYYXo1YzgveTBObzUyNE90UUIyQXJ0cFJpbzBsRk9OdWpEUzdsNElqLzhORXFTKzJycVJjbkgvckZqMmZ0WjlVL1BSZFlYQkFJbDllMGNiaFpPaXRHeldUT2toRkdlaEQ1RHgrcE10ZUZTSWhYSFdlUjY1dkJ4WG1CVGIwdytkQzdQeUpuZjZndG9CZnd6MGxPREpMUkVMb1NVM09YcWNXdm53VWRVMXdyNE0veFpSQWhBQUZVQ3lJRTBZeU9Lb0JlaFhWZmdhdm94dHBiMmJrbnR4ZmRVQjM2dDBFOENsZndGYUlMbHN6U0V2K1BzTTI4emRMRTQxRWJaM2MxY1BZV1FEcXY1K0FvMldzcjJ6dkEyY1ZHcnNGcmJPUWNVaE5ubDRpbTY3UUNTcUdMVUFmT2YvZm1ja1dmMzVKdUNQYTFrelVqTmtyTjlTMWVmVFh1U0FkMzV3STcwb0haWENEa1RReDdBajNGbGVTdCtiVUM2c2VYMTNqNUxmbzRyRFlhOFhkWHR3UEF2d0FBQVAvL0F3Q25HTjFwQUFFQUFBQUJHRkdMQUVuZFh3ODg5UUFCQStnQUFBQUEyRjJnekFBQUFBRGRaaTgzL3IzKzNRZ2RBOGtBQWdBREFBSUFBQUFBQUFBQUFRQUFBOWorN3dBQUNFRCt2ZjI4Q0IwRDZBREMvOUVBQUFBQUFBQUFBQUFBQURCNG5BVEFQeTRFWVJqSDhlL3ZONlVJaWVKbG02ZDR6VTVpNlVrb0ZLSWtiTnhBb2xJNWlkSTFORHAvS29uV0FjWUJOcEV0Sm9xSlp6OStZSmRQMEg5K2VjcVJMNm0rcHpKUy9VNzFsT283THZUTGxjbjBEcDIzQ1QzVHV0RHBoMVlUWnQ1Q1hpTllFUHl4M3dUaGRjSU5uVXNPdWlIMG1LUE9PUFltaDNyTER6M2xvSjQ5OVV6VTU2QWVXRkthVjY0MW82cHlxamEvTmMrWHBuRENnZ0RPV1ZKMHl3YnpQRmdCQUFELy93TUFJSkl0K3dBQUFBQXVBQzRBVWdDRUFLWUF3QURPQVB3QklBRklBV1lCZmdHMkFlNENIQUpVQW80Q3RnTCtBeWdETkFOV0E1Z0R3Z1B3QkNvRVNBU0VCTElFM2dVT0JTWUZXQVZ3QlpvRnpnWGFCZW9GK0FZV0JqUUdSQVpXQm1RR2VnYVFCc0FHMEFBQUFBRUFBQUF3QUl3QURBQm1BQWNBQVFBQUFBQUFBQUFBQUFBQUFBQUVBQU40bkp5VTNXNGFWeFNGUDJLZ1RmOHVLaXR5YnF4em1Vck80RVp4bE1SWDR6cFdSa1dRTXFRL1VsVnBnREVnWUdiRUREak9FL1M2YjlHM3lGVWZvMDlSOWJyYW13MWhJcXRXVUJSckRXZi9yTFAyMmdmWTUxLzJxRlR2QW4vVmw0WXJITlovTm55SEwrcE53M3VjMVQ4elhPV285cmZoR29QYVc4TjFIdFE2aGovaFhmVVB3NS95dVBxYjRic2NWQzhNZjg2ajZyN2hML2NjL3hqK2lzZThXK0VLUE9WM3d4VU95QXpmWVo5ZkRlOXhENnRacVhLUFk4TTF2dWJRY0oxRG9NdVlnaWxqRW9ZNExoa3paTUdjbUp5UW1EbGpMb2taNEFqd21WTG9yd21SSXNmd3hsOGpRZ3JtUkZweFJJRmpTc2lVaUp5UlZYeXJXU212dEtQMG1TdVNiajRGSXlKNm1qRWhJc0dSTWlRbElXYWlkUW9LTXA3VG9FRk9YL2xtRk9SNDVJeVo0cEV5WjBpRE5oYzA2VEppVEk3alFpc0pzNUNVU3dxdWlMUy9zd2hScGs5TVFtNnNGaVFNbEtkVGZyRm1CelJ4dE1rMGRydHlzMVRoQ01lUG1pM2NKTWJ4TFo3K2Qxdk15bjNYYkNLV3FxZG8yR09xUEs5MGdpTlZYUHI2L0tDNDREbHVKMzNLVEc3WGFLRHNaTlpqZWl4MC9qSS95Uk1tQ2M0ZDRCT3FnMEozSDhlWmZnZUVxc2hQQkhSNVNadlhkUFhicDBNSG54WmRBbDVvYnBzT2p1OW8wK0pjTXdMRnE3TUxkVXlMWDNCOFQ2QXhVanMyZlVSeitYcERadTRXN3VJTXVjZU1UTGRBWml6M0YrZkhPMDFZZGlndHVTTlhWL1IxanlSUzlrQlVrVDJMR0pvck1uWEZUTFZjZXlNMy9RYm1DRGt0ZExidnoyVWJsclo3NnkyK0p0VWRkaXlNazB4dXhlaTJxWG9mZU9aSy8zbEVERWpwYVVTZmxCa05DcTcxYnErSVdEREZjYTQrZnFsYlV1QnZjcVRQdGJva1pxWU1BaEt0TXlmVHY1SDVKalR1L1pMdm5iMGxzbmt6M2RISjVsYTdkSkhLeWRhTVhxdDY2N1BRVkk2M0p0Q3dxYWFXSXhPV3lxdWJpdmNsMml2eEQ5WDl1YjV1S1E4SnRLNU1zbi9qSzNETU0wNDRaYVJkcEhyQ2NuTW1yNFJFbktvQ0UyS05ramZ6aldyMUNJOFRQSjV3d2duUGVQS0JsbXMyenZpNEVwL3Qvajdubk5IbTlOYmJyR0xiblBHaVZPMy9PLytwYkkvMVBvNkhtNituTzAvendVZTQ5aHVPU3U5bVIxOEQyYUNsVlh1L0hTMGlac0xGSFd4cjRlN2ovUWNBQVAvL0F3QnlvVkZBQUFBREFBRC85UUFBLzg0QU1nQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiKTsKfV1dPjwvc3R5bGU+PHN0eWxlIHR5cGU9InRleHQvY3NzIj48IVtDREFUQVsuc2hhcGUgewogIHNoYXBlLXJlbmRlcmluZzogZ2VvbWV0cmljUHJlY2lzaW9uOwogIHN0cm9rZS1saW5lam9pbjogcm91bmQ7Cn0KLmNvbm5lY3Rpb24gewogIHN0cm9rZS1saW5lY2FwOiByb3VuZDsKICBzdHJva2UtbGluZWpvaW46IHJvdW5kOwp9Ci5ibGVuZCB7CiAgbWl4LWJsZW5kLW1vZGU6IG11bHRpcGx5OwogIG9wYWNpdHk6IDAuNTsKfQoKCQkuZDItMjkzNjUyNjMyIC5maWxsLU4xe2ZpbGw6IzBBMEYyNTt9CgkJLmQyLTI5MzY1MjYzMiAuZmlsbC1OMntmaWxsOiM2NzZDN0U7fQoJCS5kMi0yOTM2NTI2MzIgLmZpbGwtQjF7ZmlsbDojMEQzMkIyO30KCQkuZDItMjkzNjUyNjMyIC5maWxsLUIye2ZpbGw6IzBEMzJCMjt9CgkJLmQyLTI5MzY1MjYzMiAuZmlsbC1BQTR7ZmlsbDojRURGMEZEO30KCQkuZDItMjkzNjUyNjMyIC5zdHJva2UtQjF7c3Ryb2tlOiMwRDMyQjI7fQoJCS5kMi0yOTM2NTI2MzIgLnN0cm9rZS1CMntzdHJva2U6IzBEMzJCMjt9LmFwcGVuZGl4IHRleHQudGV4dHtmaWxsOiMwQTBGMjV9Lm1key0tY29sb3ItZmctZGVmYXVsdDojMEEwRjI1Oy0tY29sb3ItZmctbXV0ZWQ6IzY3NkM3RTstLWNvbG9yLWZnLXN1YnRsZTojOTQ5OUFCOy0tY29sb3ItY2FudmFzLWRlZmF1bHQ6I0ZGRkZGRjstLWNvbG9yLWNhbnZhcy1zdWJ0bGU6I0VFRjFGODstLWNvbG9yLWJvcmRlci1kZWZhdWx0OiMwRDMyQjI7LS1jb2xvci1ib3JkZXItbXV0ZWQ6IzBEMzJCMjstLWNvbG9yLW5ldXRyYWwtbXV0ZWQ6I0VFRjFGODstLWNvbG9yLWFjY2VudC1mZzojMEQzMkIyOy0tY29sb3ItYWNjZW50LWVtcGhhc2lzOiMwRDMyQjI7LS1jb2xvci1hdHRlbnRpb24tc3VidGxlOiM2NzZDN0U7LS1jb2xvci1kYW5nZXItZmc6cmVkO30ubGlnaHQtY29kZXtkaXNwbGF5OiBibG9ja30uZGFyay1jb2Rle2Rpc3BsYXk6IG5vbmV9QG1lZGlhIHNjcmVlbiBhbmQgKHByZWZlcnMtY29sb3Itc2NoZW1lOmRhcmspewoJCS5kMi0yOTM2NTI2MzIgLmZpbGwtTjF7ZmlsbDojQ0RENkY0O30KCQkuZDItMjkzNjUyNjMyIC5maWxsLU4ye2ZpbGw6I0JBQzJERTt9CgkJLmQyLTI5MzY1MjYzMiAuZmlsbC1CMXtmaWxsOiNDQkE2Zjc7fQoJCS5kMi0yOTM2NTI2MzIgLmZpbGwtQjJ7ZmlsbDojQ0JBNmY3O30KCQkuZDItMjkzNjUyNjMyIC5maWxsLUFBNHtmaWxsOiM0NTQ3NUE7fQoJCS5kMi0yOTM2NTI2MzIgLnN0cm9rZS1CMXtzdHJva2U6I0NCQTZmNzt9CgkJLmQyLTI5MzY1MjYzMiAuc3Ryb2tlLUIye3N0cm9rZTojQ0JBNmY3O30uYXBwZW5kaXggdGV4dC50ZXh0e2ZpbGw6I0NERDZGNH0ubWR7LS1jb2xvci1mZy1kZWZhdWx0OiNDREQ2RjQ7LS1jb2xvci1mZy1tdXRlZDojQkFDMkRFOy0tY29sb3ItZmctc3VidGxlOiNBNkFEQzg7LS1jb2xvci1jYW52YXMtZGVmYXVsdDojMUUxRTJFOy0tY29sb3ItY2FudmFzLXN1YnRsZTojMzEzMjQ0Oy0tY29sb3ItYm9yZGVyLWRlZmF1bHQ6I0NCQTZmNzstLWNvbG9yLWJvcmRlci1tdXRlZDojQ0JBNmY3Oy0tY29sb3ItbmV1dHJhbC1tdXRlZDojMzEzMjQ0Oy0tY29sb3ItYWNjZW50LWZnOiNDQkE2Zjc7LS1jb2xvci1hY2NlbnQtZW1waGFzaXM6I0NCQTZmNzstLWNvbG9yLWF0dGVudGlvbi1zdWJ0bGU6I0JBQzJERTstLWNvbG9yLWRhbmdlci1mZzpyZWQ7fS5saWdodC1jb2Rle2Rpc3BsYXk6IG5vbmV9LmRhcmstY29kZXtkaXNwbGF5OiBibG9ja319XV0+PC9zdHlsZT48ZyBjbGFzcz0iYldWMGNtbGpjdz09IHN0b3JlIj48ZyBjbGFzcz0ic2hhcGUiID48cGF0aCBkPSJNIDEyIDQ5IEMgMTIgMjUgMTEwIDI1IDEyMSAyNSBDIDEzMSAyNSAyMjkgMjUgMjI5IDQ5IFYgMTMyIEMgMjI5IDE1NiAxMzEgMTU2IDEyMSAxNTYgQyAxMTAgMTU2IDEyIDE1NiAxMiAxMzIgViA0OSBaIiBjbGFzcz0iIHN0cm9rZS1CMSBmaWxsLUFBNCIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48cGF0aCBkPSJNIDEyIDQ5IEMgMTIgNzMgMTEwIDczIDEyMSA3MyBDIDEzMSA3MyAyMjkgNzMgMjI5IDQ5IiBjbGFzcz0iIHN0cm9rZS1CMSBmaWxsLUFBNCIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iMTIwLjUiIHk9IjEwMC41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPjx0c3BhbiB4PSIxMjAuNSIgZHk9IjAiPk1ldHJpY3MgQVBJPC90c3Bhbj48dHNwYW4geD0iMTIwLjUiIGR5PSIxNyI+KENQVS1WZXJicmF1Y2ggZGVyIFBvZHMpPC90c3Bhbj48L3RleHQ+PC9nPjxnIGNsYXNzPSJhSEJoIHJlc291cmNlIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSI0NjMiIHk9IjEyIiB3aWR0aD0iMjEyIiBoZWlnaHQ9Ijc5IiByeD0iNiIgc3Ryb2tlPSIjMUE3M0U4IiBmaWxsPSIjRThGMEZFIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSI1NjkiIHk9IjQ5LjUiIGNsYXNzPSJ0ZXh0LWJvbGQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTVweCI+PHRzcGFuIHg9IjU2OSIgZHk9IjAiPkhvcml6b250YWxQb2RBdXRvc2NhbGVyPC90c3Bhbj48dHNwYW4geD0iNTY5IiBkeT0iMTciPlppZWw6IDUwICUgQ1BVPC90c3Bhbj48L3RleHQ+PC9nPjxnIGNsYXNzPSJaR1Z3Ykc5NWJXVnVkQT09IHJlc291cmNlIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSI5MDMiIHk9IjEyIiB3aWR0aD0iMTY3IiBoZWlnaHQ9Ijc5IiByeD0iNiIgc3Ryb2tlPSIjMUE3M0U4IiBmaWxsPSIjRThGMEZFIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSI5ODYuNSIgeT0iNDkuNSIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNXB4Ij48dHNwYW4geD0iOTg2LjUiIGR5PSIwIj5EZXBsb3ltZW50IGRlbW88L3RzcGFuPjx0c3BhbiB4PSI5ODYuNSIgZHk9IjE3Ij5yZXBsaWNhczogMiDigKYgNTwvdHNwYW4+PC90ZXh0PjwvZz48ZyBjbGFzcz0iY0c5a2N3PT0gcmVzb3VyY2UiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjEzNDUiIHk9IjU0IiB3aWR0aD0iNzciIGhlaWdodD0iNjQiIHJ4PSI2IiBzdHJva2U9IiMxQTczRTgiIGZpbGw9IiNFOEYwRkUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PHJlY3QgeD0iMTMzNSIgeT0iNjQiIHdpZHRoPSI3NyIgaGVpZ2h0PSI2NCIgcng9IjYiIHN0cm9rZT0iIzFBNzNFOCIgZmlsbD0iI0U4RjBGRSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iMTM3My41IiB5PSIxMDEuNSIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNXB4Ij5Qb2RzPC90ZXh0PjwvZz48ZyBjbGFzcz0iS0cxbGRISnBZM01nTFNabmREc2dhSEJoS1Zzd1hRPT0iPjxtYXJrZXIgaWQ9Im1rLWQyLTI5MzY1MjYzMi0zNDg4Mzc4MTM0IiBtYXJrZXJXaWR0aD0iMTAiIG1hcmtlckhlaWdodD0iMTIiIHJlZlg9IjciIHJlZlk9IjYiIHZpZXdCb3g9IjAgMCAxMCAxMiIgb3JpZW50PSJhdXRvIiBtYXJrZXJVbml0cz0idXNlclNwYWNlT25Vc2UiPiA8cG9seWdvbiBwb2ludHM9IjAsMCAxMCw2IDAsMTIiIGNsYXNzPSJjb25uZWN0aW9uIGZpbGwtQjEiIHN0cm9rZS13aWR0aD0iMiIgLz4gPC9tYXJrZXI+PHBhdGggZD0iTSAyMzAuOTk5OTk3IDY5LjAwMzU1NiBMIDQ1OS4wMDAwMDYgNjkuNDA4ODg5IiBmaWxsPSJub25lIiBjbGFzcz0iY29ubmVjdGlvbiBzdHJva2UtQjEiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIG1hcmtlci1lbmQ9InVybCgjbWstZDItMjkzNjUyNjMyLTM0ODgzNzgxMzQpIiBtYXNrPSJ1cmwoI2QyLTI5MzY1MjYzMikiIC8+PHRleHQgeD0iMzQ2IiB5PSI3NSIgY2xhc3M9InRleHQtaXRhbGljIGZpbGwtTjIiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE2cHgiPmxpZXN0IGFsbGUgMTUgczwvdGV4dD48L2c+PGcgY2xhc3M9IktHaHdZU0F0Sm1kME95QmtaWEJzYjNsdFpXNTBLVnN3WFE9PSI+PHBhdGggZD0iTSA2NzcgNTEuNSBMIDg5OSA1MS41IiBmaWxsPSJub25lIiBjbGFzcz0iY29ubmVjdGlvbiBzdHJva2UtQjEiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIG1hcmtlci1lbmQ9InVybCgjbWstZDItMjkzNjUyNjMyLTM0ODgzNzgxMzQpIiBtYXNrPSJ1cmwoI2QyLTI5MzY1MjYzMikiIC8+PHRleHQgeD0iNzg5IiB5PSI1NyIgY2xhc3M9InRleHQtaXRhbGljIGZpbGwtTjIiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE2cHgiPnNldHp0IHJlcGxpY2FzPC90ZXh0PjwvZz48ZyBjbGFzcz0iS0dSbGNHeHZlVzFsYm5RZ0xTWm5kRHNnY0c5a2N5bGJNRjA9Ij48cGF0aCBkPSJNIDEwNzIgNzguOTE2IEwgMTMzMSA3OC45MTYiIGZpbGw9Im5vbmUiIGNsYXNzPSJjb25uZWN0aW9uIHN0cm9rZS1CMSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgbWFya2VyLWVuZD0idXJsKCNtay1kMi0yOTM2NTI2MzItMzQ4ODM3ODEzNCkiIG1hc2s9InVybCgjZDItMjkzNjUyNjMyKSIgLz48dGV4dCB4PSIxMjAyLjUiIHk9Ijg0IiBjbGFzcz0idGV4dC1pdGFsaWMgZmlsbC1OMiIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTZweCI+ZXJ6ZXVndCAvIGVudGZlcm50PC90ZXh0PjwvZz48ZyBjbGFzcz0iS0hCdlpITWdMU1puZERzZ2JXVjBjbWxqY3lsYk1GMD0iPjxtYXJrZXIgaWQ9Im1rLWQyLTI5MzY1MjYzMi0yMTc3MjA2NTY5IiBtYXJrZXJXaWR0aD0iMTAiIG1hcmtlckhlaWdodD0iMTIiIHJlZlg9IjciIHJlZlk9IjYiIHZpZXdCb3g9IjAgMCAxMCAxMiIgb3JpZW50PSJhdXRvIiBtYXJrZXJVbml0cz0idXNlclNwYWNlT25Vc2UiPiA8cG9seWdvbiBwb2ludHM9IjAsMCAxMCw2IDAsMTIiIGNsYXNzPSJjb25uZWN0aW9uIGZpbGwtQjIiIHN0cm9rZS13aWR0aD0iMiIgLz4gPC9tYXJrZXI+PHBhdGggZD0iTSAxMzMzIDEwMy41ODMgTCAxMzA1IDEwMy41ODMgUyAxMjk1IDEwMy41ODMgMTI5NSAxMTMuNTgzIEwgMTI5NSAxMjEgUyAxMjk1IDEzMSAxMjg1IDEzMSBMIDI3Ny45NTg1IDEzMSBDIDI2MC4wNDE1IDEzMSAyNzcuOTU4NDgxIDExMy4xMDE1ODkgMjYwLjA0MTUxOSAxMTMuMDY0NDExIEwgMjMyLjk5OTk5MSAxMTMuMDA4MyIgZmlsbD0ibm9uZSIgY2xhc3M9ImNvbm5lY3Rpb24gc3Ryb2tlLUIyIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7c3Ryb2tlLWRhc2hhcnJheTo4LjAwMDAwMCw3Ljg5MjUxMTsiIG1hcmtlci1lbmQ9InVybCgjbWstZDItMjkzNjUyNjMyLTIxNzcyMDY1NjkpIiBtYXNrPSJ1cmwoI2QyLTI5MzY1MjYzMikiIC8+PHRleHQgeD0iNzg2LjUiIHk9IjEzNyIgY2xhc3M9InRleHQtaXRhbGljIGZpbGwtTjIiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE2cHgiPlZlcmJyYXVjaDwvdGV4dD48L2c+PG1hc2sgaWQ9ImQyLTI5MzY1MjYzMiIgbWFza1VuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeD0iLTkiIHk9Ii05IiB3aWR0aD0iMTQ1MyIgaGVpZ2h0PSIxODYiPgo8cmVjdCB4PSItOSIgeT0iLTkiIHdpZHRoPSIxNDUzIiBoZWlnaHQ9IjE4NiIgZmlsbD0id2hpdGUiPjwvcmVjdD4KPHJlY3QgeD0iMzAyIiB5PSI1OSIgd2lkdGg9Ijg4IiBoZWlnaHQ9IjIxIiBmaWxsPSJibGFjayI+PC9yZWN0Pgo8cmVjdCB4PSI3NDMiIHk9IjQxIiB3aWR0aD0iOTIiIGhlaWdodD0iMjEiIGZpbGw9ImJsYWNrIj48L3JlY3Q+CjxyZWN0IHg9IjExNDMiIHk9IjY4IiB3aWR0aD0iMTE5IiBoZWlnaHQ9IjIxIiBmaWxsPSJibGFjayI+PC9yZWN0Pgo8cmVjdCB4PSI3NTEiIHk9IjEyMSIgd2lkdGg9IjcxIiBoZWlnaHQ9IjIxIiBmaWxsPSJibGFjayI+PC9yZWN0Pgo8L21hc2s+PC9zdmc+PC9zdmc+Cg==" alt="Der HorizontalPodAutoscaler passt die Anzahl der Replicas an den CPU-Verbrauch an" /></p>
+<p>Der <strong>HorizontalPodAutoscaler</strong> (HPA) passt
+<code>replicas</code> eines Deployments automatisch an die Last an.
+Grundlage ist der <strong>CPU-Request</strong> (Kapitel 8): Bei
+<code>averageUtilization: 50</code> und einem Request von
+<code>100m</code> skaliert der HPA hoch, sobald die Pods im Schnitt mehr
+als <code>50m</code> verbrauchen.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">minReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">maxReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">metrics</span><span class="kw">:</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Resource</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">resource</span><span class="kw">:</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">target</span><span class="kw">:</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Utilization</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">averageUtilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 19-availability/hpa.yaml</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get hpa demo        <span class="co"># TARGETS zeigt nach ca. 1 Minute den aktuellen Verbrauch</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Last erzeugen: 3 Pods rufen die Demo-App einige Minuten lang in einer Schleife auf</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 19-availability/load-job.yaml</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Beobachten (Abbruch mit Strg+C)</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get hpa demo <span class="at">-w</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Ohne Beobachten: warten, bis der HPA mehr als 2 Replicas will (höchstens 5 Minuten)</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="va">$(</span><span class="fu">seq</span> 1 30<span class="va">)</span><span class="kw">;</span> <span class="cf">do</span> <span class="bu">[</span> <span class="st">&quot;</span><span class="va">$(</span><span class="ex">oc</span> get hpa demo <span class="at">-o</span> jsonpath=<span class="st">&#39;{.status.desiredReplicas}&#39;</span><span class="va">)</span><span class="st">&quot;</span> <span class="ot">-gt</span> 2 <span class="bu">]</span> <span class="kw">&amp;&amp;</span> <span class="cf">break</span><span class="kw">;</span> <span class="fu">sleep</span> 10<span class="kw">;</span> <span class="cf">done</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get hpa demo</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pods <span class="at">-l</span> app=demo</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Last beenden – heruntergeskaliert wird erst nach 5 Minuten ohne Last (Stabilisierung)</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> delete job load</span></code></pre></div>
+<blockquote>
+<p><strong>HPA und GitOps:</strong> Sobald ein HPA die Replicas steuert,
+sollte das Feld <code>replicas</code> nicht mehr im Deployment-Manifest
+stehen – sonst setzt jedes <code>oc apply</code> den Wert zurück.</p>
+</blockquote>
+<hr />
+<h2 id="manifeste-in-diesem-kapitel">Manifeste in diesem Kapitel</h2>
+<ul>
+<li><code>deployment.yaml</code> – Deployment mit
+Rolling-Update-Strategie, Probes, <code>preStop</code>-Hook und Topology
+Spread (Kapitel 18)</li>
+<li><code>service.yaml</code> – Service für die Demo-App</li>
+<li><code>pdb.yaml</code> – PodDisruptionBudget
+(<code>minAvailable: 2</code>)</li>
+<li><code>hpa.yaml</code> – HorizontalPodAutoscaler (2–5 Replicas, 50 %
+CPU)</li>
+<li><code>load-job.yaml</code> – Job, der Last auf der Demo-App
+erzeugt</li>
+</ul>
+<hr />
+<h2 id="weiterführende-links">Weiterführende Links</h2>
+<ul>
+<li><a href="https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#rolling-update-deployment">Kubernetes:
+Deployments – Rolling Update</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/workloads/pods/disruptions/">Kubernetes:
+Pod Disruption Budgets</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/">Kubernetes:
+Pod Topology Spread Constraints</a></li>
+<li><a href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/">Kubernetes:
+Horizontal Pod Autoscaling</a></li>
+<li><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/nodes/index">OpenShift
+4.22: Nodes</a></li>
+</ul>
+<p>Siehe auch <a href="../99-anhang/DOCUMENTATION.html">99-anhang/DOCUMENTATION.md</a>
+für die vollständige Liste.</p>
+<nav class="pager-bottom">
+  <a class="prev" href="../18-scheduling/README.html"><span>← Zurück</span>Kapitel 18: Scheduling – Affinity, Anti-Affinity und Topology Spread</a>
+
+  <a class="up" href="../README.html#inhaltsverzeichnis"><span>↑ Übersicht</span>Inhaltsverzeichnis</a>
+
+  <a class="next" href="../20-debugging/README.html"><span>Weiter →</span>Kapitel 20: Debugging und Observability</a>
+
+</nav>
+</main>
+</div>
+<script>
+// Kopier-Button für Codeblöcke
+document.querySelectorAll("pre").forEach(function (pre) {
+  var button = document.createElement("button");
+  button.className = "copy";
+  button.type = "button";
+  button.textContent = "Kopieren";
+  button.addEventListener("click", function () {
+    navigator.clipboard.writeText(pre.innerText).then(function () {
+      button.textContent = "Kopiert ✓";
+      setTimeout(function () { button.textContent = "Kopieren"; }, 1500);
+    });
+  });
+  pre.appendChild(button);
+});
+</script>
+</body>
+</html>

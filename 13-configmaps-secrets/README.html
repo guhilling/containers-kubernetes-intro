@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kapitel 13: ConfigMaps und Secrets
+vertieft – Container und Kubernetes/OpenShift</title>
+<style type="text/css">:root {
+--bg: #ffffff;
+--fg: #1f2328;
+--muted: #59636e;
+--border: #d1d9e0;
+--accent: #1a5fb4;
+--accent-soft: #e8f0fe;
+--code-bg: #f6f8fa;
+--topbar-bg: #f6f8fa;
+--warn: #9a6700;
+--warn-bg: #fff8c5;
+--rookie: #1a7f37;
+--rookie-bg: #dafbe1;
+--advanced: #8250df;
+--advanced-bg: #fbefff;
+--tok-comment: #6e7781;
+--tok-keyword: #cf222e;
+--tok-string: #0a3069;
+--tok-variable: #953800;
+--tok-function: #8250df;
+--tok-number: #0550ae;
+--tok-attr: #116329;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg: #0d1117;
+--fg: #e6edf3;
+--muted: #9198a1;
+--border: #30363d;
+--accent: #6cb6ff;
+--accent-soft: #15233a;
+--code-bg: #161b22;
+--topbar-bg: #161b22;
+--warn: #d29922;
+--warn-bg: #2b2111;
+--rookie: #3fb950;
+--rookie-bg: #12261e;
+--advanced: #d2a8ff;
+--advanced-bg: #221a33;
+--tok-comment: #9198a1;
+--tok-keyword: #ff7b72;
+--tok-string: #a5d6ff;
+--tok-variable: #ffa657;
+--tok-function: #d2a8ff;
+--tok-number: #79c0ff;
+--tok-attr: #7ee787;
+}
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 4.5rem; }
+body {
+margin: 0;
+background: var(--bg);
+color: var(--fg);
+font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.topbar {
+position: sticky; top: 0; z-index: 10;
+display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+padding: 0.6rem 1.5rem;
+background: var(--topbar-bg);
+border-bottom: 1px solid var(--border);
+}
+.topbar .course { font-weight: 600; color: var(--fg); }
+.pager { display: flex; gap: 1.25rem; font-size: 0.95rem; }
+.layout {
+display: grid;
+grid-template-columns: 16rem minmax(0, 52rem);
+gap: 3rem;
+justify-content: center;
+padding: 2rem 1.5rem 4rem;
+}
+.toc {
+position: sticky; top: 4.5rem;
+align-self: start;
+max-height: calc(100vh - 6rem);
+overflow-y: auto;
+font-size: 0.9rem;
+}
+.toc-title { margin: 0 0 0.5rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; }
+.toc ul { list-style: none; margin: 0; padding-left: 0; }
+.toc ul ul { padding-left: 1rem; }
+.toc li { margin: 0.3rem 0; }
+.toc a { color: var(--muted); }
+.toc a:hover { color: var(--accent); }
+main { min-width: 0; }
+h1, h2, h3, h4 { line-height: 1.25; margin: 2rem 0 1rem; }
+h1 { font-size: 2rem; margin-top: 0; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+h2 { font-size: 1.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.2rem; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 2rem 0; }
+img { max-width: 100%; height: auto; display: block; margin: 1.5rem auto; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.95rem; display: block; overflow-x: auto; }
+th, td { border: 1px solid var(--border); padding: 0.4rem 0.75rem; text-align: left; vertical-align: top; }
+th { background: var(--code-bg); }
+code { font: 0.875em/1.5 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+:not(pre) > code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.1em 0.35em; }
+pre {
+position: relative;
+background: var(--code-bg);
+border: 1px solid var(--border);
+border-radius: 8px;
+padding: 1rem 1.25rem;
+overflow-x: auto;
+}
+pre code { background: none; border: 0; padding: 0; }
+pre .copy {
+position: absolute; top: 0.5rem; right: 0.5rem;
+font: 0.75rem/1 inherit; font-family: inherit;
+padding: 0.3rem 0.55rem;
+color: var(--muted); background: var(--bg);
+border: 1px solid var(--border); border-radius: 6px;
+cursor: pointer; opacity: 0; transition: opacity 0.15s;
+}
+pre:hover .copy, pre .copy:focus { opacity: 1; }
+blockquote {
+margin: 1rem 0; padding: 0.5rem 1rem;
+color: var(--fg);
+background: var(--accent-soft);
+border-left: 4px solid var(--accent);
+border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0.4rem 0; }
+.pager-bottom { display: flex; justify-content: space-between; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.pager-bottom a { display: flex; flex-direction: column; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; max-width: 40%; }
+.pager-bottom a span { font-size: 0.8rem; color: var(--muted); }
+.pager-bottom .next { margin-left: auto; text-align: right; }
+.pager-bottom .up { text-align: center; }
+@media (max-width: 960px) {
+.layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; padding: 1.5rem 1rem 3rem; }
+.toc { position: static; max-height: none; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+.topbar { padding: 0.6rem 1rem; }
+}
+
+code span.co { color: var(--tok-comment); font-style: italic; }
+code span.kw, code span.cf { color: var(--tok-keyword); }
+code span.st, code span.ss, code span.ch, code span.vs { color: var(--tok-string); }
+code span.va { color: var(--tok-variable); }
+code span.fu, code span.bu { color: var(--tok-function); }
+code span.dv, code span.fl, code span.bn, code span.cn { color: var(--tok-number); }
+code span.at { color: var(--tok-attr); }
+code span.op, code span.ot { color: inherit; }
+div.sourceCode { margin: 1rem 0; }
+pre > code.sourceCode > span { display: inline; }
+
+.badge {
+display: inline-block;
+padding: 0.15em 0.6em;
+border-radius: 999px;
+font-size: 0.75rem;
+font-weight: 600;
+line-height: 1.5;
+vertical-align: middle;
+white-space: nowrap;
+}
+.badge-rookie { color: var(--rookie); background: var(--rookie-bg); border: 1px solid var(--rookie); }
+.badge-advanced { color: var(--advanced); background: var(--advanced-bg); border: 1px solid var(--advanced); }
+.chapter-level { margin: -0.5rem 0 1.5rem; }
+h1 + .chapter-level { margin-top: -0.25rem; }
+.advanced-section {
+margin: 1.5rem 0;
+padding: 0.25rem 1.25rem 0.75rem;
+border-left: 4px solid var(--advanced);
+background: var(--advanced-bg);
+border-radius: 0 8px 8px 0;
+}
+.toc .badge { font-size: 0.65rem; padding: 0 0.45em; margin-left: 0.25rem; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="course" href="../README.html">Container und Kubernetes/OpenShift</a>
+  <nav class="pager">
+    <a href="../README.html#inhaltsverzeichnis">↑ Inhaltsverzeichnis</a>
+
+    <a href="../12-apply-strategies/README.html" title="Kapitel 12: Server-Side vs. Client-Side Apply">← Zurück</a>
+
+    <a href="../14-scc/README.html" title="Kapitel 14: OpenShift Security Context Constraints (SCCs)">Weiter →</a>
+
+  </nav>
+</header>
+<div class="layout">
+<aside class="toc">
+  <p class="toc-title">Inhalt</p>
+<ul>
+<li><a href="#kapitel-13-configmaps-und-secrets-vertieft" id="toc-kapitel-13-configmaps-und-secrets-vertieft">Kapitel 13:
+ConfigMaps und Secrets vertieft</a>
+<ul>
+<li><a href="#das-problem-aus-kapitel-7" id="toc-das-problem-aus-kapitel-7">Das Problem aus Kapitel 7</a></li>
+<li><a href="#die-lösung-configmapgenerator" id="toc-die-lösung-configmapgenerator">Die Lösung:
+<code>configMapGenerator</code></a></li>
+<li><a href="#secretgenerator--dasselbe-prinzip-für-secrets" id="toc-secretgenerator--dasselbe-prinzip-für-secrets"><code>secretGenerator</code>
+– dasselbe Prinzip für Secrets</a></li>
+<li><a href="#ausblick-sealed-secrets" id="toc-ausblick-sealed-secrets">Ausblick: Sealed Secrets</a></li>
+<li><a href="#manifeste-in-diesem-kapitel" id="toc-manifeste-in-diesem-kapitel">Manifeste in diesem
+Kapitel</a></li>
+<li><a href="#weiterführende-links" id="toc-weiterführende-links">Weiterführende Links</a></li>
+</ul></li>
+</ul>
+</aside>
+<main>
+<h1 id="kapitel-13-configmaps-und-secrets-vertieft">Kapitel 13:
+ConfigMaps und Secrets vertieft</h1>
+<div class="chapter-level">
+<span class="badge badge-advanced">Advanced · Tag 3–4</span>
+</div>
+<h2 id="das-problem-aus-kapitel-7">Das Problem aus Kapitel 7</h2>
+<p>In Kapitel 7 haben wir gesehen: Wenn eine als Volume gemountete
+ConfigMap geändert wird, aktualisiert Kubernetes das Volume im laufenden
+Pod (nach ca. 1 Minute) – aber <strong>die Anwendung merkt davon meist
+nichts</strong>, wenn sie die Datei nur beim Start einliest. Ein
+&quot;richtiger&quot; Rollout (mit neuen, frischen Pods) passiert <strong>nicht
+automatisch</strong>.</p>
+<p>Noch unpraktischer wird es bei Umgebungsvariablen aus
+ConfigMaps/Secrets (<code>valueFrom.configMapKeyRef</code> /
+<code>secretKeyRef</code>): Diese werden <strong>nur beim
+Containerstart</strong> ausgelesen. Eine spätere Änderung der ConfigMap
+wirkt sich erst nach einem manuellen Neustart des Pods aus.</p>
+<hr />
+<h2 id="die-lösung-configmapgenerator">Die Lösung:
+<code>configMapGenerator</code></h2>
+<p>Statt eine ConfigMap mit festem Namen zu pflegen, lässt man Kustomize
+sie <strong>aus Dateien generieren</strong> – bei jeder inhaltlichen
+Änderung entsteht dabei ein <strong>neuer Name mit
+Content-Hash-Suffix</strong>:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># kustomization.yaml</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kustomize.config.k8s.io/v1beta1</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Kustomization</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> deployment.yaml</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">configMapGenerator</span><span class="kw">:</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> html-content</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">files</span><span class="kw">:</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> html/index.html</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">options</span><span class="kw">:</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">immutable</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="fu">secretGenerator</span><span class="kw">:</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> demo-secret</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">literals</span><span class="kw">:</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> password=changeme</span></span></code></pre></div>
+<p>Im Deployment wird ganz normal auf den <strong>logischen</strong>
+Namen <code>html-content</code> verwiesen:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> html-content</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">configMap</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> html-content</span></span></code></pre></div>
+<p>Beim Rendern ersetzt Kustomize den Namen automatisch durch die
+Hash-Variante – <strong>überall</strong>, wo er referenziert wird
+(Volumes, <code>envFrom</code>, <code>configMapKeyRef</code>):</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> kustomize 13-configmaps-secrets</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># → ConfigMap heißt jetzt z.B. html-content-d5k5dd82gd</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># → Deployment referenziert automatisch denselben Namen</span></span></code></pre></div>
+<p>Ändert sich <code>html/index.html</code>, ändert sich der Hash → ein
+<strong>neuer</strong> ConfigMap-Name → das Pod-Template des Deployments
+ändert sich → Kubernetes löst einen <strong>echten Rollout</strong> aus
+(neue Pods, alte werden terminiert). Genau das Problem aus Kapitel 7 ist
+damit gelöst, ganz ohne manuellen Eingriff oder zusätzliches Tool.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-k</span> 13-configmaps-secrets</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Inhalt ändern und erneut anwenden</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&#39;&lt;h1&gt;Neuer Inhalt!&lt;/h1&gt;&#39;</span> <span class="op">&gt;</span> 13-configmaps-secrets/html/index.html</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-k</span> 13-configmaps-secrets</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> rollout status deployment/demo</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get configmaps <span class="at">-l</span> app=demo   <span class="co"># zwei ConfigMaps: alte + neue Hash-Variante</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Änderung an der Datei wieder rückgängig machen</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> checkout 13-configmaps-secrets/html/index.html</span></code></pre></div>
+<p>Da jede Inhaltsänderung ohnehin eine <strong>neue</strong> ConfigMap
+erzeugt, kann die generierte ConfigMap als <code>immutable: true</code>
+markiert werden: Kubernetes verhindert dann versehentliche Änderungen
+(<code>oc edit</code>) und muss die ConfigMap nicht mehr auf Änderungen
+überwachen (entlastet den API-Server).</p>
+<p>Alte, nicht mehr referenzierte ConfigMaps bleiben zunächst bestehen
+(kein automatisches Aufräumen) – das ist bewusst so gebaut, damit ein
+Rollback auf eine alte Pod-Revision weiterhin die passende ConfigMap
+findet.</p>
+<hr />
+<h2 id="secretgenerator--dasselbe-prinzip-für-secrets"><code>secretGenerator</code>
+– dasselbe Prinzip für Secrets</h2>
+<p><code>secretGenerator</code> funktioniert identisch, nur für Secrets
+(<code>literals</code>, <code>files</code>, oder <code>envs</code> für
+ganze <code>.env</code>-Dateien). Auch hier: Namensänderung bei
+Inhaltsänderung → automatischer Rollout, sobald das Secret per Volume
+oder <code>valueFrom</code> referenziert wird (siehe
+<code>DEMO_SECRET_PASSWORD</code> im <code>deployment.yaml</code> dieses
+Kapitels).</p>
+<h3 id="disablenamesuffixhash-der-trade-off"><code>disableNameSuffixHash</code>:
+der Trade-off</h3>
+<p>Manchmal ist der automatische Rollout <strong>nicht</strong>
+gewünscht (z. B. wenn viele Ressourcen dieselbe ConfigMap referenzieren
+und man den Rollout lieber kontrolliert selbst auslöst). Dafür gibt es
+<code>disableNameSuffixHash: true</code> – dann bleibt der Name stabil,
+aber man verliert den automatischen Rollout-Trigger und ist wieder beim
+Verhalten aus Kapitel 7.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">configMapGenerator</span><span class="kw">:</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> html-content</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">files</span><span class="kw">:</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> html/index.html</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">options</span><span class="kw">:</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">disableNameSuffixHash</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<hr />
+<h2 id="ausblick-sealed-secrets">Ausblick: Sealed Secrets</h2>
+<p>Ein normales Kubernetes-Secret ist nur base64-kodiert (Kapitel 7) –
+<strong>nicht verschlüsselt</strong>. Es darf daher nicht direkt in Git
+landen (auch nicht in einem privaten Repo).</p>
+<p><strong>Sealed Secrets</strong> (Bitnami) lösen das: Ein Secret wird
+lokal mit dem <strong>öffentlichen Schlüssel</strong> eines im Cluster
+laufenden Controllers verschlüsselt und als
+<code>SealedSecret</code>-Custom-Resource abgelegt – dieses YAML ist
+git-safe, da nur der Controller (mit dem privaten Schlüssel) es wieder
+in ein echtes Secret entschlüsseln kann.</p>
+<blockquote>
+<p>Dieses Kapitel demonstriert Sealed Secrets <strong>nicht
+praktisch</strong>, da die Installation des Controllers
+Cluster-Admin-Rechte erfordert. Für eigene Cluster: siehe <a href="https://github.com/bitnami-labs/sealed-secrets">github.com/bitnami-labs/sealed-secrets</a>.</p>
+</blockquote>
+<hr />
+<h2 id="manifeste-in-diesem-kapitel">Manifeste in diesem Kapitel</h2>
+<ul>
+<li><code>kustomization.yaml</code> – <code>configMapGenerator</code> +
+<code>secretGenerator</code></li>
+<li><code>html/index.html</code> – Quelldatei für die generierte
+ConfigMap</li>
+<li><code>deployment.yaml</code> – referenziert ConfigMap/Secret über
+den logischen Namen</li>
+</ul>
+<hr />
+<h2 id="weiterführende-links">Weiterführende Links</h2>
+<ul>
+<li><a href="https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/">Kubernetes:
+Kustomization</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/configuration/configmap/">Kubernetes:
+ConfigMaps</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/configuration/secret/">Kubernetes:
+Secrets</a></li>
+<li><a href="https://github.com/bitnami-labs/sealed-secrets">Sealed
+Secrets (bitnami-labs)</a></li>
+</ul>
+<p>Siehe auch <a href="../99-anhang/DOCUMENTATION.html">99-anhang/DOCUMENTATION.md</a>
+für die vollständige Liste.</p>
+<nav class="pager-bottom">
+  <a class="prev" href="../12-apply-strategies/README.html"><span>← Zurück</span>Kapitel 12: Server-Side vs. Client-Side Apply</a>
+
+  <a class="up" href="../README.html#inhaltsverzeichnis"><span>↑ Übersicht</span>Inhaltsverzeichnis</a>
+
+  <a class="next" href="../14-scc/README.html"><span>Weiter →</span>Kapitel 14: OpenShift Security Context Constraints (SCCs)</a>
+
+</nav>
+</main>
+</div>
+<script>
+// Kopier-Button für Codeblöcke
+document.querySelectorAll("pre").forEach(function (pre) {
+  var button = document.createElement("button");
+  button.className = "copy";
+  button.type = "button";
+  button.textContent = "Kopieren";
+  button.addEventListener("click", function () {
+    navigator.clipboard.writeText(pre.innerText).then(function () {
+      button.textContent = "Kopiert ✓";
+      setTimeout(function () { button.textContent = "Kopieren"; }, 1500);
+    });
+  });
+  pre.appendChild(button);
+});
+</script>
+</body>
+</html>

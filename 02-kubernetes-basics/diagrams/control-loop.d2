@@ -1,0 +1,11 @@
+...@../../tools/diagrams/style
+
+direction: right
+
+desired: "Desired State\n(in etcd)" {class: store}
+controller: Controller {class: component}
+actual: "Actual State\n(im Cluster)" {class: component}
+
+desired -> controller: liest
+actual -> controller: beobachtet
+controller -> actual: "reconcile():\nActual = Desired herstellen"

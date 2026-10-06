@@ -1,0 +1,13 @@
+...@../../tools/diagrams/style
+
+gitops: "" {
+  shape: sequence_diagram
+  dev: Developer
+  git: Git-Repository
+  k8s: "Kubernetes API\n(Soll-Zustand)"
+  cluster: "Cluster\n(Ist-Zustand)"
+
+  dev -> git: git push
+  git -> k8s: oc apply
+  k8s -> cluster: Control-Loop gleicht Ist an Soll an
+}

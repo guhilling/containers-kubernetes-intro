@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - deployment.yaml
+
+# Label auch für die generierte ConfigMap und das Secret
+labels:
+  - pairs:
+      app: demo
+
+configMapGenerator:
+  - name: html-content
+    options:
+      immutable: true
+    files:
+      - html/index.html
+
+secretGenerator:
+  - name: demo-secret
+    literals:
+      - password=changeme

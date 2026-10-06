@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kapitel 15: Persistent
+Storage – Container und Kubernetes/OpenShift</title>
+<style type="text/css">:root {
+--bg: #ffffff;
+--fg: #1f2328;
+--muted: #59636e;
+--border: #d1d9e0;
+--accent: #1a5fb4;
+--accent-soft: #e8f0fe;
+--code-bg: #f6f8fa;
+--topbar-bg: #f6f8fa;
+--warn: #9a6700;
+--warn-bg: #fff8c5;
+--rookie: #1a7f37;
+--rookie-bg: #dafbe1;
+--advanced: #8250df;
+--advanced-bg: #fbefff;
+--tok-comment: #6e7781;
+--tok-keyword: #cf222e;
+--tok-string: #0a3069;
+--tok-variable: #953800;
+--tok-function: #8250df;
+--tok-number: #0550ae;
+--tok-attr: #116329;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg: #0d1117;
+--fg: #e6edf3;
+--muted: #9198a1;
+--border: #30363d;
+--accent: #6cb6ff;
+--accent-soft: #15233a;
+--code-bg: #161b22;
+--topbar-bg: #161b22;
+--warn: #d29922;
+--warn-bg: #2b2111;
+--rookie: #3fb950;
+--rookie-bg: #12261e;
+--advanced: #d2a8ff;
+--advanced-bg: #221a33;
+--tok-comment: #9198a1;
+--tok-keyword: #ff7b72;
+--tok-string: #a5d6ff;
+--tok-variable: #ffa657;
+--tok-function: #d2a8ff;
+--tok-number: #79c0ff;
+--tok-attr: #7ee787;
+}
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 4.5rem; }
+body {
+margin: 0;
+background: var(--bg);
+color: var(--fg);
+font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.topbar {
+position: sticky; top: 0; z-index: 10;
+display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+padding: 0.6rem 1.5rem;
+background: var(--topbar-bg);
+border-bottom: 1px solid var(--border);
+}
+.topbar .course { font-weight: 600; color: var(--fg); }
+.pager { display: flex; gap: 1.25rem; font-size: 0.95rem; }
+.layout {
+display: grid;
+grid-template-columns: 16rem minmax(0, 52rem);
+gap: 3rem;
+justify-content: center;
+padding: 2rem 1.5rem 4rem;
+}
+.toc {
+position: sticky; top: 4.5rem;
+align-self: start;
+max-height: calc(100vh - 6rem);
+overflow-y: auto;
+font-size: 0.9rem;
+}
+.toc-title { margin: 0 0 0.5rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; }
+.toc ul { list-style: none; margin: 0; padding-left: 0; }
+.toc ul ul { padding-left: 1rem; }
+.toc li { margin: 0.3rem 0; }
+.toc a { color: var(--muted); }
+.toc a:hover { color: var(--accent); }
+main { min-width: 0; }
+h1, h2, h3, h4 { line-height: 1.25; margin: 2rem 0 1rem; }
+h1 { font-size: 2rem; margin-top: 0; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+h2 { font-size: 1.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.2rem; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 2rem 0; }
+img { max-width: 100%; height: auto; display: block; margin: 1.5rem auto; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.95rem; display: block; overflow-x: auto; }
+th, td { border: 1px solid var(--border); padding: 0.4rem 0.75rem; text-align: left; vertical-align: top; }
+th { background: var(--code-bg); }
+code { font: 0.875em/1.5 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+:not(pre) > code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.1em 0.35em; }
+pre {
+position: relative;
+background: var(--code-bg);
+border: 1px solid var(--border);
+border-radius: 8px;
+padding: 1rem 1.25rem;
+overflow-x: auto;
+}
+pre code { background: none; border: 0; padding: 0; }
+pre .copy {
+position: absolute; top: 0.5rem; right: 0.5rem;
+font: 0.75rem/1 inherit; font-family: inherit;
+padding: 0.3rem 0.55rem;
+color: var(--muted); background: var(--bg);
+border: 1px solid var(--border); border-radius: 6px;
+cursor: pointer; opacity: 0; transition: opacity 0.15s;
+}
+pre:hover .copy, pre .copy:focus { opacity: 1; }
+blockquote {
+margin: 1rem 0; padding: 0.5rem 1rem;
+color: var(--fg);
+background: var(--accent-soft);
+border-left: 4px solid var(--accent);
+border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0.4rem 0; }
+.pager-bottom { display: flex; justify-content: space-between; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.pager-bottom a { display: flex; flex-direction: column; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; max-width: 40%; }
+.pager-bottom a span { font-size: 0.8rem; color: var(--muted); }
+.pager-bottom .next { margin-left: auto; text-align: right; }
+.pager-bottom .up { text-align: center; }
+@media (max-width: 960px) {
+.layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; padding: 1.5rem 1rem 3rem; }
+.toc { position: static; max-height: none; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+.topbar { padding: 0.6rem 1rem; }
+}
+
+code span.co { color: var(--tok-comment); font-style: italic; }
+code span.kw, code span.cf { color: var(--tok-keyword); }
+code span.st, code span.ss, code span.ch, code span.vs { color: var(--tok-string); }
+code span.va { color: var(--tok-variable); }
+code span.fu, code span.bu { color: var(--tok-function); }
+code span.dv, code span.fl, code span.bn, code span.cn { color: var(--tok-number); }
+code span.at { color: var(--tok-attr); }
+code span.op, code span.ot { color: inherit; }
+div.sourceCode { margin: 1rem 0; }
+pre > code.sourceCode > span { display: inline; }
+
+.badge {
+display: inline-block;
+padding: 0.15em 0.6em;
+border-radius: 999px;
+font-size: 0.75rem;
+font-weight: 600;
+line-height: 1.5;
+vertical-align: middle;
+white-space: nowrap;
+}
+.badge-rookie { color: var(--rookie); background: var(--rookie-bg); border: 1px solid var(--rookie); }
+.badge-advanced { color: var(--advanced); background: var(--advanced-bg); border: 1px solid var(--advanced); }
+.chapter-level { margin: -0.5rem 0 1.5rem; }
+h1 + .chapter-level { margin-top: -0.25rem; }
+.advanced-section {
+margin: 1.5rem 0;
+padding: 0.25rem 1.25rem 0.75rem;
+border-left: 4px solid var(--advanced);
+background: var(--advanced-bg);
+border-radius: 0 8px 8px 0;
+}
+.toc .badge { font-size: 0.65rem; padding: 0 0.45em; margin-left: 0.25rem; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="course" href="../README.html">Container und Kubernetes/OpenShift</a>
+  <nav class="pager">
+    <a href="../README.html#inhaltsverzeichnis">↑ Inhaltsverzeichnis</a>
+
+    <a href="../14-scc/README.html" title="Kapitel 14: OpenShift Security Context Constraints (SCCs)">← Zurück</a>
+
+    <a href="../16-networkpolicies/README.html" title="Kapitel 16: Grundlagen der NetworkPolicies">Weiter →</a>
+
+  </nav>
+</header>
+<div class="layout">
+<aside class="toc">
+  <p class="toc-title">Inhalt</p>
+<ul>
+<li><a href="#kapitel-15-persistent-storage" id="toc-kapitel-15-persistent-storage">Kapitel 15: Persistent
+Storage</a>
+<ul>
+<li><a href="#zusammenspiel-pvc--pv--storageclass" id="toc-zusammenspiel-pvc--pv--storageclass">Zusammenspiel PVC / PV /
+StorageClass</a></li>
+<li><a href="#access-modes" id="toc-access-modes">Access Modes</a></li>
+<li><a href="#pv-lifecycle" id="toc-pv-lifecycle">PV-Lifecycle</a></li>
+<li><a href="#resizing" id="toc-resizing">Resizing</a></li>
+<li><a href="#snapshots" id="toc-snapshots">Snapshots</a></li>
+<li><a href="#geteiltes-volume-rwx" id="toc-geteiltes-volume-rwx">Geteiltes Volume (RWX)</a></li>
+<li><a href="#beispiel-deployment-mit-pvc" id="toc-beispiel-deployment-mit-pvc">Beispiel-Deployment mit
+PVC</a></li>
+<li><a href="#manifeste-in-diesem-kapitel" id="toc-manifeste-in-diesem-kapitel">Manifeste in diesem
+Kapitel</a></li>
+<li><a href="#weiterführende-links" id="toc-weiterführende-links">Weiterführende Links</a></li>
+</ul></li>
+</ul>
+</aside>
+<main>
+<h1 id="kapitel-15-persistent-storage">Kapitel 15: Persistent
+Storage</h1>
+<div class="chapter-level">
+<span class="badge badge-advanced">Advanced · Tag 3–4</span>
+</div>
+<p>Container-Dateisysteme sind flüchtig: Wird ein Container neu
+gestartet, sind alle darin geschriebenen Daten weg. Für alles, was das
+überdauern soll (Datenbanken, Uploads, ...), braucht es
+<strong>PersistentVolumes (PV)</strong> und
+<strong>PersistentVolumeClaims (PVC)</strong>.</p>
+<h2 id="zusammenspiel-pvc--pv--storageclass">Zusammenspiel PVC / PV /
+StorageClass</h2>
+<p><img role="img" aria-label="Zusammenspiel von Pod, PVC, StorageClass und PV" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiICBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWluWU1pbiBtZWV0IiB2aWV3Qm94PSIwIDAgMTIxMSAxODIiPjxzdmcgY2xhc3M9ImQyLTMxMjE0MjUzNDYgZDItc3ZnIiB3aWR0aD0iMTIxMSIgaGVpZ2h0PSIxODIiIHZpZXdCb3g9Ii05IC05IDEyMTEgMTgyIj48cmVjdCB4PSItOSIgeT0iLTkiIHdpZHRoPSIxMjExIiBoZWlnaHQ9IjE4MiIgcng9IjAiIGZpbGw9InRyYW5zcGFyZW50IiBzdHJva2Utd2lkdGg9IjAiIC8+PHN0eWxlIHR5cGU9InRleHQvY3NzIj48IVtDREFUQVsKLmQyLTMxMjE0MjUzNDYgLnRleHQtYm9sZCB7Cglmb250LWZhbWlseTogImQyLTMxMjE0MjUzNDYtZm9udC1ib2xkIiwgIlNvdXJjZSBTYW5zIFBybyIsICJTb3VyY2UgU2FucyAzIiwgLWFwcGxlLXN5c3RlbSwgQmxpbmtNYWNTeXN0ZW1Gb250LCAiU2Vnb2UgVUkiLCBIZWx2ZXRpY2EsIEFyaWFsLCBzYW5zLXNlcmlmOwp9CkBmb250LWZhY2UgewoJZm9udC1mYW1pbHk6IGQyLTMxMjE0MjUzNDYtZm9udC1ib2xkOwoJZm9udC1kaXNwbGF5OiBzd2FwOwoJc3JjOiB1cmwoImRhdGE6Zm9udC93b2ZmO2Jhc2U2NCxkMDlHUmdBQkFBQUFBQThjQUFvQUFBQUFGdVFBQWd1RkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQlBVeTh5QUFBQTlBQUFBR0FBQUFCZ1h4SFhybU50WVhBQUFBRlVBQUFBcFFBQUFPZ0ZPZ1ZKWjJ4NVpnQUFBZndBQUFoeEFBQUxTTUpscEdCb1pXRmtBQUFLY0FBQUFEWUFBQUEyRzM4ZTFHaG9aV0VBQUFxb0FBQUFKQUFBQUNRS2Z3WGthRzEwZUFBQUNzd0FBQUNVQUFBQWxFVEdCU2xzYjJOaEFBQUxZQUFBQUV3QUFBQk1OM1E2VW0xaGVIQUFBQXVzQUFBQUlBQUFBQ0FBUFFEM2JtRnRaUUFBQzh3QUFBTXZBQUFJS2dqd1ZrRndiM04wQUFBTy9BQUFBQ0FBQUFBZy85RUFNZ0FEQWlvQ3ZBQUZBQUFDaWdKWUFBQUFTd0tLQWxnQUFBRmVBRElCS1FBQUFnc0hBd01FQXdJQ0JHQUFBdmNBQUFBREFBQUFBQUFBQUFCQlJFSlBBQ0FBSVAvL0F1Ny9CZ0FBQTlnQkVTQUFBWjhBQUFBQUFmQUNsQUFBQUNBQUEzaWNoTTI3S29aeEFNZnh6L00rai9QamZENy9XVkR1UVRLWWxGSjJvekxJWUhBNWlzeVNMSXI3VUhJTlNyYWZVaWJEMjNmOTFCZVZXb1ZXNHczcmlrWkhzV1hicmozN0RodzZjdXpVdVV0WDNuMGxLRGIvbVJObkx2NU1Qdktkejd6bUpjOTV5bU1lY3ArNzNPWW0xOW5KeHUrNVc1Vml6YXFPV3FOSHJ6NzlCZ3dhMGhvMll0U1ljUk1tVFprMlk5YWNlUXNXTFZteHpBOEFBQUQvL3dNQWExMHVhQUFBQUhpY2JKWmJiTnZXR2NlL2N5U0x0Y0xZcGlpS3VwaWtSRXFrS051MExZcWtMN0pseFpMdE9KSnZhWnlra2UzR1NKTTJqcE8wZGxhMzJOQ0haUVhXdXRnS2QwTzJGTHRoeFRhZ2ZTaXlBbXVCOUdIWTBCYk5RNGNVODFNdkE0WU42TU5xRk1hd0ZvNDBrSllUSjl1RGRBaUM1N3Y4djkvM25RTU5NQVdBRi9FcjRJSkdhQVlmTUFBNkZhTVN1cUpJaEtWYmxzUzZMQVZSeEJUMlZWLzd0YUs2VmRXZGlsNFRubDFZUU9WNS9NcWRDNmZLaTR2L1h1anZyLzdzN1hlcUw2R1Zkd0J3N1JzQVBJelhvUkVvQUpyUUZWbFdKSS9IUmV1MHBFakVQMXBlYkQ0WU9lZ21ROS9jZXZQV3E4bjNrbWc4bSsyK3FHZVdxOS9ENjNkV3IxOEhBRUNnMWJaeEY3NEdFWUFHVVphTmpHbnE2UUJMeUxJa2VqeU1QNkNuVFl2MW9MbVpGNDRlZTJrbWR5WTJFYktrOXNOdHMyUEpYSEJpaGl6OWFQbkNUNloxY1o3bDB2T0h6bHlPaHlxUDF1MFc4RFVRL3AvZHVsbERNblRLNDBITEoxOCtkdnlIeDBmUFJzdWhubFRwMGNvcHYweGUrSmY0Wk4xNEpqWWY0Qzh2bnJuczlWNWVxMzRjMHdCQkdRQy9nZGR0K3pxbDA0RUFxNXVtUmV1VVpMdXlKSUtRRkVYaU1jT1VmL21FMStkMWV5bnZ1Vjg4VHpTNjNNYmM5RnpHN1g2SXdPdlZUMXNIZVg2d0ZZbDNWcitNVGs0SjE3Lysrcm93TlJuOUVnQTdQcnJ3T3BEZ2Q3eWtBd0hHNy9GSUVrUHBhU01qUzFMNTg3RXJJeU9yeGVteHRhRnNBYThybGNuU1l1Y25hT1p4UGJXcnIxVGJ4bDU4RFZLT0Rvb1ZzRE0zTXJLaWFQaC9SR0haWFEvSVAvUmMrbUZwTnFsMTZHM0hZbG01LzRsQ3orWFVrZWlRSW5mMHBoN3VIK203U0hacGovR3l5QW1jTDk3VU9kSnBuc2kwcCtaQ0VhR1Y1eWt4K0hEUnJQUUFxbjBOZ0hXOERnY0JkTmMrblZ6di92blZpV2EyMmQwVWJDci8rRTk0dmZxUmNkWTB6eHFvNjg0cVlFalZ0dEhIYUFkQ0lBR3dvbXhrVE1zSmsxQ2NvQmxLc25tejBxWmxPSnk4VzVpNnVvRWxWUmlLRzUxTGZRdG4xN3h1WWZTaFVJS2V5QXJrOGR6RWllYVlFbVJPYy9HTFQxWC9ycmRLVDdIMGNXOGJGMlRCMWpwZjI4WUJmQlA4ZFdJVWlaQW9uU0VjWjQ0b2lxMmJKQkpNSUlDS3NXSE9UYTVzdUxtQ21EM1JtVjA0SVp1ejdhby9TY2FpQnI3NWVpbk1EVDVaT3ZaTWJtMms5SHpIaDc0bXB4YngyamE2aVhZZy9DQ1Q5NUJrUFI0VUtsN0tqMzJyb0kyMkZxV29rY3QxQlRXNkx6RkxEbHlaT2JvNndMTUxYQ2svVkdhYUg0MUc3QnBqVUdyYmFBZmZCQnFpZTFyWlViT0tvZTlUYWEvSVgxVXU5UzlrMUo2UVoyUE42dzZQNEtEaW85djhrdGxKdnZqTTlKWEIxbURwZDNlR3U4UFNtai8wb2E5cGVQUndFYkFUKzkvUURnUWY2Q2hiR2lKbVUyV3hIbzlMejloZWtERDYxS0hoQy8yamM1MXVYTjMwam5RYlpyYzgvOU1iU3J0b2tvT3JNOU9ydWR4U2dVNDBtbnJzWkpoSGZhclJhZWVDSUFpQVZ2RUg5bXIza3ZVQW80ek9TTlFqaHc3RnA0YUZURXZrWUppTThDZFBvdThzTjBTTTJRenB1ZERRRUpQNWxlcDNBVndnMWpvd2dYYWdFL3BoM0ZGR05qS1c0Y1JlWDB3OXplcU1WRzhzVWJFRjBtMjgvQjZQeXk1NFhUUjY5MWtTWmVlVHIvcm1lMGJwU0RRWVZ2dm1qZmJZVzVORVkrYUV4UWsrVVoycW5DNThlNXhURkk1VEZEVTlwQ1QwVUl5TUROd085N1Juays2RFNTR1Nibkg3Q20zWnlTUzVkRUQwOTQ3SHZjMEIydGMvckU5cjZJT1VxcWpKcEpxcWJzUkRiSXZMRlF5MWNydmE1TzFpTzR5Q2ZwZE5ocElvUjNTQ3ltOFFyVWZTMDRjM3VHaHJNb2h2dm40eTFMWTBWNzJGWW1ZeXhGYmZoRm9OTEFENEJOL0dNb2dBUUlBRUwremFybTBqSDc0SnpZNU9CcVZUZDRGOHY5Uy9RVFUyRUI0Zm1TQlBIY0hTblUzV2g5QnlBMkh2QTNCeGFBZGlkcjEwdTdudGF0MFhHWEYzemRzOU9kSnQ1T25ZZVBmVWtRMHVtdWl5L3pyUjFwRFEwWllVdS9mQzdhcStXVi8yOGtZNzROL3ZZMy9lYTE1M3RIdzNjYlNWNHp2dXkzdVhYNGVGNWdkT21udXRYYTgwQ3VRdUZRcVhjcm1MaGNMRlhJZW1kV2dkSGZYZUcxZzlPbk5sNE9ueVVMNWt0NkFkVnI0MmhnTm9CMmpnQWRoNzBkbHpXcFFWbHFIdmpRMDdmZTZ3OHNqajJRVXptZzAzVE1ybWJGdktuL3dEL20xM1dQcit5ckcxWENRMCtUS0szeDBhVHU3b0IyZ0hmUGZwUzhqM01vK1VaS2JWR3p3WWFta2Q4S090NCtudWhvYm4zRzQxWGYwY0VEQzFiZlJ6dEFPS1U5ZDc4MS9lbmY5M2pkblRuOGVNMzNPNys1eDhTTXdKTVo3VHdueC84b2xqdmNlRlErRk11TGRYamc2b2o1T3lVQWxGV0pvSzBGNHkzcXNXWjVYZ0NYOUFDWWFhRGtpOTJ2RGNMcXRVYlJ0ZHhLdkFPbW9iaG1SWWxtNTM3NzVCQjVYSlFvbDY5dW1uSlk0TWVWbmFJcy9QZnJEc3VYcDE1YjFVd3VOZThwQzd0cksxYmZRZnRBWCtCOWlrNnVQdHI5T0hOL2hvcXh6WVdEdmdFc2JKcFRtVXFYNW1xR0VPalZWYmlvbDJRRUFDb0JyYXFwOURiUDBjc25UWGpkKzhNdVNsdmU1RzJwdC82VmRvNjR0RVdWSEtpUytxTFk1dkdRRDlIbTFCSTRCdTBKSVJZMXc2STMvME5ycjgwZVlrMGxZbXFuOVpzZnZLNFF1L2oyWDdoZ1VFeEZGZ3I2L3dISDRQOUwzejE1RmZjeG1aUVZ4bnpnWjVqOFVtelBoNWw4MGtlcTE5Tks1M2EyRXVuc25FR1k2SkNacjJzbjUrcW5pcUk4Z0g3WmVwYVRMSW5JbEhHRmFJaU9ra2w1TFZDS2NNOTFWVDZKLzV4L3E2U20zeGRFS2svWkZJb2wvck9OSnV4NlBWQmhIQUd6WlByR0thaWloS3p1RzZ5MnlKNytsRDJJMGwwNVRUbWNvZkovejVSRnRTMXNiek0ydTd0UmlybFZFU2YyYnJ5RHBOWkZmU2h1ZFdybGpNVmF4MDJycHg3dE9yVno4OUo1L2VYRHEvdVFnSXVtcGwxRkxmbzVqTzdjT3lrL1dzVjNyUzZaNUtybGk4SVM5dW5sL2FQQzA3ZTIzZEFPQmp0QVV1aDNzcXY0RzJxaTJBYW0vZ1hqaUtiOE1CQUdwZjRBbE5TeVEwRGZlbUpDbGwvK3c3NmhIY0MyL2g5K0dBVGFGcjM5ZjZ2dWRsUVZXRnFLSzhJeVNUUWpTWnhMMnF3S3NxYjcvbVZaVVhWSUQvQWdBQS8vOERBUGtiVVlvQUFBQUFBUUFBQUFJTGhRSEhyeHRmRHp6MUFBRUQ2QUFBQUFEWVhhQ0VBQUFBQU4xbUx6YitOLzdFQ0cwRDhRQUJBQU1BQWdBQUFBQUFBQUFCQUFBRDJQN3ZBQUFJbVA0My9qY0liUUFCQUFBQUFBQUFBQUFBQUFBQUFBQUFKUUt5QUZBQXlBQUFBajMvK2dKR0FDNENmZ0F1QXZvQVRRSlVBRTBDTEFBakFpei8rUUlQQUNvQ1BRQkJBZE1BSkFJOUFDY0NCZ0FrQVZVQUdBSVdBQ0lDT3dCQkFSUUFOd0VlQUVFRFdRQkJBandBUVFJckFDUUNQUUJCQVk0QVFRRzdBQlVCZndBUkFqZ0FQQUlMQUF3QnpBQW1BaXNBSkFKNEFFRUJMQUF1QVZnQVNBRllBREFCRkFCQkFBRC9yUUFBLzBzQUFBQXNBQ3dBVUFCOEFLd0EzZ0VBQVVBQlhBR1VBY1lCOGdJa0FsZ0NmZ0xtQXdnREZBTXdBMklEaEFPd0ErQUVBQVE4QkdJRWhBU2dCTFFFd0FVSUJTZ0ZRZ1ZjQldnRmZnV2tBQUVBQUFBbEFKQUFEQUJqQUFjQUFRQUFBQUFBQUFBQUFBQUFBQUFFQUFONG5KeVV6MjRiWlJURmYwNXMwd3JCQWtWVnVvbStCWXNpdFdOVEpWWGJyQ2FrVmtaRWNmQzRJQ1NFTkxZbnR1WHh6TWd6ZGhxZWdEVnZ3VnQweFVQd0hJZzF1dGZYcmwwUUJTdUtkV2JtL2puZnVlZCt3QUYvc2srbGVoLzRyWjRhcm5CVXZ6YTh4NzM2aGVGOVd2VTl3MVVlMVg0M1hHTlFXeGl1ODNtdFkvZ2ozbFovTVh5UDQrcVBodTl6V0cwWi9waW4xUVBEbit3Ny9qRDhLY2U4WGVJS1BPZG53eFVPeVEzdmNjQVBodmQ1Z05Xc1ZIbEEwM0NOenpneVhPY0k2REttSkdGTXloREhEV09HekprUlV4QVNNMlBNRFRFREhBRStDYVcrVFlrVU9ZYi8rRFlpcEdSR3BCVkhsRGdTUWhJaUNrWlc4U2ZOeXJqV2p0Sm5wa2k2K1pTTWlPaHB4b1NJRkVmR2tJeVVtSW5XS1NuSmVVbURCZ1Y5NVp0VFV1QlJNQ2JCSTJQR2tBWnRXbHpTWmNTWUFrZExLd216a0l3YlNtNkp0TCt6Q0ZHbVQweEtZYXptcEF5VXAxTitzV1lIWE9Kb2sydnNadVhMclFxUGNYeXIyY0pOWWh4ZjR1bS8yMkMyM1hmRkptS2hlb3FHUFJMbGVhc1RIS25pMHRmbkc4VWxMM0U3NmJQTjVNTWFEWlNkekhwTWo3bk9YK1luZWNJa3hibERmRUoxVU9nZTRqalQ1NEJRRmZtT2dDNFh0SGxOVjU5OU9uVHd1YUpMd0N2TmJkUEI4UlZ0cmpqWGpFRHg4bHRMSFhQRjl6aStKdEFZcVIyYlBxSzVQTDBoTjNjTGQzR0duR05LcmxzZ001YnppL1BqblNZc081UnR1YU5RVi9SMWp5UlM5a0JVa1QyTEdKb3JjblhGVkxWY2VhTXcvUWJtQ1BsYTZtemZmWmR0V05qdXJiYjRqa3gzMkRFM1RqSzVKYU1QVGRWN3p6TzMrdWNSTVNDanB4RjlNcVkwS0xuVHMxMFRNU2ZCY2E0K3Z0QXRLZkhYT2RMblRsMFNNMVVHQWFuV21aSHJiMlMrQ1kxN2Y4djN6dTRTMmJ5cDd1aGtmYXBkdWtqbGRHTkdyMVc5MWJmUVZJNDNKdEN3cVdhV0l4T1d5c3VUaXZjbDJ0dmlINnI3QzczZE1wNXdSa2JDNEc4M3dGTThtaHh6d2lrajdTQ1ZVeFoyT3pUMWhtanlnbE05L1lSWW8rUytmS002U1lVVFBKNXh3Z2t2ZVBhZWppc216cmk0TlpmTjNqN25uTkhtOUQrZFlobmY1b3hYNjNmLzN2VlhaZHJVc3ppZXJKK2U3enpGUi8vRHJWL3dlT3UrN09ndElKdXpzR3J2dHVLS2lLbHdjWWViV3JpSGVIOEJBQUQvL3dNQTlMZFBVUUFBQXdBQUFBQUFBUC9PQURJQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPT0iKTsKfQouZDItMzEyMTQyNTM0NiAudGV4dC1pdGFsaWMgewoJZm9udC1mYW1pbHk6ICJkMi0zMTIxNDI1MzQ2LWZvbnQtaXRhbGljIiwgIlNvdXJjZSBTYW5zIFBybyIsICJTb3VyY2UgU2FucyAzIiwgLWFwcGxlLXN5c3RlbSwgQmxpbmtNYWNTeXN0ZW1Gb250LCAiU2Vnb2UgVUkiLCBIZWx2ZXRpY2EsIEFyaWFsLCBzYW5zLXNlcmlmOwp9CkBmb250LWZhY2UgewoJZm9udC1mYW1pbHk6IGQyLTMxMjE0MjUzNDYtZm9udC1pdGFsaWM7Cglmb250LWRpc3BsYXk6IHN3YXA7CglzcmM6IHVybCgiZGF0YTpmb250L3dvZmY7YmFzZTY0LGQwOUdSZ0FCQUFBQUFBODRBQW9BQUFBQUY2QUFBUmhSQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFCUFV5OHlBQUFBOUFBQUFHQUFBQUJnVzFTVmVHTnRZWEFBQUFGVUFBQUFwUUFBQU9nRk9nVkpaMng1WmdBQUFmd0FBQWlUQUFBTC9MN3FLdlpvWldGa0FBQUtrQUFBQURZQUFBQTJHN1VyMm1ob1pXRUFBQXJJQUFBQUpBQUFBQ1FMZUFqSmFHMTBlQUFBQ3V3QUFBQ1VBQUFBbEQ2dkJBSnNiMk5oQUFBTGdBQUFBRXdBQUFCTU9qNDljRzFoZUhBQUFBdk1BQUFBSUFBQUFDQUFQUUQyYm1GdFpRQUFDK3dBQUFNckFBQUlNZ250VnpOd2IzTjBBQUFQR0FBQUFDQUFBQUFnLzhZQU1nQURBZUVCa0FBRkFBQUNpZ0pZLy9FQVN3S0tBbGdBUkFGZUFESUJJd0FBQWdzRkF3TUVBd2tDQkNBQUFIY0FBQUFEQUFBQUFBQUFBQUJCUkVKUEFBRUFJUC8vQXU3L0JnQUFBOWdCRVNBQUFaTUFBQUFBQWVZQ2xBQUFBQ0FBQTNpY2hNMjdLb1p4QU1meHovTStqL1BqZkQ3L1dWRHVRVEtZbEZKMm96TElZSEE1aXN5U0xJcjdVSElOU3JhZlVpYkQyM2Y5MUJlVldvVlc0dzNyaWtaSHNXWGJyajM3RGh3NmN1elV1VXRYM24wbEtEYi9tUk5uTHY1TVB2S2R6N3ptSmM5NXltTWVjcCs3M09ZbTE5bkp4dSs1VzVWaXphcU9XcU5Icno3OUJnd2EwaG8yWXRTWWNSTW1UWmsyWTlhY2VRc1dMVm14ekE4QUFBRC8vd01BYTEwdWFBQUFBSGljZkZaYmJDUGw5VC9mTjVPWlhKeUxQZlpNN01RZXh6T2VjZXl4blhqc21UaU83V1J6VCt6TlpUZGgvN3RKOXZKbncrNnl0QkdVc2hSV0ZGQlhxMHJRZ1BhbEZhVlZBUWtFcXRBaUh1aUZxcUlQVzlxdCtyQ3RxR2pWb3RLQWRpc1ZwUkVDMU14VW4rTk52S25hRjhjUDhUbm5kem0vODBFZHlBRDRTL2dLVU5BQXJlQUNENERPZFZHVWJwcVNRT21xS3JHc3FYSWNLeitCcmozeEhYcjQ2TjhpMy85Y0Urbnh4MStaL3Z1SlYvR1Y3ZlBvNjh1UFBXWWR1M3o2OUYyM2JsbFI5UHRiQUFEWS9oVUEraDFlaHdad0FuQ3NyaXFLS2pFTVFqb25xUkw3MS81M0d1bEdtdmJwMXEvUjNVZExjNjZQejZLSDE5YlM1L3F5OTFoemVIMTc3ZnAxQUFSWmV3dkg4WE1nQXRTRkZDV1RMbUE5eFF1c29raWhGdXh4ODd5ZU1reUJZVkJvK296UmMvUmlxVyt1M2VBTXBmLzRBVGswbFlzTUJ5VjUyVEY4NFdENXlrUGpaclE3cU9idnZqQ1FXODRFTzFKaUhBQVFaTzB0bk1QUFFRaWdMdlRmV3BpU3FWTU1nN1N2WHV3NTl2aGNiczVyY21ha2NHcFVsa3BGT2N1Rkx6Zi9KaXV2T0o2NWNQREtRMk83amZwWGpQYTJOd2V0RHdQaFNpOEpBUDhFcjRPWGNLMXpnbTV5T2lWeGhtRktMQ1ZSaENPV2twNWN6dkwwMkR2TFQwNlhHbndPZXVibldwNm5tWmI2S2J4dVBYLzVNanExdllidTE4N0ZuclZlUkV2UGFtYzE2Mm5BbGRweHZBNU40SzVVVC9FZU44TklFc1hwS1NPVFZpUkpldkt0cGZ1bkhqOThOajEwL1BTNTBzUnB2RDYxT0h0UHIvVVpHcCtkeWVwRU93UU9ld3RaK0RtSUFnZ2hSVFVyQkdUU2lxb1NBUXhqVndDRzhiaDVRZUFyZlQ0YVhvdGsvUXZtd0Z3OFhJcm1Na3U1M0FsUjk0NGx3aGwvcjF4S3BuT3JqdjcrV0N3MTBpZW4rSVJ2MGt6TnA5S1JSS0JiN09sUWtueThjOXpzUDVZR0JQTUFlQWl2UXpPQVR1a2N6d3U2WVppY2pwN0t6WFRVMVZPME4rTjc4N0QxQ2w2M3JtVHVNekpmVHFQejIydGtkZ3lxdllVK1E1dmdKbXdJZTJycXBrNUpwc1F3S3RGeVY5bzNCa3ZhMUlxdTVwMDBWemhacktlbEl5NWxSdFk4cVU1NU9DUDJPbzR0akQyOHBFZTY4cFp2SXB3Y1RDVC9vSVNpazh1cFluNm5uMmh2b1Uvd05mQ1FiU0pzU2F6RTZTeXJWMmp5dUZ1d21pcGdRbjZJWVZtZXY2bm1uWlM3K0hSWjViRjhPRjVwbjVHSE00R2U3dENjbEhEcmpraFhIbDk3KzRRL2RuU1J0QjZNVGk3cmhYdzAvSkVTQWdSaGV3dGRSWnZRZVFlNlBUV3EyL0Rlek4xYStXUkdHK0Rqbk9MdldUU3kvVUdERC9uS2p0WGxrUWNXa2lGdmorQVpXUnMrTU9aenB0emhYZTZ3V29ObGo3di9UVjYvaTJwVHl1dFY5ZzZHOTdPbkJvKy92ZDIzbno1Y3dmSXp0QWsrQ05mMkkyNWl1eGorTmhaS040aDdDY0lQRjgvR3A1ZDZ6S0dBbzg3NlJVTndPT3JQQ2dILzNMZHRUTG02cGN5SzQ5ekowYlY1TFRHYjZ0UmJpck5ocjFQM2lDamMxTjdjMlNzdUFJSVlBSG9LM3dDQmJJaFV4TFZ1WmxtZGxhallRckZwcUszMVlONFhkWFUwZGppN3V1dWRweHovdjRCZXp0Yk5UUjFxYmpMWnhsVHNVTUU2UXZSSHRvdzIwU2FJa0tqZEZ0TmtHS21XUVpJZDFCM3N2ZHE3S01tZG81SENWSXRYT1p6TXo4WW1sM3FWZ3BQaWlxdmNBMWxwTGhUamV6dWxJVDJRL0tQaXp3aWgwdUFaUlZ0Y0dQN0svNldJSDZuanE2Z3JGdjJ0RXVvZU85S1R5eEVORWNsSjlCNitWczJYUFIreWxaREpwS1VRdzFMaTArV2VOcnA3WGl0azZndWxBWnFlNkp4SWpPSnJ0L0pTY3FoUGxLMTNrZVp1YjU2T0pxeVhiWnZVaEMvd1ZheVFoQVFHcEltZFhwcTlCVi9nYStBaXlETnBrbVFrRWFxeTNUZkVQRksraUpDVFlsalV5RHVLVGkrK2Qvc1p0b0Z5SVp5ajZkMTU4VTIwU2JLR3pMc3pybEFkbXJsajZsb0FKNHNzclJ4UytudnJra2ZDZVlPbUMrVThUWTk3SnJSUmdtZU1uNGlOb28xSnVkZU1hUHBRbnpQZ3JzVzA5MjJQTTdRSjdiVXo3S2VNZE95ZVQ5ekJXS1hEZnNMMmN1aDl0QW10NEsvMTlrNGdrS3EzRi9iR3pJbzJ0WkthT2E1TnIwVGpjN3FSSWgrT004ZEdIMWhJN0h3T0hsZ2JPVEErdkRaeVlJelV0aisxZGZRSjJ0elpVN1ptNGhZc1ZSS0k1ZTdJbk1adkZoa3F2SkNvaEUxS0dlQ3dTM3lwTm5PdTR6Y0d4WGgxV2NVejMwT29HanJLeCtHdVBWODlpamFocllZamdWVnVjOU5FKzB0eHI2ZWp6U2VYeER6YVdOYnlEU1AxeFp4MUhaRDlMM3NMWFVTYm9PNi9KL3ZQQ2JrbU84ZmtoZDVsYjQ4d3FFVHozWDJKckRhcEphWTZFNXplcGZRYXdVSzZaOTZSamloaUpDSDVWTkZYNkk0TmhlVkF4TzJMaXdIRkZSclE0aU5oTXZPQXZZV080UE83V1dtWW5GVEVlbVhMYTdMeXJjRTBqYkxqVFNWNXFPTVJ4OFVzMVJscThUVTUyNUtPWXJ6VjE0eGMyYnBMbHdyV1RaY3JFR2lzTTlsV1VydlAza0wvUUJ2ZzNhdTk1MzZ1R3BldjdqcHp3ait1alpiSWdZa2NkaHd3blNLSERPc0c1eVdXUVVjczM1UlV2YjA1QVBRQjJ2alAyL2ZFZUVtbUdacDJ5dHkzeXRZMjJyQStrcVlsZVZKR1hzdFgrYTM5S1FENklkcUFCZ0RKUkpMWnhTS2RiYXhIdzM5cVJ2bDY2NmVXUTBPUEZ1TFdOd29BWU5zazc5RmY4R3RZSVM4L1lFR0c5MGlkeWszN0hOOEFvL0xtMnRVclFXWFNCYXJxWExJY3R4MU5lZHdCaXFpR0RvVW5SRW5RUmRVTXhPT0JEalhTRVZKRFJyaGh0WFRXMGJmWU4zQzRRMVU3QWpFdEVKdDJlTDA2eC9jcS91NlFIQk9EQ1ZWTkJrTmFkQ3htMWVGbTg2Z3hOS3dZVVZrUkJDbW82T0hZUkhRSDR3ZjJFcXpEZWVKRFZpV3ZKaEt5MWJSd055V3pMT1lEa3QvWGVmVEZoR3RBOXZGZVZRNU1WdDRHQ0lic1dYUVhmaDlhQVlRZDY1a0NRdzRaTDN5dHZjczhNeFUvZDc3QjNmTDY0QXZ6RC83eXg4dmVTOWFmbjArc25sQkkzeHYyTE55cy9sWTFYT1FlRVdJcXFPUG43bTF3dGFaSWlkZDlsMURYZDVPcnh4VnU4QWZ6RDc3N28rcnV3SFcwQVZSbGR5anhaUGtVMnFpSWhtQWNUOE5WZkJXYUFMZ2FLQmU0Z0NTNC9SS2VGbmh2Vnp2dkRRSzIvNG5McUI2L0JrMGczUG5mZXMzM0RxY1E4TGdFOGFYS1h6NkF5eDVPQ1BKdVh2UndRcEIzOHlMQXZ3RUFBUC8vQXdDR3RtOE9BQUFCQUFBQUFSaFJFcEQ3QlY4UFBQVUFBUVBvQUFBQUFOaGRvTXdBQUFBQTNXWXZOLzY5L3QwSUhRUEpBQUlBQXdBQ0FBQUFBQUFBQUFFQUFBUFkvdThBQUFoQS9yMzl2QWdkQStnQXd2L1JBQUFBQUFBQUFBQUFBQUFsQW5RQUpBRElBQUFCL3YvTEFpWUFPUUpNQURrQ3dRQWpBaVlBSXdINkFBd0I4QUJTQWhrQUp3SVlBQjhCc3dBbEFoY0FKd0hoQUNVQkdnQXJBaE1BQVFJTEFCOEE3UUFmQVBnQUxBTWZBQjhDRFFBZkFnTUFKd0lYLy9ZQlZnQWZBWkwvL0FGRkFEd0NFQUE0QWNBQU93R2EvL1lDQXdBbkFpc0FId0R5LytFQkl3QkJBU1gvMUFEdEFCOEFBQUJIQUFELzh3QUFBQzRBTGdCU0FJUUF1Z0RvQVF3QlRBRnFBYUlCMmdJSUFrQUNlZ0tpQXVvREZBTWdBMElEaEFPdUE5d0VGZ1EwQkhBRW5nVEtCT2dGQUFVTUJWb0ZlQVdXQmJRRndnWFlCZjRBQVFBQUFDVUFqQUFNQUdZQUJ3QUJBQUFBQUFBQUFBQUFBQUFBQUFRQUEzaWNuSlRkYmhwWEZJVS9ZcUJOL3k0cUszSnVySE9aU3M3Z1JuR1V4RmZqT2xaR1JaQXlwRDlTVldtQU1TQmdac1FNT000VDlMcHYwYmZJVlIralQxSDF1dHFiRFdFaXExWlFGR3NOWi8rc3MvYmFCOWpuWC9hb1ZPOENmOVdYaGlzYzFuODJmSWN2NmszRGU1elZQek5jNWFqMnQrRWFnOXBidzNVZTFEcUdQK0ZkOVEvRG4vSzQrcHZodXh4VUx3eC96cVBxdnVFdjl4ei9HUDZLeDd4YjRRbzg1WGZERlE3SUROOWhuMThONzNFUHExbXBjbzlqd3pXKzV0QnduVU9neTVpQ0tXTVNoamd1R1ROa3daeVluSkNZT1dNdWlSbmdDUENaVXVpdkNaRWl4L0RHWHlOQ0N1WkVXbkZFZ1dOS3lKU0luSkZWZkt0WkthKzBvL1NaSzVKdVBnVWpJbnFhTVNFaXdaRXlKQ1VoWnFKMUNnb3ludE9nUVU1ZitXWVU1SGprakpuaWtUSm5TSU0yRnpUcE1tSk1qdU5DS3dtemtKUkxDcTZJdEwrekNGR21UMHhDYnF3V0pBeVVwMU4rc1dZSE5IRzB5VFIydTNLelZPRUl4NCthTGR3a3h2RXRudjUzVzh6S2ZkZHNJcGFxcDJqWVk2bzhyM1NDSTFWYyt2cjhvTGpnT1c0bmZjcE1idGRvb094azFtTjZMSFQrTWovSkV5WUp6aDNnRTZxRFFuY2Z4NWwrQjRTcXlFOEVkSGxKbTlkMDlkdW5Rd2VmRmwwQ1htaHVtdzZPNzJqVDRsd3pBc1dyc3d0MVRJdGZjSHhQb0RGU096WjlSSFA1ZWtObTdoYnU0Z3k1eDR4TXQwQm1MUGNYNThjN1RWaDJLQzI1STFkWDlIV1BKRkwyUUZTUlBZc1ltaXN5ZGNWTXRWeDdJemY5QnVZSU9TMTB0dS9QWlJ1V3RudnJMYjRtMVIxMkxJeVRURzdGNkxhcGVoOTQ1a3IvZVVRTVNPbHBSSitVR1EwS3J2VnVyNGhZTU1WeHJqNStxVnRTNEc5eXBNKzF1aVJtcGd3Q0VxMHpKOU8va2ZrbU5PNzlrdStkdlNXeWVUUGQwY25tVnJ0MGtjckoxb3hlcTNycnM5QlVqcmNtMExDcHBwWWpFNWJLcTV1Szl5WGFLL0VQMWYyNXZtNHBEd20wcmt5eWYrTXJjTXd6VGpobHBGMmtlc0p5Y3lhdmhFU2NxZ0lUWW8yU04vT05hdlVJanhNOG5uRENDYzk0OG9HV2F6Yk8rTGdTbiszK1B1ZWMwZWIwMXR1c1l0dWM4YUpVN2Y4Ny82bHNqL1Uram9lYnI2YzdUL1BCUjdqMkc0NUs3MlpIWHdQWm9LVlZlNzhkTFNKbXdzVWRiR3ZoN3VQOUJ3QUEvLzhEQUhLaFVVQUFBQU1BQVAvMUFBRC96Z0F5QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIpOwp9XV0+PC9zdHlsZT48c3R5bGUgdHlwZT0idGV4dC9jc3MiPjwhW0NEQVRBWy5zaGFwZSB7CiAgc2hhcGUtcmVuZGVyaW5nOiBnZW9tZXRyaWNQcmVjaXNpb247CiAgc3Ryb2tlLWxpbmVqb2luOiByb3VuZDsKfQouY29ubmVjdGlvbiB7CiAgc3Ryb2tlLWxpbmVjYXA6IHJvdW5kOwogIHN0cm9rZS1saW5lam9pbjogcm91bmQ7Cn0KLmJsZW5kIHsKICBtaXgtYmxlbmQtbW9kZTogbXVsdGlwbHk7CiAgb3BhY2l0eTogMC41Owp9CgoJCS5kMi0zMTIxNDI1MzQ2IC5maWxsLU4xe2ZpbGw6IzBBMEYyNTt9CgkJLmQyLTMxMjE0MjUzNDYgLmZpbGwtTjJ7ZmlsbDojNjc2QzdFO30KCQkuZDItMzEyMTQyNTM0NiAuZmlsbC1CMXtmaWxsOiMwRDMyQjI7fQoJCS5kMi0zMTIxNDI1MzQ2IC5maWxsLUIye2ZpbGw6IzBEMzJCMjt9CgkJLmQyLTMxMjE0MjUzNDYgLmZpbGwtQjZ7ZmlsbDojRjdGOEZFO30KCQkuZDItMzEyMTQyNTM0NiAuZmlsbC1BQTR7ZmlsbDojRURGMEZEO30KCQkuZDItMzEyMTQyNTM0NiAuc3Ryb2tlLUIxe3N0cm9rZTojMEQzMkIyO30KCQkuZDItMzEyMTQyNTM0NiAuc3Ryb2tlLUIye3N0cm9rZTojMEQzMkIyO30uYXBwZW5kaXggdGV4dC50ZXh0e2ZpbGw6IzBBMEYyNX0ubWR7LS1jb2xvci1mZy1kZWZhdWx0OiMwQTBGMjU7LS1jb2xvci1mZy1tdXRlZDojNjc2QzdFOy0tY29sb3ItZmctc3VidGxlOiM5NDk5QUI7LS1jb2xvci1jYW52YXMtZGVmYXVsdDojRkZGRkZGOy0tY29sb3ItY2FudmFzLXN1YnRsZTojRUVGMUY4Oy0tY29sb3ItYm9yZGVyLWRlZmF1bHQ6IzBEMzJCMjstLWNvbG9yLWJvcmRlci1tdXRlZDojMEQzMkIyOy0tY29sb3ItbmV1dHJhbC1tdXRlZDojRUVGMUY4Oy0tY29sb3ItYWNjZW50LWZnOiMwRDMyQjI7LS1jb2xvci1hY2NlbnQtZW1waGFzaXM6IzBEMzJCMjstLWNvbG9yLWF0dGVudGlvbi1zdWJ0bGU6IzY3NkM3RTstLWNvbG9yLWRhbmdlci1mZzpyZWQ7fS5saWdodC1jb2Rle2Rpc3BsYXk6IGJsb2NrfS5kYXJrLWNvZGV7ZGlzcGxheTogbm9uZX1AbWVkaWEgc2NyZWVuIGFuZCAocHJlZmVycy1jb2xvci1zY2hlbWU6ZGFyayl7CgkJLmQyLTMxMjE0MjUzNDYgLmZpbGwtTjF7ZmlsbDojQ0RENkY0O30KCQkuZDItMzEyMTQyNTM0NiAuZmlsbC1OMntmaWxsOiNCQUMyREU7fQoJCS5kMi0zMTIxNDI1MzQ2IC5maWxsLUIxe2ZpbGw6I0NCQTZmNzt9CgkJLmQyLTMxMjE0MjUzNDYgLmZpbGwtQjJ7ZmlsbDojQ0JBNmY3O30KCQkuZDItMzEyMTQyNTM0NiAuZmlsbC1CNntmaWxsOiMzMTMyNDQ7fQoJCS5kMi0zMTIxNDI1MzQ2IC5maWxsLUFBNHtmaWxsOiM0NTQ3NUE7fQoJCS5kMi0zMTIxNDI1MzQ2IC5zdHJva2UtQjF7c3Ryb2tlOiNDQkE2Zjc7fQoJCS5kMi0zMTIxNDI1MzQ2IC5zdHJva2UtQjJ7c3Ryb2tlOiNDQkE2Zjc7fS5hcHBlbmRpeCB0ZXh0LnRleHR7ZmlsbDojQ0RENkY0fS5tZHstLWNvbG9yLWZnLWRlZmF1bHQ6I0NERDZGNDstLWNvbG9yLWZnLW11dGVkOiNCQUMyREU7LS1jb2xvci1mZy1zdWJ0bGU6I0E2QURDODstLWNvbG9yLWNhbnZhcy1kZWZhdWx0OiMxRTFFMkU7LS1jb2xvci1jYW52YXMtc3VidGxlOiMzMTMyNDQ7LS1jb2xvci1ib3JkZXItZGVmYXVsdDojQ0JBNmY3Oy0tY29sb3ItYm9yZGVyLW11dGVkOiNDQkE2Zjc7LS1jb2xvci1uZXV0cmFsLW11dGVkOiMzMTMyNDQ7LS1jb2xvci1hY2NlbnQtZmc6I0NCQTZmNzstLWNvbG9yLWFjY2VudC1lbXBoYXNpczojQ0JBNmY3Oy0tY29sb3ItYXR0ZW50aW9uLXN1YnRsZTojQkFDMkRFOy0tY29sb3ItZGFuZ2VyLWZnOnJlZDt9LmxpZ2h0LWNvZGV7ZGlzcGxheTogbm9uZX0uZGFyay1jb2Rle2Rpc3BsYXk6IGJsb2NrfX1dXT48L3N0eWxlPjxnIGNsYXNzPSJjRzlrIHJlc291cmNlIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSIxMiIgeT0iNDciIHdpZHRoPSIxNDciIGhlaWdodD0iNzkiIHJ4PSI2IiBzdHJva2U9IiMxQTczRTgiIGZpbGw9IiNFOEYwRkUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9Ijg1LjUiIHk9Ijg0LjUiIGNsYXNzPSJ0ZXh0LWJvbGQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTVweCI+PHRzcGFuIHg9Ijg1LjUiIGR5PSIwIj5Qb2Q8L3RzcGFuPjx0c3BhbiB4PSI4NS41IiBkeT0iMTciPih2b2x1bWVNb3VudCk8L3RzcGFuPjwvdGV4dD48L2c+PGcgY2xhc3M9ImNIWmogcmVzb3VyY2UiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjMzNCIgeT0iNDYiIHdpZHRoPSIxODYiIGhlaWdodD0iODAiIHJ4PSI2IiBzdHJva2U9IiMxQTczRTgiIGZpbGw9IiNFOEYwRkUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjQyNyIgeT0iODQiIGNsYXNzPSJ0ZXh0LWJvbGQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTVweCI+PHRzcGFuIHg9IjQyNyIgZHk9IjAiPlBWQzwvdHNwYW4+PHRzcGFuIHg9IjQyNyIgZHk9IjE3Ij4oR3LDtsOfZSwgQWNjZXNzIE1vZGUpPC90c3Bhbj48L3RleHQ+PC9nPjxnIGNsYXNzPSJjSFk9IHN0b3JlIj48ZyBjbGFzcz0ic2hhcGUiID48cGF0aCBkPSJNIDEwNjggNDUgQyAxMDY4IDIxIDExMTkgMjEgMTEyNSAyMSBDIDExMzAgMjEgMTE4MSAyMSAxMTgxIDQ1IFYgMTI4IEMgMTE4MSAxNTIgMTEzMCAxNTIgMTEyNSAxNTIgQyAxMTE5IDE1MiAxMDY4IDE1MiAxMDY4IDEyOCBWIDQ1IFoiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQUE0IiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjxwYXRoIGQ9Ik0gMTA2OCA0NSBDIDEwNjggNjkgMTExOSA2OSAxMTI1IDY5IEMgMTEzMCA2OSAxMTgxIDY5IDExODEgNDUiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQUE0IiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSIxMTI0LjUiIHk9Ijk2LjUiIGNsYXNzPSJ0ZXh0LWJvbGQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTVweCI+PHRzcGFuIHg9IjExMjQuNSIgZHk9IjAiPlBWPC90c3Bhbj48dHNwYW4geD0iMTEyNC41IiBkeT0iMTciPihTcGVpY2hlcik8L3RzcGFuPjwvdGV4dD48L2c+PGcgY2xhc3M9ImMyTT0gY29tcG9uZW50Ij48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSI3MzUiIHk9IjEyIiB3aWR0aD0iMTMyIiBoZWlnaHQ9Ijc5IiByeD0iNiIgY2xhc3M9IiBzdHJva2UtQjEgZmlsbC1CNiIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iODAxIiB5PSI0OS41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPjx0c3BhbiB4PSI4MDEiIGR5PSIwIj5TdG9yYWdlQ2xhc3M8L3RzcGFuPjx0c3BhbiB4PSI4MDEiIGR5PSIxNyI+KFByb3Zpc2lvbmVyKTwvdHNwYW4+PC90ZXh0PjwvZz48ZyBjbGFzcz0iS0hCdlpDQXRKbWQwT3lCd2RtTXBXekJkIj48bWFya2VyIGlkPSJtay1kMi0zMTIxNDI1MzQ2LTM0ODgzNzgxMzQiIG1hcmtlcldpZHRoPSIxMCIgbWFya2VySGVpZ2h0PSIxMiIgcmVmWD0iNyIgcmVmWT0iNiIgdmlld0JveD0iMCAwIDEwIDEyIiBvcmllbnQ9ImF1dG8iIG1hcmtlclVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+IDxwb2x5Z29uIHBvaW50cz0iMCwwIDEwLDYgMCwxMiIgY2xhc3M9ImNvbm5lY3Rpb24gZmlsbC1CMSIgc3Ryb2tlLXdpZHRoPSIyIiAvPiA8L21hcmtlcj48cGF0aCBkPSJNIDE2MSA4Ni43NSBMIDMzMCA4Ni43NSIgZmlsbD0ibm9uZSIgY2xhc3M9ImNvbm5lY3Rpb24gc3Ryb2tlLUIxIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiBtYXJrZXItZW5kPSJ1cmwoI21rLWQyLTMxMjE0MjUzNDYtMzQ4ODM3ODEzNCkiIG1hc2s9InVybCgjZDItMzEyMTQyNTM0NikiIC8+PHRleHQgeD0iMjQ2LjUiIHk9IjkyIiBjbGFzcz0idGV4dC1pdGFsaWMgZmlsbC1OMiIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTZweCI+bnV0enQ8L3RleHQ+PC9nPjxnIGNsYXNzPSJLSEIyWXlBdEptZDBPeUJ6WXlsYk1GMD0iPjxtYXJrZXIgaWQ9Im1rLWQyLTMxMjE0MjUzNDYtMjE3NzIwNjU2OSIgbWFya2VyV2lkdGg9IjEwIiBtYXJrZXJIZWlnaHQ9IjEyIiByZWZYPSI3IiByZWZZPSI2IiB2aWV3Qm94PSIwIDAgMTAgMTIiIG9yaWVudD0iYXV0byIgbWFya2VyVW5pdHM9InVzZXJTcGFjZU9uVXNlIj4gPHBvbHlnb24gcG9pbnRzPSIwLDAgMTAsNiAwLDEyIiBjbGFzcz0iY29ubmVjdGlvbiBmaWxsLUIyIiBzdHJva2Utd2lkdGg9IjIiIC8+IDwvbWFya2VyPjxwYXRoIGQ9Ik0gNTIyIDczLjQxNiBMIDczMSA3My40MTYiIGZpbGw9Im5vbmUiIGNsYXNzPSJjb25uZWN0aW9uIHN0cm9rZS1CMiIgc3R5bGU9InN0cm9rZS13aWR0aDoyO3N0cm9rZS1kYXNoYXJyYXk6OC4wMDAwMDAsNy44OTI1MTE7IiBtYXJrZXItZW5kPSJ1cmwoI21rLWQyLTMxMjE0MjUzNDYtMjE3NzIwNjU2OSkiIG1hc2s9InVybCgjZDItMzEyMTQyNTM0NikiIC8+PHRleHQgeD0iNjI3LjUiIHk9Ijc5IiBjbGFzcz0idGV4dC1pdGFsaWMgZmlsbC1OMiIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTZweCI+Zm9yZGVydCBhbjwvdGV4dD48L2c+PGcgY2xhc3M9IktITmpJQzBtWjNRN0lIQjJLVnN3WFE9PSI+PHBhdGggZD0iTSA4NjkgNjQuOTE2ODM2IEwgMTA2NCA2NC45OTgzMjgiIGZpbGw9Im5vbmUiIGNsYXNzPSJjb25uZWN0aW9uIHN0cm9rZS1CMSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgbWFya2VyLWVuZD0idXJsKCNtay1kMi0zMTIxNDI1MzQ2LTM0ODgzNzgxMzQpIiBtYXNrPSJ1cmwoI2QyLTMxMjE0MjUzNDYpIiAvPjx0ZXh0IHg9Ijk2Ny41IiB5PSI3MCIgY2xhc3M9InRleHQtaXRhbGljIGZpbGwtTjIiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE2cHgiPmVyemV1Z3Q8L3RleHQ+PC9nPjxnIGNsYXNzPSJLSEIyWXlBdEptZDBPeUJ3ZGlsYk1GMD0iPjxwYXRoIGQ9Ik0gNTIyIDEwMC4wODMgTCA1NTAgMTAwLjA4MyBTIDU2MCAxMDAuMDgzIDU2MCAxMTAuMDgzIEwgNTYwIDExMiBTIDU2MCAxMjIgNTcwIDEyMiBMIDEwNjQgMTIyIiBmaWxsPSJub25lIiBjbGFzcz0iY29ubmVjdGlvbiBzdHJva2UtQjEiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIG1hcmtlci1lbmQ9InVybCgjbWstZDItMzEyMTQyNTM0Ni0zNDg4Mzc4MTM0KSIgbWFzaz0idXJsKCNkMi0zMTIxNDI1MzQ2KSIgLz48dGV4dCB4PSI3ODMiIHk9IjEyOCIgY2xhc3M9InRleHQtaXRhbGljIGZpbGwtTjIiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE2cHgiPmdlYnVuZGVuPC90ZXh0PjwvZz48bWFzayBpZD0iZDItMzEyMTQyNTM0NiIgbWFza1VuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeD0iLTkiIHk9Ii05IiB3aWR0aD0iMTIxMSIgaGVpZ2h0PSIxODIiPgo8cmVjdCB4PSItOSIgeT0iLTkiIHdpZHRoPSIxMjExIiBoZWlnaHQ9IjE4MiIgZmlsbD0id2hpdGUiPjwvcmVjdD4KPHJlY3QgeD0iMjI3IiB5PSI3NiIgd2lkdGg9IjM5IiBoZWlnaHQ9IjIxIiBmaWxsPSJibGFjayI+PC9yZWN0Pgo8cmVjdCB4PSI1OTMiIHk9IjYzIiB3aWR0aD0iNjkiIGhlaWdodD0iMjEiIGZpbGw9ImJsYWNrIj48L3JlY3Q+CjxyZWN0IHg9Ijk0MCIgeT0iNTQiIHdpZHRoPSI1NSIgaGVpZ2h0PSIyMSIgZmlsbD0iYmxhY2siPjwvcmVjdD4KPHJlY3QgeD0iNzQ4IiB5PSIxMTIiIHdpZHRoPSI3MCIgaGVpZ2h0PSIyMSIgZmlsbD0iYmxhY2siPjwvcmVjdD4KPC9tYXNrPjwvc3ZnPjwvc3ZnPgo=" alt="Zusammenspiel von Pod, PVC, StorageClass und PV" /></p>
+<ul>
+<li>Eine <strong>PVC</strong> ist eine <em>Anfrage</em> nach Speicher
+(Größe, Access Mode) – gestellt vom Anwendungsentwickler, ohne Details
+über die tatsächliche Storage-Infrastruktur zu kennen.</li>
+<li>Ein <strong>PV</strong> ist der <em>tatsächliche</em> Speicher (z.
+B. ein Cloud-Volume).</li>
+<li>Eine <strong>StorageClass</strong> definiert einen Auto-Provisioner,
+der bei Bedarf automatisch ein passendes PV erzeugt und mit der PVC
+verbindet – ohne StorageClass müsste ein Admin PVs manuell vorab
+anlegen.</li>
+</ul>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get storageclass</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Die Default-StorageClass ist an der Annotation erkennbar:</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">#   storageclass.kubernetes.io/is-default-class: &quot;true&quot;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># PVC und Deployment anlegen, das die PVC verwendet</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 15-storage/pvc.yaml</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 15-storage/deployment-with-pvc.yaml</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> rollout status deployment/demo</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pvc demo-data</span></code></pre></div>
+<p>Wird in der PVC kein <code>storageClassName</code> angegeben (wie in
+<code>pvc.yaml</code>), wird automatisch die Default-StorageClass des
+Clusters verwendet.</p>
+<h2 id="access-modes">Access Modes</h2>
+<table>
+<thead>
+<tr>
+<th>Modus</th>
+<th>Bedeutung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RWO</td>
+<td>ReadWriteOnce – von <strong>einem Node</strong> lesend/schreibend
+nutzbar</td>
+</tr>
+<tr>
+<td>RWOP</td>
+<td>ReadWriteOncePod – von <strong>einem einzigen Pod</strong>
+lesend/schreibend nutzbar</td>
+</tr>
+<tr>
+<td>ROX</td>
+<td>ReadOnlyMany – von mehreren Nodes gleichzeitig, nur lesend</td>
+</tr>
+<tr>
+<td>RWX</td>
+<td>ReadWriteMany – von mehreren Nodes gleichzeitig,
+lesend/schreibend</td>
+</tr>
+</tbody>
+</table>
+<p>Welche Modi ein Volume unterstützt, hängt vom zugrunde liegenden
+Storage-Typ ab – klassischer Block-Storage (z. B. die meisten
+Cloud-Disks) unterstützt in der Regel nur RWO und RWOP.</p>
+<h3 id="rwo-vs-rwop">RWO vs. RWOP</h3>
+<p><strong>RWO</strong> beschränkt ein Volume auf <strong>einen
+Node</strong> – nicht auf einen Pod. Landen zwei Pods auf demselben
+Node, dürfen beide gleichzeitig schreiben. Ob das passiert, entscheidet
+der Scheduler; für eine Anwendung, die exklusiven Zugriff braucht (z. B.
+eine Datenbank mit eigener Sperrdatei), ist das ein Risiko.</p>
+<p><strong>RWOP</strong> (<code>ReadWriteOncePod</code>) garantiert,
+dass <strong>genau ein Pod</strong> im ganzen Cluster das Volume nutzt.
+Ein zweiter Pod wird gar nicht erst gestartet, sondern bleibt
+<code>Pending</code>. RWOP setzt einen CSI-Treiber voraus, der den Modus
+unterstützt (die meisten aktuellen tun das).</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 15-storage/pvc-rwop.yaml</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 15-storage/deployment-rwop.yaml</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Ein Pod läuft, der zweite bleibt Pending</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> wait <span class="at">--for</span><span class="op">=</span>jsonpath=<span class="st">&#39;{.status.readyReplicas}&#39;</span>=1 deployment/demo-rwop <span class="at">--timeout</span><span class="op">=</span>120s</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pods <span class="at">-l</span> volume=rwop</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Grund im Event des wartenden Pods:</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co"># &quot;... PersistentVolumeClaim with ReadWriteOncePod access mode already in-use by another pod&quot;</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="va">POD</span><span class="op">=</span><span class="va">$(</span><span class="ex">oc</span> get pods <span class="at">-l</span> volume=rwop <span class="at">--field-selector</span><span class="op">=</span>status.phase=Pending <span class="at">-o</span> jsonpath=<span class="st">&#39;{.items[0].metadata.name}&#39;</span><span class="va">)</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> describe pod <span class="st">&quot;</span><span class="va">$POD</span><span class="st">&quot;</span> <span class="kw">|</span> <span class="fu">grep</span> <span class="at">-i</span> ReadWriteOncePod</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Aufräumen</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> delete <span class="at">-f</span> 15-storage/deployment-rwop.yaml</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> delete <span class="at">-f</span> 15-storage/pvc-rwop.yaml</span></code></pre></div>
+<h2 id="pv-lifecycle">PV-Lifecycle</h2>
+<p><img role="img" aria-label="Lebenszyklus eines PV" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiICBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWluWU1pbiBtZWV0IiB2aWV3Qm94PSIwIDAgMTA2OSAyMjAiPjxzdmcgY2xhc3M9ImQyLTMwMTExMzQxMTkgZDItc3ZnIiB3aWR0aD0iMTA2OSIgaGVpZ2h0PSIyMjAiIHZpZXdCb3g9Ii05IC05IDEwNjkgMjIwIj48cmVjdCB4PSItOSIgeT0iLTkiIHdpZHRoPSIxMDY5IiBoZWlnaHQ9IjIyMCIgcng9IjAiIGZpbGw9InRyYW5zcGFyZW50IiBzdHJva2Utd2lkdGg9IjAiIC8+PHN0eWxlIHR5cGU9InRleHQvY3NzIj48IVtDREFUQVsKLmQyLTMwMTExMzQxMTkgLnRleHQtYm9sZCB7Cglmb250LWZhbWlseTogImQyLTMwMTExMzQxMTktZm9udC1ib2xkIiwgIlNvdXJjZSBTYW5zIFBybyIsICJTb3VyY2UgU2FucyAzIiwgLWFwcGxlLXN5c3RlbSwgQmxpbmtNYWNTeXN0ZW1Gb250LCAiU2Vnb2UgVUkiLCBIZWx2ZXRpY2EsIEFyaWFsLCBzYW5zLXNlcmlmOwp9CkBmb250LWZhY2UgewoJZm9udC1mYW1pbHk6IGQyLTMwMTExMzQxMTktZm9udC1ib2xkOwoJZm9udC1kaXNwbGF5OiBzd2FwOwoJc3JjOiB1cmwoImRhdGE6Zm9udC93b2ZmO2Jhc2U2NCxkMDlHUmdBQkFBQUFBQTRRQUFvQUFBQUFGWFFBQWd1RkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQlBVeTh5QUFBQTlBQUFBR0FBQUFCZ1h4SFhybU50WVhBQUFBRlVBQUFBbmdBQUFNb0Rjd1VXWjJ4NVpnQUFBZlFBQUFkNkFBQUtBUFdaQUlwb1pXRmtBQUFKY0FBQUFEWUFBQUEyRzM4ZTFHaG9aV0VBQUFtb0FBQUFKQUFBQUNRS2Z3WGlhRzEwZUFBQUNjd0FBQUNNQUFBQWpEKytCUXBzYjJOaEFBQUtXQUFBQUVnQUFBQklMd1l4MW0xaGVIQUFBQXFnQUFBQUlBQUFBQ0FBT3dEM2JtRnRaUUFBQ3NBQUFBTXZBQUFJS2dqd1ZrRndiM04wQUFBTjhBQUFBQ0FBQUFBZy85RUFNZ0FEQWlvQ3ZBQUZBQUFDaWdKWUFBQUFTd0tLQWxnQUFBRmVBRElCS1FBQUFnc0hBd01FQXdJQ0JHQUFBdmNBQUFBREFBQUFBQUFBQUFCQlJFSlBBQ0FBSVAvL0F1Ny9CZ0FBQTlnQkVTQUFBWjhBQUFBQUFmQUNsQUFBQUNBQUEzaWNkTTFMU2dJQkhJRHgzelRUZTZycC9acGlOa0ZkWVhaQkI0Z1c3VnRFQkVIUUl2QTRJcUpyUVplQ1I5RTc2UFl2cUZ2NWxyL0ZoMFFxUVM0elJLbVF5bFdlMUY2OGV2UHUwN2RmL3hwbUVhZzhxajJ2OU1PWEgzOUxqWEZNWXhLakdFUS9ldEdOVHJTakZjMTRXSHpXbDdoenI3UWhsZG0wWmR1T1hYdjI1UTRjT2xJNGR1TFVtWE1YTGwyNWR1T1dPUUFBQVAvL0F3Q2hZeVowQUFCNG5GeVdXMnpiNWhYSHovZEpKbU9adGt6ZEtNbVNkYUhGaXkreVJZcWlMMUpreFpMdE9KTGp5NUk0cUMrSkVTUmRuTnNTWjNHS0RYdkpOcUJWRUtES2ltNHRObUJZTVF4SUg0S2d3QmJBSFRCc2FJcm1ZVURhK2FsTmh3MTdhQjdtRmNhd2RiWTRmTFRpeUhtd1A0RWd6em4vLy9tZFEwSURUQUhnWlh3WExOQUlkbkNBRzBCbEkyeE1GVVdlMWxWZDV6bUxMaUtXbnNLTzZudS9FbVdyTEZzN3cyK0hYbHRhUXFWRmZIZm53aXVsNWVWL0x3ME5WWC8rdTRmVjIramFRd0JzZkFPQVIzQVpHb0VGY05LcUtBZ2lUMUVXcCtya1JaNytSK3NiOXVhMlppdmorK2J4L2NmdlNoOUphQ0tkVGx4U2t4ZXJQOFRsbmRWMzNnRUFzRUFKQUtkeEdWandRNVRVcGlvZWo5dEYwVzd6b0hpTHFxUzBwTUR6cktxWVorbHAvc0p3ajZTTTVLK09MUlZTQ1NVNU9uc3puWm5GNWVCb3RtdldibTAra2h2NWxveCszTWtMNGVyY1hGY01BRUhjMk1KOStHMW9BMmlJQ29LV1RLVlV4Y1BSZ3NCSEtjcnQ4cWhLU3Vjb3RERHordXl4MnpQWk01RkpuODUzSCs0NlBpNWx2Wk16VFBFbkZ5LzhkRnFOTG5KQlpmSFFtU3NkdnZsVGdLRUVnSXU0RERadzExVlA4YUtxcEVqZHBPRGZubmx6ZXVyT3FaNUEvMnc4UHRzZndPWDhuU3RYM2h5N0ljMVBUcDZNQWRUaTlPRXlNT0NxYzRIaWVmZWU3aS9IcjQrT3JoYW14OWVHMDNsY0Z1ZVBGcGQ3UDBjenI2cWRzQmRqRnBlaEJiaDZKMGxEU0JSU0RzK1huaFd1NXJQYTNmZStQMTBjekdRR2k3Z2NtNXNjWCtDcS8zdjJESjFLOVBVSkFNajRMd0JXY1JtYUFWU0w2dlI0T0RXVjBwMnE1Y00vdlR0cDUreldGbTlMNmEwLzRuTDF6OXJaVk9xc2h2cDJWZ0ZEcDdHRlBrWGI0QU1lZ0lzU28zWFRZMW8wSFhlelBPRkVWMUs2WnZyK1lYN3FWZ1h6Y21pNFErdGRHVnc2dTJhemhzWU8rR0xPeVhTSU9aR2RuTE5IUksvN2RMRGowdFhxMzlVQWY1VnpuckIxQmIyY3FUbG5iR0VQWGdjWGhNek9panpOczZxYk5wT1pCSW1FSHo1S2dFS0Z5RWpReWx5cldJUDVhSHF1TjcwMEo2U09kOHN1aVltRU5ieCtyK2dQSHZ4Tzhkak43TnBvOFVjOW56aGFnTERUWVd5aGRiUU4vcGZaNGFNdnlLR1FyM0E1Ti83ZGZId3NVT0REV2piYjU0MDdCMlBIbWN6MW1kblZURHUzRkN6bWhrdHUrNmx3MjI2L1JHTUxiZU4xY0VMNHVWZWthazdVMURxWGhGcWFyK2N2RHkwbDVYNGZWVm16V2YyajJDczZuRjB1UHRYTHZIRnordnJCZ0xmNG01MlJoSjlmYy9rK2NiU01qQjB1QURaci95dmFCaStFOWxWUHJLRWpIbytxNkJ4RldkUWt5WUpDWTFjUGpWd1lHbHZvdGVMcWhtMDBvYVVTd3VMUEhvamQwUlJ6Y0hWbWVqV2JYY2s3WTQwcE5YTFMzNDRHWmEyWGFMRkExT2pCTk5xR1hoaUNDVk9Ob0NWMXpjeFhPMUtxd3FsdXZnWjJWQ1NpVklLRWk2SXNwRWsxb2M0YXFWSEJ2T1hyd2NYK01XZGIyT3VYQnhlMTdzZ0hSK25HNUp3ZUREbWk4dFQ4NmZ6M0pvS2lHQXlLb3F3TWl6SFZGMkhhTWsvOC9kMXB5ZG9zaGRxVVZxc2ozNVUrS2pFclRWSFh3RVNIemU1eE9vWkcxT2s0K3JoVEZtVkpranVybFE0ZjEycXhlSDJCSU5HRElFY2FaSElGNmg1UGJwWm5UYU5vTmxlaEEwZVU2Y09WWURnZ2VmSDZ2Wk8rcnBXRjZtTVVTVWsrcm5vZkRBTjBBUGdjUDhFQzhSNW9DTVBydTdHTkxlVEE2MkEzZmRKWWxkMkQ2RkZ4cU1JMk50Q1VnNGt4cnh6Qi9NNEc1MERvWWdOTm5nT3dCTkUyUk16cEpnTkphTmxYR2IxMzVzZ2NqU2EwbkRNeWtaZzZVZ21HWTMza1h5L2FIQTcxZEVuUnhQTnkrNnIzYThkejNXZ2JYUFU1Nm5XdjJhemgwcDV3dEpsdDc5bW5lNWM1a3dYN1M5djJ4VGpXT28wODJjdjUvT1ZzOWxJK2Z5bmJFNC8zeEh0NmF2T1NXWjJkdVo2NVVSck9GY25ZMUhxQzdxQnRjT3pUVHdzdkttc3JDdTZBemR2c2F3MWtYR2p6aEpKb2FQaUIxU29yMVM4QmdkdllRcjlBMnlDYXZvczZvWitnSm9oeHJDVmZCSE83UEZ3N2RydW9KNGx6d3FGb05oUnBEOGI5N1VQU3Q0OE5uQWdkOGlmOUF3TkNPQ08veWdpaGVWOGI1MlE5VGh2VE1TQVhqb3ZlT1pkSDlQcGFtdmlCK01qQ0xrdXNzWVV1NFZXeWxSdWlncWJ4bXE2cmJ0WE4xeTBQbUQrYUw3S3YzYmpCQnhtZmpYUHF6UG5qSDEra2J0MjY5bEZuakxLdVVNeHVyTFN4aGY2RE5zSDFFanRzYldYOFpmcHdwVDBjRUR5VnRTWkxhSUpaV1VESjZsTk45Z2ZSZUxXMUVPc0dCQXhaOEdpenR0dTUybTdYVmN1RFg5OGR0amx0MWthbkxYZjdsMmp6cTFoSkZFdXhyNnF0Wm03R09JaDIwQ2EwMWZ1bjYvdEN0T0ExVDhUdXB4MEhZcEtOL3YzZHNTYUh6WHFBYlV6ZnZzZjFILzBEWmIyQ0dqcUNmdlMzejZLak1YNk0vNnphZFBBWWVYOFp4aTQzK0JFV2lEcWdJWUk4NXZXTXNRWC9SUC9DSXZsQ1FIbWd5QWtJeG8wU2t2QlRvb016SVNOT2t1WTl6aFlLMlhsZFVmUUg1NzY0ZGV1TGM4THBqWlh6Rzh1QW9NOG9vZGJhTTZMNWhpWWN1RjFVZWI1ZlVmcm5zNFhDQTJGNTQvekt4bW5CZkhhWE8vZ1ViWUxGNUk3TlZkQm10UldROFQ0ZWdGbjhCSm9BV1BOTlJ3YlJSY1hpOFZnc0hzY0RuVHpmU2Y3STk5SVJQQUFmNEVmUVJDaXcxTjJ0MXYyK0dKTGxVRmdVSDRZa0tSU1dKRHdnaDlwbHVaMWMzajFOM2FZZjhEN0p5OVhsZlV0UVZVRlFWVVlUSlUyVFJBMytEd0FBLy84REFNakRGS1lBQUFBQkFBQUFBZ3VGdWQ4VDNWOFBQUFVBQVFQb0FBQUFBTmhkb0lRQUFBQUEzV1l2TnY0My9zUUliUVB4QUFFQUF3QUNBQUFBQUFBQUFBRUFBQVBZL3U4QUFBaVkvamYrTndodEFBRUFBQUFBQUFBQUFBQUFBQUFBQUFBakFySUFVQURJQUFBQ1BmLzZBbDBBVFFKR0FDNENld0JOQWxRQVRRSmxBRTBDTFAvNUFnOEFLZ0k5QUVFQjB3QWtBajBBSndJR0FDUUNGZ0FpQWpzQVFRRVVBRGNCSGdCQkExa0FRUUk4QUVFQ0t3QWtBWTRBUVFHN0FCVUJmd0FSQWpnQVBBSUxBQXdDQ1FBTUFpc0FKQUVzQUQwQldBQklBVmdBTUFFVUFFRUFBUCt0QUFEL1N3RXNBRDBBQUFBc0FDd0FVQUNFQUxBQTFBRDJBUndCT0FGd0FhSUJ6Z0lBQWpRQ25BSytBc29DNWdNWUF6b0RaZ09HQThJRDZBUUtCQ1lFVmdSaUJHNEVpQVNpQks0RXhBVHFCUUFBQVFBQUFDTUFrQUFNQUdNQUJ3QUJBQUFBQUFBQUFBQUFBQUFBQUFRQUEzaWNuSlRQYmh0bEZNVi9UbXpUQ3NFQ1JWVzZpYjRGaXlLMVkxTWxWZHVzSnFSV1JrUng4TGdnSklRMHRpZTI1ZkhNeUROMkdwNkFOVy9CVzNURlEvQWNpRFc2MTlldVhSQUZLNHAxWnViK09kKzU1MzdBQVgreVQ2VjZIL2l0bmhxdWNGUy9OcnpIdmZxRjRYMWE5VDNEVlI3VmZqZGNZMUJiR0s3emVhMWorQ1BlVm44eGZJL2o2bytHNzNOWWJSbittS2ZWQThPZjdEditNUHdweDd4ZDRnbzg1MmZERlE3SkRlOXh3QStHOTNtQTFheFVlVURUY0kzUE9ESmM1d2pvTXFZa1lVektFTWNOWTRiTW1SRlRFQkl6WTh3Tk1RTWNBVDRKcGI1TmlSUTVodi80TmlLa1pFYWtGVWVVT0JKQ0VpSUtSbGJ4SjgzS3VOYU8wbWVtU0xyNWxJeUk2R25HaElnVVI4YVFqSlNZaWRZcEtjbDVTWU1HQlgzbG0xTlM0RkV3SnNFalk4YVFCbTFhWE5KbHhKZ0NSMHNyQ2JPUWpCdEtib20wdjdNSVVhWlBURXBock9ha0RKU25VMzZ4WmdkYzRtaVRhK3htNWN1dENvOXhmS3Zad2sxaUhGL2k2Yi9iWUxiZGQ4VW1ZcUY2aW9ZOUV1VjVxeE1jcWVMUzErY2J4U1V2Y1R2cHM4M2t3eG9ObEozTWVreVB1YzVmNWlkNXdpVEZ1VU44UW5WUTZCN2lPTlBuZ0ZBVitZNkFMaGUwZVUxWG4zMDZkUEM1b2t2QUs4MXQwOEh4RlcydU9OZU1RUEh5VzBzZGM4WDNPTDRtMEJpcEhacytvcms4dlNFM2R3dDNjWWFjWTBxdVd5QXpsdk9MOCtPZEppdzdsRzI1bzFCWDlIV1BKRkwyUUZTUlBZc1ltaXR5ZGNWVXRWeDVvekQ5QnVZSStWcnFiTjk5bDIxWTJPNnR0dmlPVEhmWU1UZE9Ncmtsb3c5TjFYdlBNN2Y2NXhFeElLT25FWDB5cGpRb3VkT3pYUk14SjhGeHJqNiswQzBwOGRjNTB1ZE9YUkl6VlFZQnFkYVprZXR2Wkw0SmpYdC95L2ZPN2hMWnZLbnU2R1I5cWwyNlNPVjBZMGF2VmIzVnQ5QlVqamNtMExDcFpwWWpFNWJLeTVPSzl5WGEyK0lmcXZzTHZkMHlubkJHUnNMZ2J6ZkFVenlhSEhQQ0tTUHRJSlZURm5ZN05QV0dhUEtDVXozOWhGaWo1TDU4b3pwSmhSTThubkhDQ1M5NDlwNk9LeWJPdUxnMWw4M2VQdWVjMGViMFA1MWlHZC9takZmcmQvL2U5VmRsMnRTek9KNnNuNTd2UE1WSC84T3RYL0I0Njc3czZDMGdtN093YXUrMjRvcUlxWEJ4aDV0YXVJZDRmd0VBQVAvL0F3RDB0MDlSQUFBREFBQUFBQUFBLzg0QU1nQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiKTsKfQouZDItMzAxMTEzNDExOSAudGV4dC1pdGFsaWMgewoJZm9udC1mYW1pbHk6ICJkMi0zMDExMTM0MTE5LWZvbnQtaXRhbGljIiwgIlNvdXJjZSBTYW5zIFBybyIsICJTb3VyY2UgU2FucyAzIiwgLWFwcGxlLXN5c3RlbSwgQmxpbmtNYWNTeXN0ZW1Gb250LCAiU2Vnb2UgVUkiLCBIZWx2ZXRpY2EsIEFyaWFsLCBzYW5zLXNlcmlmOwp9CkBmb250LWZhY2UgewoJZm9udC1mYW1pbHk6IGQyLTMwMTExMzQxMTktZm9udC1pdGFsaWM7Cglmb250LWRpc3BsYXk6IHN3YXA7CglzcmM6IHVybCgiZGF0YTpmb250L3dvZmY7YmFzZTY0LGQwOUdSZ0FCQUFBQUFBNFVBQW9BQUFBQUZnd0FBUmhSQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFCUFV5OHlBQUFBOUFBQUFHQUFBQUJnVzFTVmVHTnRZWEFBQUFGVUFBQUFuZ0FBQU1vRGN3VVdaMng1WmdBQUFmUUFBQWVEQUFBS2tGU2MyenBvWldGa0FBQUplQUFBQURZQUFBQTJHN1VyMm1ob1pXRUFBQW13QUFBQUpBQUFBQ1FMZUFqSGFHMTBlQUFBQ2RRQUFBQ0xBQUFBakRva0E5eHNiMk5oQUFBS1lBQUFBRWdBQUFCSU1XUTBURzFoZUhBQUFBcW9BQUFBSUFBQUFDQUFPd0QyYm1GdFpRQUFDc2dBQUFNckFBQUlNZ250VnpOd2IzTjBBQUFOOUFBQUFDQUFBQUFnLzhZQU1nQURBZUVCa0FBRkFBQUNpZ0pZLy9FQVN3S0tBbGdBUkFGZUFESUJJd0FBQWdzRkF3TUVBd2tDQkNBQUFIY0FBQUFEQUFBQUFBQUFBQUJCUkVKUEFBRUFJUC8vQXU3L0JnQUFBOWdCRVNBQUFaTUFBQUFBQWVZQ2xBQUFBQ0FBQTNpY2RNMUxTZ0lCSElEeDN6VFRlNnJwL1pwaU5rRmRZWFpCQjRnVzdWdEVCRUhRSXZBNElxSnJRWmVDUjlFNzZQWXZxRnY1bHIvRmgwUXFRUzR6UkttUXlsV2UxRjY4ZXZQdTA3ZGYveHBtRWFnOHFqMnY5TU9YSDM5TGpYRk1ZeEtqR0VRL2V0R05UclNqRmMxNFdIeldsN2h6cjdRaGxkbTBaZHVPWFh2MjVRNGNPbEk0ZHVMVW1YTVhMbDI1ZHVPV09RQUFBUC8vQXdDaFl5WjBBQUI0bkh4VmIyd2JkeGwrZjcrNzNDV05tOVErK3k1MkhmKzVzKzhTNTJ3bnZ2Z3VUbXJIanBNNGNlemxUNU9zdEhYU3NMWnJ1NnpMMm8yMVc2dXhJcFVoc1dHa0NnbkVQekVoTVhVU1V4a2ZCdEtRZ0E5aFVBbWtnb29HNGs4aFJTblNJT1REbU1nZHVrc2FPMFhpeTkxUGx1OTVuK2Y1UGUvN1FnT0VBUEI1ZkFNSWFJSldjSUFMUUdHQ0JLRm9tc0FSaWlRSk5LMUpERU9IcnFIVmExOGg4MGYvMnZITmY4dCtzdkRLbXhOL1AzRVQzOWhhUnArdXZQeXlmdXpWVTZjZWYvQkFqNkRmUEFBQXdNYlBBZEN2Y1JXYXdBN0EwSW9raXBKQVVRZ3BqQ0FKOUwzK24rd2o5NUdrUjlGL2dVNGVMVTA3L25ZV1hWNVo2VDNYbDNwU244YlZyWlhidHdFSUVBQndBRmZCRGg3enJEQktnblU1S1lxbVdlc3RFRXBDVGZhS1F1MGdmT2E3aTh0ZCtSQlNSZ3RYSHV0ZldEZzZVanoyMUlXRjgrWHg1M0MxV0pDSDVVYlNsdXNicjhqb1V3VXRtdGhhSHlrbDBpWnZCQ2xqRTBmeFY4RVAwTUNMWXJJM2c1VUV5OUdpS1BBdDJPVmtXU1doYWh4RklYN2lqTnA5OUdxcGI3cE5aVlN4ZjNFb3hCY0hPdklCSVZTeDVTODlWcjd4UWtHTGRBYWs5TWxMaHdZcXljREJoRDlxZW1QcXdLcmxEVk9uU0pDVWhQcFF3WXVmZTIzdUc4L016ODlkeVQvNWhJcXJuNzM4d2p1bnNyTmZXcXFjaFYyTUtLNUNNempyTVFTQ3Fkbnc3dkVMeFZkbXovYm1GaytkSzQyZHd0WGkvTlNUUGZwSHFEQTFtVkpxT0JLdXduNWdhemcwSXhCN2tONDUvdXo1d3hjUEwxL1FocDlZT0RreGRnSlhSdzhmTzIvWDd5RldYMGR6TTZOcTNNUkRNQU9BY3hZZUtJVENzQ3lucUtyR0tPaTFnY21ERFkwRTZVNTZ2aitydjRtcitvM2swMnJ5bVY2MHZMVmlmb3RCTWpiUlIyZ0RuS1pESEw5cnZxSXBoS0FKRkNVbFZFM2J2WW52WlV0eWNVR1IwbmFTeVN3Tk5wTENFWWM0R1pKZENXOG9uL1QzMkk3TmpWNCtyblFFMDdwbkxCelB4dUsvRmZuSWVDVXhhTjAxQnIreGlmNkJWOEZsZGdMSGk1SkFDNHhDMDRxcVdqNjBZQ21Sd2FZRnZKVzNkU2x0SjV5RHI1Y2xGb2RtbzFiNVpDaWY5SFYzOHROQ3pLbllPb0pwdlByZWlmYXVvL05tNld4a3ZLSmswcEh3ZlpFSEJHRmpFOTFDRytEZG84NktGa1c1bkErVGRYZnlwRnhlU3NxSDJDZ2p0bmZQcTZuK2dNcnluckx0ZEdYNDRseWNkM2R6cnVHVi9OQ294NTV3aG5lOXcxS2RscHAzLzkrOGZnZHhRQ3hYZDl4N0xQeW9lMUpnOGIydHZrZnR3NWFXSDZFTjhFQzR2cDZWbmlDMTJ5V0VZa1hhVlBpWCtiUFJpZVBkV3M1bmE5Qi8yaFRJUjlwVG5LOTkrc3NHSmh5ZFFuTEJkbTVwWkdWR2prMGx2RXJMNEZUWWJWZGNmaFJ1YnR2djdmSFBBUVpraE5BRzJnQS94S3lha3JaZFI2TW9vVjZ4UWxBVXNVZnR6WjU1SWVRZDZjZ1VXOXppYkR3OTFUVit2RWZNMkFsbThEUnpNU1ZNODExc2oxZklLYjc0NzhUMkpNZVhzbWRFZVg0dS85d25FbVoraU1YVEtOZ1YrYVhJZDQ0ZTZSNFlNRDFINW94QWQvRXF1SzNPcWVXR0pnVEdsQzN3RkUzNFh5OTNIeUE3WitSTXNqRlRPa1NTWTk2eDJBaGVmWkFXNHJrK2YwaC9IOG5PdHYwVGtaaitIY013TWVGamZBdUwxb21Dd05oMkxkblloSS94S2poTTVjbGVqVEZGdXB3N05qK2RvMTRxWDBYSVRsQTAyc2ZhQnUxdS9OVFdGK2ttd29Id0FFbnU4c1hyYUFNaTIzeTM2WEk3cEtrOXJPc0ZMQTNTcEhoWTdPOXBpQjhKcDFXU3pKVFRKRmx3amNranBwNVJkcXhyQksyTmgzcTBEbG5KOWRsOXpucE50VlBOTTdRQmJmVWNIclhNck5nNUU5dmptRlhoVWNOcWMrTUR0QUd0MEY2ZnhlMEdObEVmTnRpZHlRVzV1SkNZWEpRbkZpTFJhVVZObUEvYm1XTWpGK2RpMjgvczBNcndVQ0cvTWp3MHVzdjNDdHFBQTNWOE9WcDh5TE9aYkM5RjNhNkRCenloa2orTjFpcHl1bW00Y1hCQXZ3M0krSSt4aWE2aURaRHEwNXJzRlNWenIxaTJiKzhWa3hxM3ZjN2U2S200dTdtc0dFbDM5c1ZTOHJnY0szcGpqQklVZTlSQXByZDd4dGJiSWZvN1lvSkg4bnN5blYyNWNNalg0ZlJFL1Q3UndSK1NvOE5oay9NaFl4TWR3Y3U3YzBiVkdHRVFLN1JDQzBUZG5IazMyMHVpVktHNUZNb2RmTWwyTlVWNCtSWlBzLzFBM0RZWWJmWHNSNDVVdy9YckdYM2Q0ZkQ1OWpWb2RLdUozV2Rzb2cvUkdyaHIyTFVrTWp1ajV1WnVTc2JhQy9KSXlSek9IYk8ySWMzdVo1Q3EzMkhjNXZXaEk3cW5LRmg3Q01FQUFQb1RXdnZmdlhHdFVBcVJGRW5hUTh3WHl2b1dXdFB2Q3hOQ2FEeUUzTHJIK3RiNHNSRkg5OUFhZUFCb3kyZVRpN1lIcFFWVCt3SXRib2NqbkhNN0RwZEVjeFBadzQ3UGwvUS91d2ZHZmtYVHFhWjBRa0QzOVErRFpVRW84Y2krOWM5NFdRWUF3N0QyMGgveFcxZzBkeTNRRUlTNzF1K2NzUW1yNlBkWUFoNnk2Rm1nZ0RmNVFNNllRby9qRDZBVmdOdSthbzJqektITGNpKzJCYlV6eGVpNTVTWm55OXZaTjJhZS85a1BLKzdyK2grK0hqdDlRalMxM0RHbVlIM25XMGwxbUxQVEhITm1ObEQwM0ZOTmp0YUVDZkcyNXpvS2ZpMStlbEZrc3QrYWVmNzlIK3hrRlc2ak5TQ3NyQkwrcGZJbjBacGxFb0lDbm9CYitCWTBBekRtck54cCtrdU1UK0NjN1FLZTRGaDNzSTExQndBYi84SmwxSWpmZ21iZzl2NWJxVHNmdEhNK2w0UHpmOXQ2c3o1Y2RqRmNnSFd5L29kdnE2N3AwYXV3Yk5ibDZ1cU9zbTdKeTdhRmJWN1dJN2V6YmhuK0N3QUEvLzhEQUsra0xvRUFBQUVBQUFBQkdGRUZoN29SWHc4ODlRQUJBK2dBQUFBQTJGMmd6QUFBQUFEZFppODMvcjMrM1FnZEE4a0FBZ0FEQUFJQUFBQUFBQUFBQVFBQUE5ais3d0FBQ0VEK3ZmMjhDQjBENkFEQy85RUFBQUFBQUFBQUFBQUFBQ040bkJ6TE1jNEJRUmlIOGVmOWIvbmxTeVNLb1hxTE1hYmdBSVJHSWR1S3drbWN4RlZjWUtPU2FGM0FBU1N5R29VWXNkVlRQUGxwejRnejJLZGNWQk0xWnE1TjE2Z0owUjVzTlNScmdOdVJwRUMyRzBsOVRIODRkNXdYMDhweC9lT3F5TGJEN1ZEZXRtYXBIak5yV0ZoVFRyOUhTN0RJeWxLNWRoWnFLRTlhd2hjQUFQLy9Bd0QzblJ3akFBQUFBQzRBTGdCU0FJb0F2QURlQVFJQktnRklBWUFCdUFIbUFoNENXQUtnQXNvQzFnTDRBem9EWkFPU0E3QUQ3QVFhQkVZRVpBU1VCS0FFckFUS0JPZ0U5Z1VNQlRJRlNBQUJBQUFBSXdDTUFBd0FaZ0FIQUFFQUFBQUFBQUFBQUFBQUFBQUFCQUFEZUp5Y2xOMXVHbGNVaFQ5aW9FMy9MaW9yY202c2M1bEt6dUJHY1pURVYrTTZWa1pGa0RLa1AxSlZhWUF4SUdCbXhBdzR6aFAwdW0vUnQ4aFZINk5QVWZXNjJwc05ZU0tyVmxBVWF3MW4vNnl6OXRvSDJPZGY5cWhVN3dKLzFaZUdLeHpXZnpaOGh5L3FUY043bk5VL00xemxxUGEzNFJxRDJsdkRkUjdVT29ZLzRWMzFEOE9mOHJqNm0rRzdIRlF2REgvT28rcSs0Uy8zSFA4WS9vckh2RnZoQ2p6bGQ4TVZEc2dNMzJHZlh3M3ZjUStyV2FseWoyUEROYjdtMEhDZFE2RExtSUlwWXhLR09DNFpNMlRCbkppY2tKZzVZeTZKR2VBSThKbFM2SzhKa1NMSDhNWmZJMElLNWtSYWNVU0JZMHJJbElpY2tWVjhxMWtwcjdTajlKa3JrbTQrQlNNaWVwb3hJU0xCa1RJa0pTRm1vblVLQ2pLZTA2QkJUbC81WmhUa2VPU01tZUtSTW1kSWd6WVhOT2t5WWt5TzQwSXJDYk9RbEVzS3JvaTB2N01JVWFaUFRFSnVyQllrREpTblUzNnhaZ2MwY2JUSk5IYTdjck5VNFFqSGo1b3QzQ1RHOFMyZS9uZGJ6TXA5MTJ3aWxxcW5hTmhqcWp5dmRJSWpWVno2K3Z5Z3VPQTViaWQ5eWt4dTEyaWc3R1RXWTNvc2RQNHlQOGtUSmduT0hlQVRxb05DZHgvSG1YNEhoS3JJVHdSMGVVbWIxM1QxMjZkREI1OFdYUUplYUc2YkRvN3ZhTlBpWERNQ3hhdXpDM1ZNaTE5d2ZFK2dNVkk3Tm4xRWMvbDZRMmJ1RnU3aURMbkhqRXkzUUdZczl4Zm54enROV0hZb0xia2pWMWYwZFk4a1V2WkFWSkU5aXhpYUt6SjF4VXkxWEhzak4vMEc1Z2c1TFhTMjc4OWxHNWEyZStzdHZpYlZIWFlzakpOTWJzWG90cWw2SDNqbVN2OTVSQXhJNldsRW41UVpEUXF1OVc2dmlGZ3d4WEd1UG42cFcxTGdiM0trejdXNkpHYW1EQUlTclRNbjA3K1IrU1kwN3YyUzc1MjlKYko1TTkzUnllWld1M1NSeXNuV2pGNnJldXV6MEZTT3R5YlFzS21tbGlNVGxzcXJtNHIzSmRvcjhRL1YvYm0rYmlrUENiU3VUTEovNHl0d3pETk9PR1drWGFSNnduSnpKcStFUkp5cUFoTmlqWkkzODQxcTlRaVBFenllY01JSnozanlnWlpyTnM3NHVCS2Y3ZjQrNTV6UjV2VFcyNnhpMjV6eG9sVHQvenYvcVd5UDlUNk9oNXV2cHp0UDg4Rkh1UFliamtydlprZGZBOW1ncFZWN3Z4MHRJbWJDeFIxc2ErSHU0LzBIQUFELy93TUFjcUZSUUFBQUF3QUEvL1VBQVAvT0FESUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQT09Iik7Cn1dXT48L3N0eWxlPjxzdHlsZSB0eXBlPSJ0ZXh0L2NzcyI+PCFbQ0RBVEFbLnNoYXBlIHsKICBzaGFwZS1yZW5kZXJpbmc6IGdlb21ldHJpY1ByZWNpc2lvbjsKICBzdHJva2UtbGluZWpvaW46IHJvdW5kOwp9Ci5jb25uZWN0aW9uIHsKICBzdHJva2UtbGluZWNhcDogcm91bmQ7CiAgc3Ryb2tlLWxpbmVqb2luOiByb3VuZDsKfQouYmxlbmQgewogIG1peC1ibGVuZC1tb2RlOiBtdWx0aXBseTsKICBvcGFjaXR5OiAwLjU7Cn0KCgkJLmQyLTMwMTExMzQxMTkgLmZpbGwtTjF7ZmlsbDojMEEwRjI1O30KCQkuZDItMzAxMTEzNDExOSAuZmlsbC1OMntmaWxsOiM2NzZDN0U7fQoJCS5kMi0zMDExMTM0MTE5IC5maWxsLUIxe2ZpbGw6IzBEMzJCMjt9CgkJLmQyLTMwMTExMzQxMTkgLmZpbGwtQjZ7ZmlsbDojRjdGOEZFO30KCQkuZDItMzAxMTEzNDExOSAuc3Ryb2tlLUIxe3N0cm9rZTojMEQzMkIyO30KCQkuZDItMzAxMTEzNDExOSAuc3Ryb2tlLUIye3N0cm9rZTojMEQzMkIyO30uYXBwZW5kaXggdGV4dC50ZXh0e2ZpbGw6IzBBMEYyNX0ubWR7LS1jb2xvci1mZy1kZWZhdWx0OiMwQTBGMjU7LS1jb2xvci1mZy1tdXRlZDojNjc2QzdFOy0tY29sb3ItZmctc3VidGxlOiM5NDk5QUI7LS1jb2xvci1jYW52YXMtZGVmYXVsdDojRkZGRkZGOy0tY29sb3ItY2FudmFzLXN1YnRsZTojRUVGMUY4Oy0tY29sb3ItYm9yZGVyLWRlZmF1bHQ6IzBEMzJCMjstLWNvbG9yLWJvcmRlci1tdXRlZDojMEQzMkIyOy0tY29sb3ItbmV1dHJhbC1tdXRlZDojRUVGMUY4Oy0tY29sb3ItYWNjZW50LWZnOiMwRDMyQjI7LS1jb2xvci1hY2NlbnQtZW1waGFzaXM6IzBEMzJCMjstLWNvbG9yLWF0dGVudGlvbi1zdWJ0bGU6IzY3NkM3RTstLWNvbG9yLWRhbmdlci1mZzpyZWQ7fS5saWdodC1jb2Rle2Rpc3BsYXk6IGJsb2NrfS5kYXJrLWNvZGV7ZGlzcGxheTogbm9uZX1AbWVkaWEgc2NyZWVuIGFuZCAocHJlZmVycy1jb2xvci1zY2hlbWU6ZGFyayl7CgkJLmQyLTMwMTExMzQxMTkgLmZpbGwtTjF7ZmlsbDojQ0RENkY0O30KCQkuZDItMzAxMTEzNDExOSAuZmlsbC1OMntmaWxsOiNCQUMyREU7fQoJCS5kMi0zMDExMTM0MTE5IC5maWxsLUIxe2ZpbGw6I0NCQTZmNzt9CgkJLmQyLTMwMTExMzQxMTkgLmZpbGwtQjZ7ZmlsbDojMzEzMjQ0O30KCQkuZDItMzAxMTEzNDExOSAuc3Ryb2tlLUIxe3N0cm9rZTojQ0JBNmY3O30KCQkuZDItMzAxMTEzNDExOSAuc3Ryb2tlLUIye3N0cm9rZTojQ0JBNmY3O30uYXBwZW5kaXggdGV4dC50ZXh0e2ZpbGw6I0NERDZGNH0ubWR7LS1jb2xvci1mZy1kZWZhdWx0OiNDREQ2RjQ7LS1jb2xvci1mZy1tdXRlZDojQkFDMkRFOy0tY29sb3ItZmctc3VidGxlOiNBNkFEQzg7LS1jb2xvci1jYW52YXMtZGVmYXVsdDojMUUxRTJFOy0tY29sb3ItY2FudmFzLXN1YnRsZTojMzEzMjQ0Oy0tY29sb3ItYm9yZGVyLWRlZmF1bHQ6I0NCQTZmNzstLWNvbG9yLWJvcmRlci1tdXRlZDojQ0JBNmY3Oy0tY29sb3ItbmV1dHJhbC1tdXRlZDojMzEzMjQ0Oy0tY29sb3ItYWNjZW50LWZnOiNDQkE2Zjc7LS1jb2xvci1hY2NlbnQtZW1waGFzaXM6I0NCQTZmNzstLWNvbG9yLWF0dGVudGlvbi1zdWJ0bGU6I0JBQzJERTstLWNvbG9yLWRhbmdlci1mZzpyZWQ7fS5saWdodC1jb2Rle2Rpc3BsYXk6IG5vbmV9LmRhcmstY29kZXtkaXNwbGF5OiBibG9ja319XV0+PC9zdHlsZT48ZyBjbGFzcz0iWVhaaGFXeGhZbXhsIGNvbXBvbmVudCI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iMTIiIHk9IjY5IiB3aWR0aD0iMTA4IiBoZWlnaHQ9IjY0IiByeD0iNiIgY2xhc3M9IiBzdHJva2UtQjEgZmlsbC1CNiIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iNjYiIHk9IjEwNi41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPkF2YWlsYWJsZTwvdGV4dD48L2c+PGcgY2xhc3M9IlltOTFibVE9IGNvbXBvbmVudCI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iMzQwIiB5PSI2OSIgd2lkdGg9Ijg3IiBoZWlnaHQ9IjY0IiByeD0iNiIgY2xhc3M9IiBzdHJva2UtQjEgZmlsbC1CNiIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iMzgzLjUiIHk9IjEwNi41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPkJvdW5kPC90ZXh0PjwvZz48ZyBjbGFzcz0iY21Wc1pXRnpaV1E9IGNvbXBvbmVudCI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iNjUyIiB5PSI2MCIgd2lkdGg9IjEwNCIgaGVpZ2h0PSI4MCIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjYiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjcwNCIgeT0iMTA1LjUiIGNsYXNzPSJ0ZXh0LWJvbGQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTVweCI+UmVsZWFzZWQ8L3RleHQ+PC9nPjxnIGNsYXNzPSJaR1ZzWlhSbCBjb21wb25lbnQiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjgzNiIgeT0iMTIiIHdpZHRoPSIyMDMiIGhlaWdodD0iNzkiIHJ4PSI2IiBjbGFzcz0iIHN0cm9rZS1CMiBmaWxsLUI2IiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7c3Ryb2tlLWRhc2hhcnJheTo4LjAwMDAwMCw3Ljg5MjUxMTsiIC8+PC9nPjx0ZXh0IHg9IjkzNy41IiB5PSI0OS41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPjx0c3BhbiB4PSI5MzcuNSIgZHk9IjAiPmdlbMO2c2NodDwvdHNwYW4+PHRzcGFuIHg9IjkzNy41IiBkeT0iMTciPihSZWNsYWltIFBvbGljeTogRGVsZXRlKTwvdHNwYW4+PC90ZXh0PjwvZz48ZyBjbGFzcz0iY21WMFlXbHUgY29tcG9uZW50Ij48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSI4MzYiIHk9IjExMSIgd2lkdGg9IjIwMyIgaGVpZ2h0PSI3OSIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIyIGZpbGwtQjYiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjtzdHJva2UtZGFzaGFycmF5OjguMDAwMDAwLDcuODkyNTExOyIgLz48L2c+PHRleHQgeD0iOTM3LjUiIHk9IjE0OC41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPjx0c3BhbiB4PSI5MzcuNSIgZHk9IjAiPmJsZWlidCBlcmhhbHRlbjwvdHNwYW4+PHRzcGFuIHg9IjkzNy41IiBkeT0iMTciPihSZWNsYWltIFBvbGljeTogUmV0YWluKTwvdHNwYW4+PC90ZXh0PjwvZz48ZyBjbGFzcz0iS0dGMllXbHNZV0pzWlNBdEptZDBPeUJpYjNWdVpDbGJNRjA9Ij48bWFya2VyIGlkPSJtay1kMi0zMDExMTM0MTE5LTM0ODgzNzgxMzQiIG1hcmtlcldpZHRoPSIxMCIgbWFya2VySGVpZ2h0PSIxMiIgcmVmWD0iNyIgcmVmWT0iNiIgdmlld0JveD0iMCAwIDEwIDEyIiBvcmllbnQ9ImF1dG8iIG1hcmtlclVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+IDxwb2x5Z29uIHBvaW50cz0iMCwwIDEwLDYgMCwxMiIgY2xhc3M9ImNvbm5lY3Rpb24gZmlsbC1CMSIgc3Ryb2tlLXdpZHRoPSIyIiAvPiA8L21hcmtlcj48cGF0aCBkPSJNIDEyMiAxMDEgTCAzMzYgMTAxIiBmaWxsPSJub25lIiBjbGFzcz0iY29ubmVjdGlvbiBzdHJva2UtQjEiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIG1hcmtlci1lbmQ9InVybCgjbWstZDItMzAxMTEzNDExOS0zNDg4Mzc4MTM0KSIgbWFzaz0idXJsKCNkMi0zMDExMTM0MTE5KSIgLz48dGV4dCB4PSIyMzAiIHk9IjEwNyIgY2xhc3M9InRleHQtaXRhbGljIGZpbGwtTjIiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE2cHgiPkJpbmQgYW4gUFZDPC90ZXh0PjwvZz48ZyBjbGFzcz0iS0dKdmRXNWtJQzBtWjNRN0lISmxiR1ZoYzJWa0tWc3dYUT09Ij48cGF0aCBkPSJNIDQyOSAxMDEgTCA2NDggMTAxIiBmaWxsPSJub25lIiBjbGFzcz0iY29ubmVjdGlvbiBzdHJva2UtQjEiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIG1hcmtlci1lbmQ9InVybCgjbWstZDItMzAxMTEzNDExOS0zNDg4Mzc4MTM0KSIgbWFzaz0idXJsKCNkMi0zMDExMTM0MTE5KSIgLz48dGV4dCB4PSI1MzkuNSIgeT0iMTA3IiBjbGFzcz0idGV4dC1pdGFsaWMgZmlsbC1OMiIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTZweCI+UFZDIGdlbMO2c2NodDwvdGV4dD48L2c+PGcgY2xhc3M9IktISmxiR1ZoYzJWa0lDMG1aM1E3SUdSbGJHVjBaU2xiTUYwPSI+PHBhdGggZD0iTSA3NTggODcuNjY2IEwgNzg2IDg3LjY2NiBTIDc5NiA4Ny42NjYgNzk2IDc3LjY2NiBMIDc5NiA2MS41IFMgNzk2IDUxLjUgODA2IDUxLjUgTCA4MzIgNTEuNSIgZmlsbD0ibm9uZSIgY2xhc3M9ImNvbm5lY3Rpb24gc3Ryb2tlLUIxIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiBtYXJrZXItZW5kPSJ1cmwoI21rLWQyLTMwMTExMzQxMTktMzQ4ODM3ODEzNCkiIG1hc2s9InVybCgjZDItMzAxMTEzNDExOSkiIC8+PC9nPjxnIGNsYXNzPSJLSEpsYkdWaGMyVmtJQzBtWjNRN0lISmxkR0ZwYmlsYk1GMD0iPjxwYXRoIGQ9Ik0gNzU4IDExNC4zMzMgTCA3ODYgMTE0LjMzMyBTIDc5NiAxMTQuMzMzIDc5NiAxMjQuMzMzIEwgNzk2IDE0MC41IFMgNzk2IDE1MC41IDgwNiAxNTAuNSBMIDgzMiAxNTAuNSIgZmlsbD0ibm9uZSIgY2xhc3M9ImNvbm5lY3Rpb24gc3Ryb2tlLUIxIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiBtYXJrZXItZW5kPSJ1cmwoI21rLWQyLTMwMTExMzQxMTktMzQ4ODM3ODEzNCkiIG1hc2s9InVybCgjZDItMzAxMTEzNDExOSkiIC8+PC9nPjxtYXNrIGlkPSJkMi0zMDExMTM0MTE5IiBtYXNrVW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4PSItOSIgeT0iLTkiIHdpZHRoPSIxMDY5IiBoZWlnaHQ9IjIyMCI+CjxyZWN0IHg9Ii05IiB5PSItOSIgd2lkdGg9IjEwNjkiIGhlaWdodD0iMjIwIiBmaWxsPSJ3aGl0ZSI+PC9yZWN0Pgo8cmVjdCB4PSIxODgiIHk9IjkxIiB3aWR0aD0iODQiIGhlaWdodD0iMjEiIGZpbGw9ImJsYWNrIj48L3JlY3Q+CjxyZWN0IHg9IjQ5NSIgeT0iOTEiIHdpZHRoPSI4OSIgaGVpZ2h0PSIyMSIgZmlsbD0iYmxhY2siPjwvcmVjdD4KPC9tYXNrPjwvc3ZnPjwvc3ZnPgo=" alt="Lebenszyklus eines PV" /></p>
+<p>Die <strong>Reclaim Policy</strong> des PV bestimmt, was nach dem
+Löschen der PVC passiert:</p>
+<ul>
+<li><code>Delete</code> – PV und zugrunde liegender Speicher werden
+automatisch gelöscht (Standard bei den meisten dynamisch provisionierten
+StorageClasses).</li>
+<li><code>Retain</code> – PV bleibt im Zustand <code>Released</code>
+erhalten, muss manuell aufgeräumt oder wiederverwendet werden (schützt
+vor versehentlichem Datenverlust).</li>
+</ul>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Name des gebundenen PV</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pvc demo-data <span class="at">-o</span> jsonpath=<span class="st">&#39;{.spec.volumeName}{&quot;\n&quot;}&#39;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pv   <span class="co"># ❗ benötigt Leserechte auf Cluster-Ebene</span></span></code></pre></div>
+<h2 id="resizing">Resizing</h2>
+<p>Unterstützt die StorageClass <code>allowVolumeExpansion: true</code>,
+lässt sich eine PVC <strong>vergrößern</strong>, ohne sie neu
+anzulegen:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> patch pvc demo-data <span class="at">-p</span> <span class="st">&#39;{&quot;spec&quot;:{&quot;resources&quot;:{&quot;requests&quot;:{&quot;storage&quot;:&quot;2Gi&quot;}}}}&#39;</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pvc demo-data <span class="at">-w</span></span></code></pre></div>
+<p>Wichtig: Eine Verkleinerung ist nicht möglich – nur eine
+Vergrößerung. Je nach Storage-Backend muss der Pod, der die PVC
+verwendet, für die Dateisystem-Vergrößerung neu gestartet werden.</p>
+<h2 id="snapshots">Snapshots</h2>
+<p><code>VolumeSnapshot</code>/<code>VolumeSnapshotClass</code> erlauben
+es, einen Zeitpunkt-Zustand eines Volumes zu sichern und später als
+Basis für ein neues Volume zu verwenden.
+<code>cluster-specific/volumesnapshot.yaml</code> zeigt das Prinzip:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">source</span><span class="kw">:</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">persistentVolumeClaimName</span><span class="kw">:</span><span class="at"> demo-data</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">  # volumeSnapshotClassName: ...   ohne Angabe: Default-VolumeSnapshotClass des Clusters</span></span></code></pre></div>
+<p>Snapshots setzen voraus, dass der CSI-Treiber des Clusters Snapshots
+unterstützt und eine <code>VolumeSnapshotClass</code> existiert – prüfen
+mit:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get volumesnapshotclass</span></code></pre></div>
+<p>❗ Nur auf Clustern mit (Default-)VolumeSnapshotClass (die Developer
+Sandbox hat eine):</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 15-storage/cluster-specific/volumesnapshot.yaml</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> wait <span class="at">--for</span><span class="op">=</span>jsonpath=<span class="st">&#39;{.status.readyToUse}&#39;</span>=true volumesnapshot/demo-data-snapshot <span class="at">--timeout</span><span class="op">=</span>300s</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get volumesnapshot demo-data-snapshot</span></code></pre></div>
+<p>Ein neues Volume aus dem Snapshot entsteht über
+<code>dataSource</code> in einer PVC:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">dataSource</span><span class="kw">:</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> demo-data-snapshot</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> VolumeSnapshot</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> snapshot.storage.k8s.io</span></span></code></pre></div>
+<h2 id="geteiltes-volume-rwx">Geteiltes Volume (RWX)</h2>
+<p>Soll ein Deployment mit mehreren Replicas <strong>dasselbe</strong>
+Volume nutzen (z. B. gemeinsame HTML-Dateien), braucht es den Access
+Mode <code>ReadWriteMany</code>. Ob das geht, hängt von der StorageClass
+ab:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get storageclass</span></code></pre></div>
+<p>❗ Nur auf Clustern mit RWX-fähiger StorageClass (vorher
+<code>storageClassName</code> in
+<code>cluster-specific/pvc-rwx.yaml</code> anpassen):</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 15-storage/cluster-specific/pvc-rwx.yaml</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 15-storage/cluster-specific/deployment-rwx.yaml</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pods <span class="at">-l</span> app=demo <span class="at">-o</span> wide   <span class="co"># Pods auf verschiedenen Nodes, gleiches Volume</span></span></code></pre></div>
+<h2 id="beispiel-deployment-mit-pvc">Beispiel-Deployment mit PVC</h2>
+<p><code>deployment-with-pvc.yaml</code> mountet die PVC aus
+<code>pvc.yaml</code> unter <code>/var/demo/data</code>. Die
+Update-Strategie ist bewusst auf <code>Recreate</code> gesetzt, da die
+meisten RWO-Volumes nicht gleichzeitig von zwei Pods (altem und neuem,
+wie bei einem Rolling-Update) gemountet werden können.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Deployment und PVC wurden bereits oben angelegt:</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get deployment demo</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pvc demo-data</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Daten schreiben, Pod löschen – die Daten überleben</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> exec deploy/demo <span class="at">--</span> sh <span class="at">-c</span> <span class="st">&#39;date &gt; /var/demo/data/test.txt&#39;</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> delete pod <span class="at">-l</span> app=demo <span class="at">--wait</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> rollout status deployment/demo</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> exec deploy/demo <span class="at">--</span> cat /var/demo/data/test.txt</span></code></pre></div>
+<h2 id="manifeste-in-diesem-kapitel">Manifeste in diesem Kapitel</h2>
+<ul>
+<li><code>pvc.yaml</code> – PersistentVolumeClaim ohne feste
+StorageClass (nutzt Cluster-Default)</li>
+<li><code>pvc-rwop.yaml</code>, <code>deployment-rwop.yaml</code> –
+Volume mit <code>ReadWriteOncePod</code>, das zwei Replicas nutzen
+wollen</li>
+<li><code>deployment-with-pvc.yaml</code> – Deployment, das die PVC
+mountet</li>
+<li>❗ <code>cluster-specific/volumesnapshot.yaml</code> –
+Referenz-Snapshot (abhängig vom CSI-Treiber des Clusters)</li>
+<li>❗ <code>cluster-specific/pvc-rwx.yaml</code>,
+<code>cluster-specific/deployment-rwx.yaml</code> – geteiltes RWX-Volume
+für 3 Replicas (benötigt eine StorageClass mit
+<code>ReadWriteMany</code>, z. B. EFS/CephFS –
+<code>storageClassName</code> anpassen)</li>
+</ul>
+<hr />
+<h2 id="weiterführende-links">Weiterführende Links</h2>
+<ul>
+<li><a href="https://kubernetes.io/docs/concepts/storage/persistent-volumes/">Kubernetes:
+Persistent Volumes</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/storage/storage-classes/">Kubernetes:
+StorageClasses</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/storage/volume-snapshots/">Kubernetes:
+Volume-Snapshots</a></li>
+<li><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/storage/index">OpenShift
+4.22: Storage</a></li>
+</ul>
+<p>Siehe auch <a href="../99-anhang/DOCUMENTATION.html">99-anhang/DOCUMENTATION.md</a>
+für die vollständige Liste.</p>
+<nav class="pager-bottom">
+  <a class="prev" href="../14-scc/README.html"><span>← Zurück</span>Kapitel 14: OpenShift Security Context Constraints (SCCs)</a>
+
+  <a class="up" href="../README.html#inhaltsverzeichnis"><span>↑ Übersicht</span>Inhaltsverzeichnis</a>
+
+  <a class="next" href="../16-networkpolicies/README.html"><span>Weiter →</span>Kapitel 16: Grundlagen der NetworkPolicies</a>
+
+</nav>
+</main>
+</div>
+<script>
+// Kopier-Button für Codeblöcke
+document.querySelectorAll("pre").forEach(function (pre) {
+  var button = document.createElement("button");
+  button.className = "copy";
+  button.type = "button";
+  button.textContent = "Kopieren";
+  button.addEventListener("click", function () {
+    navigator.clipboard.writeText(pre.innerText).then(function () {
+      button.textContent = "Kopiert ✓";
+      setTimeout(function () { button.textContent = "Kopieren"; }, 1500);
+    });
+  });
+  pre.appendChild(button);
+});
+</script>
+</body>
+</html>

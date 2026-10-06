@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: demo-check
+  labels:
+    app: demo-job
+spec:
+  completions: 3              # Job ist fertig, wenn 3 Pods erfolgreich waren
+  parallelism: 3              # ... die gleichzeitig laufen dürfen
+  backoffLimit: 2             # höchstens 2 Wiederholungen bei Fehlern
+  activeDeadlineSeconds: 120  # spätestens nach 2 Minuten abbrechen
+  ttlSecondsAfterFinished: 600  # 10 Minuten nach Ende automatisch löschen
+  template:
+    metadata:
+      labels:
+        app: demo-job         # bewusst NICHT app=demo – sonst würde der Service auch diese Pods ansprechen
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: check
+          image: quay.io/ghilling/ubi-tools:10-latest
+          command: ["sh", "-c", "curl -sf http://demo:8080/health && echo ' – Demo-App ist gesund'"]
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"

@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kapitel 18: Scheduling – Affinity, Anti-Affinity und Topology
+Spread – Container und Kubernetes/OpenShift</title>
+<style type="text/css">:root {
+--bg: #ffffff;
+--fg: #1f2328;
+--muted: #59636e;
+--border: #d1d9e0;
+--accent: #1a5fb4;
+--accent-soft: #e8f0fe;
+--code-bg: #f6f8fa;
+--topbar-bg: #f6f8fa;
+--warn: #9a6700;
+--warn-bg: #fff8c5;
+--rookie: #1a7f37;
+--rookie-bg: #dafbe1;
+--advanced: #8250df;
+--advanced-bg: #fbefff;
+--tok-comment: #6e7781;
+--tok-keyword: #cf222e;
+--tok-string: #0a3069;
+--tok-variable: #953800;
+--tok-function: #8250df;
+--tok-number: #0550ae;
+--tok-attr: #116329;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg: #0d1117;
+--fg: #e6edf3;
+--muted: #9198a1;
+--border: #30363d;
+--accent: #6cb6ff;
+--accent-soft: #15233a;
+--code-bg: #161b22;
+--topbar-bg: #161b22;
+--warn: #d29922;
+--warn-bg: #2b2111;
+--rookie: #3fb950;
+--rookie-bg: #12261e;
+--advanced: #d2a8ff;
+--advanced-bg: #221a33;
+--tok-comment: #9198a1;
+--tok-keyword: #ff7b72;
+--tok-string: #a5d6ff;
+--tok-variable: #ffa657;
+--tok-function: #d2a8ff;
+--tok-number: #79c0ff;
+--tok-attr: #7ee787;
+}
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 4.5rem; }
+body {
+margin: 0;
+background: var(--bg);
+color: var(--fg);
+font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.topbar {
+position: sticky; top: 0; z-index: 10;
+display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+padding: 0.6rem 1.5rem;
+background: var(--topbar-bg);
+border-bottom: 1px solid var(--border);
+}
+.topbar .course { font-weight: 600; color: var(--fg); }
+.pager { display: flex; gap: 1.25rem; font-size: 0.95rem; }
+.layout {
+display: grid;
+grid-template-columns: 16rem minmax(0, 52rem);
+gap: 3rem;
+justify-content: center;
+padding: 2rem 1.5rem 4rem;
+}
+.toc {
+position: sticky; top: 4.5rem;
+align-self: start;
+max-height: calc(100vh - 6rem);
+overflow-y: auto;
+font-size: 0.9rem;
+}
+.toc-title { margin: 0 0 0.5rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; }
+.toc ul { list-style: none; margin: 0; padding-left: 0; }
+.toc ul ul { padding-left: 1rem; }
+.toc li { margin: 0.3rem 0; }
+.toc a { color: var(--muted); }
+.toc a:hover { color: var(--accent); }
+main { min-width: 0; }
+h1, h2, h3, h4 { line-height: 1.25; margin: 2rem 0 1rem; }
+h1 { font-size: 2rem; margin-top: 0; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+h2 { font-size: 1.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.2rem; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 2rem 0; }
+img { max-width: 100%; height: auto; display: block; margin: 1.5rem auto; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.95rem; display: block; overflow-x: auto; }
+th, td { border: 1px solid var(--border); padding: 0.4rem 0.75rem; text-align: left; vertical-align: top; }
+th { background: var(--code-bg); }
+code { font: 0.875em/1.5 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+:not(pre) > code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.1em 0.35em; }
+pre {
+position: relative;
+background: var(--code-bg);
+border: 1px solid var(--border);
+border-radius: 8px;
+padding: 1rem 1.25rem;
+overflow-x: auto;
+}
+pre code { background: none; border: 0; padding: 0; }
+pre .copy {
+position: absolute; top: 0.5rem; right: 0.5rem;
+font: 0.75rem/1 inherit; font-family: inherit;
+padding: 0.3rem 0.55rem;
+color: var(--muted); background: var(--bg);
+border: 1px solid var(--border); border-radius: 6px;
+cursor: pointer; opacity: 0; transition: opacity 0.15s;
+}
+pre:hover .copy, pre .copy:focus { opacity: 1; }
+blockquote {
+margin: 1rem 0; padding: 0.5rem 1rem;
+color: var(--fg);
+background: var(--accent-soft);
+border-left: 4px solid var(--accent);
+border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0.4rem 0; }
+.pager-bottom { display: flex; justify-content: space-between; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.pager-bottom a { display: flex; flex-direction: column; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; max-width: 40%; }
+.pager-bottom a span { font-size: 0.8rem; color: var(--muted); }
+.pager-bottom .next { margin-left: auto; text-align: right; }
+.pager-bottom .up { text-align: center; }
+@media (max-width: 960px) {
+.layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; padding: 1.5rem 1rem 3rem; }
+.toc { position: static; max-height: none; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+.topbar { padding: 0.6rem 1rem; }
+}
+
+code span.co { color: var(--tok-comment); font-style: italic; }
+code span.kw, code span.cf { color: var(--tok-keyword); }
+code span.st, code span.ss, code span.ch, code span.vs { color: var(--tok-string); }
+code span.va { color: var(--tok-variable); }
+code span.fu, code span.bu { color: var(--tok-function); }
+code span.dv, code span.fl, code span.bn, code span.cn { color: var(--tok-number); }
+code span.at { color: var(--tok-attr); }
+code span.op, code span.ot { color: inherit; }
+div.sourceCode { margin: 1rem 0; }
+pre > code.sourceCode > span { display: inline; }
+
+.badge {
+display: inline-block;
+padding: 0.15em 0.6em;
+border-radius: 999px;
+font-size: 0.75rem;
+font-weight: 600;
+line-height: 1.5;
+vertical-align: middle;
+white-space: nowrap;
+}
+.badge-rookie { color: var(--rookie); background: var(--rookie-bg); border: 1px solid var(--rookie); }
+.badge-advanced { color: var(--advanced); background: var(--advanced-bg); border: 1px solid var(--advanced); }
+.chapter-level { margin: -0.5rem 0 1.5rem; }
+h1 + .chapter-level { margin-top: -0.25rem; }
+.advanced-section {
+margin: 1.5rem 0;
+padding: 0.25rem 1.25rem 0.75rem;
+border-left: 4px solid var(--advanced);
+background: var(--advanced-bg);
+border-radius: 0 8px 8px 0;
+}
+.toc .badge { font-size: 0.65rem; padding: 0 0.45em; margin-left: 0.25rem; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="course" href="../README.html">Container und Kubernetes/OpenShift</a>
+  <nav class="pager">
+    <a href="../README.html#inhaltsverzeichnis">↑ Inhaltsverzeichnis</a>
+
+    <a href="../17-jobs/README.html" title="Kapitel 17: Jobs und CronJobs">← Zurück</a>
+
+    <a href="../19-availability/README.html" title="Kapitel 19: Verfügbarkeit – Rolling Updates, PodDisruptionBudget, Autoscaling">Weiter →</a>
+
+  </nav>
+</header>
+<div class="layout">
+<aside class="toc">
+  <p class="toc-title">Inhalt</p>
+<ul>
+<li><a href="#kapitel-18-scheduling--affinity-anti-affinity-und-topology-spread" id="toc-kapitel-18-scheduling--affinity-anti-affinity-und-topology-spread">Kapitel
+18: Scheduling – Affinity, Anti-Affinity und Topology Spread</a>
+<ul>
+<li><a href="#node-labels" id="toc-node-labels">Node-Labels</a></li>
+<li><a href="#node-affinity" id="toc-node-affinity">Node
+Affinity</a></li>
+<li><a href="#pod-anti-affinity-replicas-trennen" id="toc-pod-anti-affinity-replicas-trennen">Pod Anti-Affinity: Replicas
+trennen</a></li>
+<li><a href="#pod-affinity-pods-zusammen-platzieren" id="toc-pod-affinity-pods-zusammen-platzieren">Pod Affinity: Pods
+zusammen platzieren</a></li>
+<li><a href="#topology-spread-constraints" id="toc-topology-spread-constraints">Topology Spread
+Constraints</a></li>
+<li><a href="#ausblick-taints-und-tolerations" id="toc-ausblick-taints-und-tolerations">Ausblick: Taints und
+Tolerations</a></li>
+<li><a href="#manifeste-in-diesem-kapitel" id="toc-manifeste-in-diesem-kapitel">Manifeste in diesem
+Kapitel</a></li>
+<li><a href="#weiterführende-links" id="toc-weiterführende-links">Weiterführende Links</a></li>
+</ul></li>
+</ul>
+</aside>
+<main>
+<h1 id="kapitel-18-scheduling--affinity-anti-affinity-und-topology-spread">Kapitel
+18: Scheduling – Affinity, Anti-Affinity und Topology Spread</h1>
+<div class="chapter-level">
+<span class="badge badge-advanced">Advanced · Tag 3–4</span>
+</div>
+<p>Der <strong>Scheduler</strong> entscheidet, auf welchem Node ein Pod
+läuft. Ohne weitere Angaben wählt er irgendeinen Node mit genug freien
+Ressourcen (Kapitel 8). Oft soll das gezielter passieren:</p>
+<ul>
+<li><strong>Node Affinity:</strong> nur auf bestimmten Nodes (z. B.
+bestimmte Prozessor-Architektur, Zone, GPU)</li>
+<li><strong>Pod Affinity:</strong> in der Nähe anderer Pods (z. B. Cache
+neben der Anwendung)</li>
+<li><strong>Pod Anti-Affinity:</strong> getrennt von anderen Pods (z. B.
+Replicas auf verschiedenen Nodes)</li>
+<li><strong>Topology Spread Constraints:</strong> gleichmäßig verteilt
+über Nodes oder Zonen</li>
+</ul>
+<p><img role="img" aria-label="Anti-Affinity, Topology Spread und Affinity im Vergleich" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiICBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWluWU1pbiBtZWV0IiB2aWV3Qm94PSIwIDAgNjc2IDc1MSI+PHN2ZyBjbGFzcz0iZDItMzQ2MjI2ODI1IGQyLXN2ZyIgd2lkdGg9IjY3NiIgaGVpZ2h0PSI3NTEiIHZpZXdCb3g9Ii0yMSAtMjEgNjc2IDc1MSI+PHJlY3QgeD0iLTIxIiB5PSItMjEiIHdpZHRoPSI2NzYiIGhlaWdodD0iNzUxIiByeD0iMCIgZmlsbD0idHJhbnNwYXJlbnQiIHN0cm9rZS13aWR0aD0iMCIgLz48c3R5bGUgdHlwZT0idGV4dC9jc3MiPjwhW0NEQVRBWwouZDItMzQ2MjI2ODI1IC50ZXh0LWJvbGQgewoJZm9udC1mYW1pbHk6ICJkMi0zNDYyMjY4MjUtZm9udC1ib2xkIiwgIlNvdXJjZSBTYW5zIFBybyIsICJTb3VyY2UgU2FucyAzIiwgLWFwcGxlLXN5c3RlbSwgQmxpbmtNYWNTeXN0ZW1Gb250LCAiU2Vnb2UgVUkiLCBIZWx2ZXRpY2EsIEFyaWFsLCBzYW5zLXNlcmlmOwp9CkBmb250LWZhY2UgewoJZm9udC1mYW1pbHk6IGQyLTM0NjIyNjgyNS1mb250LWJvbGQ7Cglmb250LWRpc3BsYXk6IHN3YXA7CglzcmM6IHVybCgiZGF0YTpmb250L3dvZmY7YmFzZTY0LGQwOUdSZ0FCQUFBQUFCRWdBQW9BQUFBQUdjd0FBZ3VGQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFCUFV5OHlBQUFBOUFBQUFHQUFBQUJnWHhIWHJtTnRZWEFBQUFGVUFBQUF5UUFBQVJ4Rmd1amJaMng1WmdBQUFpQUFBQW9lQUFBTnVKRzVteGRvWldGa0FBQU1RQUFBQURZQUFBQTJHMzhlMUdob1pXRUFBQXg0QUFBQUpBQUFBQ1FLZndYdmFHMTBlQUFBREp3QUFBQ3VBQUFBd0ZucUIycHNiMk5oQUFBTlRBQUFBR0lBQUFCaVd2Ulg2bTFoZUhBQUFBMndBQUFBSUFBQUFDQUFTQUQzYm1GdFpRQUFEZEFBQUFNdkFBQUlLZ2p3VmtGd2IzTjBBQUFSQUFBQUFDQUFBQUFnLzlFQU1nQURBaW9DdkFBRkFBQUNpZ0pZQUFBQVN3S0tBbGdBQUFGZUFESUJLUUFBQWdzSEF3TUVBd0lDQkdBQUF2Y0FBQUFEQUFBQUFBQUFBQUJCUkVKUEFDQUFJUC8vQXU3L0JnQUFBOWdCRVNBQUFaOEFBQUFBQWZBQ2xBQUFBQ0FBQTNpY2pNNDdMblFCR0lEaDU4eWMvOGNZRE1PNGM5em5RaUU2MGNqb0pDSmhBMHJSaUVURWhsd1dJRVRGU3BCb05Rb0Z4U2M1a1dqbGJaL2lSYUlvUVZtYVZOQ1VTWlZrR3BhdFdMTnUwNVp0TzNidE8zVHMxTGtucno2eWFnUXk5ZHl1NXJiOVkvY2NPSExpN05mR2kwSjh4bGU4eDFzOHhrUGN4MTNjeGsxY3gxVmN4a1cwWXlOYXo3WDg2SzhsbWxvVzFjMlp0MkJKUVZIcW4vODZkT3BTMHEyc1I2OCtGZjBHVkEwYVVqTnN4S2d4NHlaTW1qSnRWbVpHZzI4QUFBRC8vd01BTkc0MllRQUFBSGljWEZkcGJCdlh0VDcza3VKWUZMVndtUm51MjVBencxM2tjRGphS1Zva0pjdWt0ZG15SFd1SkJlZkZzYnk5V0g1Uzhod2t3UE5yV2tlcGs4aHRuYVpOMnFJQjJzSnBFUmdCMHJScTBRQlpqQmo1NDZRR2ltWXBHampvbjFaSjFhQUlKTEs0UTBtVy9FTzZnNHQ3Ny9uT2Q3L3ozVU9vZzJFQVBJT3ZnQWJxb1JsTVFBTklScDh4S0FrQ1J5bVNvbkNzUmhHUWtSckdwc3JMUHhWQzJsQklHL1plOVR3NlBZM0tVL2pLK3NrajVabVpyNlk3T3lzdi92cU55dFBvM0JzQXVQbzFBTzdEaTFBUFJnQXpKUWs4TDNBNm5jWXNtVG1Cbys2MFBOWGM2R2pVR214ZjMzejE1Zy9FZDBRMDJOV1ZQQzJsVDFYK0h5K3V6NzN3QWdBQWduaDFGYmZpcStBQXFQUHp2SnpPWktRVXcxSTh6L2wxT3RyQ1NLbU13dXJRNU9pbHNRTlBqMmFQK2ZiWkZDNjZKekkrSUdhdCswWU5wZStjT3ZuOGlPU2ZZbDJwcWQzSHpnWnNFL2NEaGpJQUx1RkYwTmN5bGxJTVExdDBPazZRVXBtTW5PWjVqaXUvZnV5NWtlSEw5OGVjYldQeCtGaWJFeS9tTDU4OSsxei92RGl4YjkvaG9JcXZESUJQNGtVd3FLY1lKYk9rTVhNYWlpNHZhZC84eVZ0LysvRkxKYnhZK1JkcXFLeFZGcEQ1Mks4Mjk1VHdJcGpWUFdaVzRubFpsb3ljUnVBWWhxYkwzL3RGcjFiYnRFaUd1a2E4V1BudE0ra25PdTZzejZIQ3R6TVhPajRIMk1EZnFzYTE3TURQMFVZcEphY0ovRThIemhlTGM0V1JnWVhlcmp4ZUZDYUdTak9KajlEb2NTa01LbmF1dW9yMStDcUVWVzRGaFdHa0ZNbGRFT0o0SjlHMGhXSFpXZ1JrNlgwOHRaOGJGK014S1hMQTE4VjNQcFJ2T3h2ZTYrMFYrRmg3ZUg5bnNlTzBvVFgrZ0p2M3V6d3VVNkFwVVV4a0RxV2o0VW1idytOMHU0MSs2LzVDWnFJTkVOZ0FzQmt2QWtVeTRHUWZ6Umx2WGtkZlg4Y3RGeTZzcnhDTUdNTFZWZlFCV2dNYmNBQ3NuNWZUR1VXRlJBa3FRTnJJRVYwcHFZd2lxM3I0WFg3NDRoTG1RcDdlZ0p5WTdaaityd1c5MXRPL3l4WTA3K3Z5R0E1bTl4MXE5Z2xXK3FncmNQcmh5bWVTazN1WU5SL1VSMXhXVm8yWHE2NWlCaStEQlR3MVZqaUtNMG8wcFFaVENSQUlSNXlmb2hrR0ZYeDlMcTNoM0pMV2xmZDNIVXAwVFIvaU0rUFJrRVUwK0x3eVhyNVdzcnQ2L3J0MDRKSHNRckgwamRoN3BpYVY5MEIxRlMyak5iRGZxMm5PZjFmUk9tUXJuTWtOL0U4KzN1OHNjRjQ1bTIyMXhzMGR3WEZEOS9uUnNibHVOenZ0S3VWNnkzVHovVjVIalN1aHVvclc4REtZd2J2SkZVSE5DckswamFYTkMvMXk0a3puZERyVVp0TXRMZWkxOWlLMkNpWnp4TUpsRW9hbkhoazUzK08wbG42KzNwZTBjd3NXMjN1bXByNytQUVhBS3ZhL29EV3dnbWNIZWtJTjVTTUtJdGcxVXBwRVFaNytoM2YzbmV6c24weG9jZVcydnBpVU0wbCs2dnZYaGFnL1kraVpHeDJaeTJabjgrWmdmVWJ5SGJhN1VVZElUcEJjRUZnQjBCeStRVWFpRGVVZVBkSVN6Um52MjcwN01Oem5TYmM0R3UwR2gvdndZZlRZcVRxSFBKNDI2RTdXMWZsNDk3bksvd0Zvd0YrTllRcXRRUUk2WVZCbGhwZlRpcXhpM3hneVVvcVZhRzZqaVB3Q0lVZ2k4ckxvZEJweTRSdWttV3Zmbko5WGwzelpNZFhXYjNaNHJmWlF4NVFjOWIwMlJOV25EeWt1ajhrZkdwNDRtcjh3NkJJRWwwc1FRcWxlSVNqWmZBWkg5eTE3VzdSTDFEYUtIa2VxUld2S1I3cUdSTU5zZzkvU1BoalFOek5tVTJlZk5CSkhOOEloSVNTS29YQmxLV0JqV3pRYXE4M3BxbkdUSTVldGFoU2tMVzNTUnM2b2trNFpjMHVVYzI5cVpNK1N5K3NVclhqNTJtRmJaSGF5Y2hQNU1xS05yYndLMVNvb0FQQVJ2b1Y1aUFJQUJURzR0SFcyR3k5ditaa2lVV1pPb09qY1plMFBmL1RMMzd4ME5vdVhLNmZmdWxuNTh4LzZIeVhycTZ2SWhKZWhXZVZWTmtyR0xRRy9XK3BjTXRiWFVUcVRJV2c0c2hkejY3ZFpFMEtuNmlpeUQwRGpRbXZnVStPd2twb0R1eU1UYW12TWtSb3VKdVdjMlRlWUhONjc1UElHVzhtL0JGcnA5Y1Fpb2orNW1WNXI1ZFdOWVpNbnRBYVc3VEcyODdTZzEzckxXMFNobGF3N3RvT25tdDVWN1RUZjh3TGR0WUlOWlNBbWV5YWZQNVBObnM3blQyZGo4WGdzSG90dDFHcjMzTmpvK2U3NWNtK3VSRXFXd01wVkJ6Q0Qxc0FNYmdEMkxqcFZmcnpBMHVhN05rUFNkKzBSN2p2ZU5aM3hkdG5yaHZqTWVDUnNFVi9IUDB2YXVXK2RPN0NRZGRpR25rV0JMWk5SYzBlWDBScVlkdkJMOFhjemQ1UjQycW0zTnRwYW5OMFd0SEl3bGF5cmUxeXJEYVVxbndJQ3VycUtYa0pySUtqM2V2ZHQ0R3R2dzlaaDVHVndZOXFpdTVWOGtOL3R6M3A4YmxmYzd1NFVIenJRZnRDejI1NjJ0N2Z6M3U3UWNRUHZtYkE1V0xPUk1lc05nZlpRWVZ5d0hySXdndFhXMU1DMXgvc21hOW8yVmxmUmFUd0hyTXEyTEhPeW9raWsycmNaSTB3TTVVdkdSK2ZuT1pmQnBtZk5pdUhFK0kxVHVvc1h6NzBURHVxMHN6cEQ3YXl1NmlyNk4xb0J5ejNhTkc3WTRSOUg5aXk1dlU2ZVdWcG8wSGdHRGJPVEtGMzVSQTdaWFdpZzBsSUlSbXMraEZmUWlxcFRqY1F5RExrb1JkbjJwZUUyZWh1S3VuTGh1VmFkWHFlbEd1dVZ4OXZxbXlrdFZVOGx2amwvTFVZMVVscXFnWXFpbFR2QkFaNGY1TzZvNDBEd1RxWGxiYTRvaWtYdWJSVXp1YnhWdEVMZVJza3NiQXREc1hmak5GMjkvR0pVeitpMXUweTcvRmVmZWY3RlZnTnIwTlpiNmdXRS96NU1SMmc2UWc5WHZ4aWxvelFkWVViSnVZWnFEMXBISytEWWZwK0tzajBsVFJOZVlIek5kc3EwS3lqcXFkOWY2Vzh3NmJXN2pQVmRUMTlqMjRiZTFHblBvcnFBeTQ3KytxRy9HT1Q2dVE4ckRUMEhTQzlScmRiZWFmd3U1a0d2K2trY1dkUjV0WDdVZVhaam5sSHp6RlZYOFNSK0I2VE4za09WVjF3anAzdndSazJSUXQyc3RTWk1XOXdhVW5QbzVXaC9RRXJHN2E1QU9oMmdYYlRQRTQ4L0s1MFlMaHlKV2QxV01oa2VNVmpwWXdFSHpYb2MvcFRvQ3ZNaGgwdm82NmlFMGVlNUJ6cGFTNUZBS3VnM1d4eU9ZR2M4dGpkSzhCUUIwSi93LzZxK1I1NUxPWk5SaUxrV0w4Mm5CL3duNStmUm1TTjZwMlY5YmI2bUxUY0ErZ3cvQ1U2eWZoUHlSaytpVmpIcEdDUTZPUEpZTVJueUs5Ymh4RXcrT3lWM1RxU3RYY3dUKzh1UFBSUkxKQVg3VUVwS0hlbVd6NXpKYU9vdWtIT1o2aXI2QkQ4Sm9YdnJqcE5UbVIxUmFJdU9tQU9KOWMveUtTN3ZLb3FKTnVkZ1lieFg1UDJLZXpBNjB6SHppQ0lwL2JsWlEwcWNkQWFFZ0RQRUhFL3d2cURiZmg4Zk9US1dMRExhbG5KUDUxaGtzOWZ1UVFDdkVNOWdoVXhHOFBzNXRlR3FCU3U1MnpvUTFtSXVrK0ZUNllrMzkxbHl3WWpJeHdkem93czFEWFJYVitFZjZBc3NRQUlBNVVGSFJrQVFnUnZJaDVLZ0FWQmtpWTU4ZGVQNGNSSXZBdStqMTFDME51K2pJK2pTKzFOVGdHQ2dXa1lpL2dRYUFWalZjRW5WRTZPNW1TMFVzaE5LS3FWY2YvRGppeGMvZnBBL2VudjJ4TzBaUU5CYUxhT1dqVDJDMnNFVHo2SXR1c1dKdGxTcWJTSmJLRnpuWjI2Zm1MMTlsRmYzRWcwQ3dBZG9oY1FuYjExdUNhMVVXZ0JWWDhIdE1JWnZRUU9BY1JzQndYZzhHSXpIY1h1WTQ4TGtqL3pPMll2YjRUWDhMalFReDlKc1d5MXQrejdsQ1lVOFhrRjR3eU9LSHE4bzR2YVF4eDBLdWNsMGJWUjVVdm1EVjBoY2RsdmM3L0tTeFBPU1pKQUZVWlpGUVliL0FBQUEvLzhEQUIzZ3ovd0FBQUFCQUFBQUFndUZjUytrTTE4UFBQVUFBUVBvQUFBQUFOaGRvSVFBQUFBQTNXWXZOdjQzL3NRSWJRUHhBQUVBQXdBQ0FBQUFBQUFBQUFFQUFBUFkvdThBQUFpWS9qZitOd2h0QUFFQUFBQUFBQUFBQUFBQUFBQUFBQUF3ZUp3RXdMRkp3RUFVeHZILyt3S2lJQ1pDRExGSm9RZEM3Z2gyQ3VhSzF3UkJEeXdVNGdMT0lGaTRnYjFEMk5pNmdMMExPSWROL09tVE83NUJlZnZUd3FRWGlwNG9lcWZvbnFMRXFSTEhxaG1WY2ZzaEtIT21IWUk5MEt2alJGZTR0VndvNERiZzFTT3VHVmNrS09QMmh0c1hSL2JLb1M2WnExMTZpUVB0c2ErYVVaR2daMXdOaXhvR05YU1dtQ3lSN1pab3YwUmJ1YmFWYzJ0eDJENWd1N0ZFL2djQUFQLy9Bd0NCTXhxY0FBQUFBQUFzQUN3QVVBQjhBS0FBdWdEY0FQNEJQZ0ZRQVlnQnVnSG1BaGdDVEFKeUF0b0MvQU1JQXlBRFBBTnVBNUFEdkFQc0JBd0VTQVJ1QkpBRXlBVDBCU1FGTUFVOEJZUUZuQVhJQmdZR0pnWXlCajRHU2daa0JuNEdpZ2FnQnNZRzNBQUFBQUVBQUFBd0FKQUFEQUJqQUFjQUFRQUFBQUFBQUFBQUFBQUFBQUFFQUFONG5KeVV6MjRiWlJURmYwNXMwd3JCQWtWVnVvbStCWXNpdFdOVEpWWGJyQ2FrVmtaRWNmQzRJQ1NFTkxZbnR1WHh6TWd6ZGhxZWdEVnZ3VnQweFVQd0hJZzF1dGZYcmwwUUJTdUtkV2JtL2puZnVlZCt3QUYvc2srbGVoLzRyWjRhcm5CVXZ6YTh4NzM2aGVGOVd2VTl3MVVlMVg0M1hHTlFXeGl1ODNtdFkvZ2ozbFovTVh5UDQrcVBodTl6V0cwWi9waW4xUVBEbit3Ny9qRDhLY2U4WGVJS1BPZG53eFVPeVEzdmNjQVBodmQ1Z05Xc1ZIbEEwM0NOenpneVhPY0k2REttSkdGTXloREhEV09HekprUlV4QVNNMlBNRFRFREhBRStDYVcrVFlrVU9ZYi8rRFlpcEdSR3BCVkhsRGdTUWhJaUNrWlc4U2ZOeXJqV2p0Sm5wa2k2K1pTTWlPaHB4b1NJRkVmR2tJeVVtSW5XS1NuSmVVbURCZ1Y5NVp0VFV1QlJNQ2JCSTJQR2tBWnRXbHpTWmNTWUFrZExLd216a0l3YlNtNkp0TCt6Q0ZHbVQweEtZYXptcEF5VXAxTitzV1lIWE9Kb2sydnNadVhMclFxUGNYeXIyY0pOWWh4ZjR1bS8yMkMyM1hmRkptS2hlb3FHUFJMbGVhc1RIS25pMHRmbkc4VWxMM0U3NmJQTjVNTWFEWlNkekhwTWo3bk9YK1luZWNJa3hibERmRUoxVU9nZTRqalQ1NEJRRmZtT2dDNFh0SGxOVjU5OU9uVHd1YUpMd0N2TmJkUEI4UlZ0cmpqWGpFRHg4bHRMSFhQRjl6aStKdEFZcVIyYlBxSzVQTDBoTjNjTGQzR0duR05LcmxzZ001YnppL1BqblNZc081UnR1YU5RVi9SMWp5UlM5a0JVa1QyTEdKb3JjblhGVkxWY2VhTXcvUWJtQ1BsYTZtemZmWmR0V05qdXJiYjRqa3gzMkRFM1RqSzVKYU1QVGRWN3p6TzMrdWNSTVNDanB4RjlNcVkwS0xuVHMxMFRNU2ZCY2E0K3Z0QXRLZkhYT2RMblRsMFNNMVVHQWFuV21aSHJiMlMrQ1kxN2Y4djN6dTRTMmJ5cDd1aGtmYXBkdWtqbGRHTkdyMVc5MWJmUVZJNDNKdEN3cVdhV0l4T1d5c3VUaXZjbDJ0dmlINnI3QzczZE1wNXdSa2JDNEc4M3dGTThtaHh6d2lrajdTQ1ZVeFoyT3pUMWhtanlnbE05L1lSWW8rUytmS002U1lVVFBKNXh3Z2t2ZVBhZWppc216cmk0TlpmTjNqN25uTkhtOUQrZFlobmY1b3hYNjNmLzN2VlhaZHJVc3ppZXJKK2U3enpGUi8vRHJWL3dlT3UrN09ndElKdXpzR3J2dHVLS2lLbHdjWWViV3JpSGVIOEJBQUQvL3dNQTlMZFBVUUFBQXdBQUFBQUFBUC9PQURJQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPT0iKTsKfV1dPjwvc3R5bGU+PHN0eWxlIHR5cGU9InRleHQvY3NzIj48IVtDREFUQVsuc2hhcGUgewogIHNoYXBlLXJlbmRlcmluZzogZ2VvbWV0cmljUHJlY2lzaW9uOwogIHN0cm9rZS1saW5lam9pbjogcm91bmQ7Cn0KLmNvbm5lY3Rpb24gewogIHN0cm9rZS1saW5lY2FwOiByb3VuZDsKICBzdHJva2UtbGluZWpvaW46IHJvdW5kOwp9Ci5ibGVuZCB7CiAgbWl4LWJsZW5kLW1vZGU6IG11bHRpcGx5OwogIG9wYWNpdHk6IDAuNTsKfQoKCQkuZDItMzQ2MjI2ODI1IC5maWxsLU4xe2ZpbGw6IzBBMEYyNTt9CgkJLmQyLTM0NjIyNjgyNSAuZmlsbC1CNHtmaWxsOiNFM0U5RkQ7fQoJCS5kMi0zNDYyMjY4MjUgLmZpbGwtQjV7ZmlsbDojRURGMEZEO30KCQkuZDItMzQ2MjI2ODI1IC5maWxsLUI2e2ZpbGw6I0Y3RjhGRTt9CgkJLmQyLTM0NjIyNjgyNSAuc3Ryb2tlLUIxe3N0cm9rZTojMEQzMkIyO30KCQkuZDItMzQ2MjI2ODI1IC5zdHJva2UtQjJ7c3Ryb2tlOiMwRDMyQjI7fS5hcHBlbmRpeCB0ZXh0LnRleHR7ZmlsbDojMEEwRjI1fS5tZHstLWNvbG9yLWZnLWRlZmF1bHQ6IzBBMEYyNTstLWNvbG9yLWZnLW11dGVkOiM2NzZDN0U7LS1jb2xvci1mZy1zdWJ0bGU6Izk0OTlBQjstLWNvbG9yLWNhbnZhcy1kZWZhdWx0OiNGRkZGRkY7LS1jb2xvci1jYW52YXMtc3VidGxlOiNFRUYxRjg7LS1jb2xvci1ib3JkZXItZGVmYXVsdDojMEQzMkIyOy0tY29sb3ItYm9yZGVyLW11dGVkOiMwRDMyQjI7LS1jb2xvci1uZXV0cmFsLW11dGVkOiNFRUYxRjg7LS1jb2xvci1hY2NlbnQtZmc6IzBEMzJCMjstLWNvbG9yLWFjY2VudC1lbXBoYXNpczojMEQzMkIyOy0tY29sb3ItYXR0ZW50aW9uLXN1YnRsZTojNjc2QzdFOy0tY29sb3ItZGFuZ2VyLWZnOnJlZDt9LmxpZ2h0LWNvZGV7ZGlzcGxheTogYmxvY2t9LmRhcmstY29kZXtkaXNwbGF5OiBub25lfUBtZWRpYSBzY3JlZW4gYW5kIChwcmVmZXJzLWNvbG9yLXNjaGVtZTpkYXJrKXsKCQkuZDItMzQ2MjI2ODI1IC5maWxsLU4xe2ZpbGw6I0NERDZGNDt9CgkJLmQyLTM0NjIyNjgyNSAuZmlsbC1CNHtmaWxsOiM1ODVCNzA7fQoJCS5kMi0zNDYyMjY4MjUgLmZpbGwtQjV7ZmlsbDojNDU0NzVBO30KCQkuZDItMzQ2MjI2ODI1IC5maWxsLUI2e2ZpbGw6IzMxMzI0NDt9CgkJLmQyLTM0NjIyNjgyNSAuc3Ryb2tlLUIxe3N0cm9rZTojQ0JBNmY3O30KCQkuZDItMzQ2MjI2ODI1IC5zdHJva2UtQjJ7c3Ryb2tlOiNDQkE2Zjc7fS5hcHBlbmRpeCB0ZXh0LnRleHR7ZmlsbDojQ0RENkY0fS5tZHstLWNvbG9yLWZnLWRlZmF1bHQ6I0NERDZGNDstLWNvbG9yLWZnLW11dGVkOiNCQUMyREU7LS1jb2xvci1mZy1zdWJ0bGU6I0E2QURDODstLWNvbG9yLWNhbnZhcy1kZWZhdWx0OiMxRTFFMkU7LS1jb2xvci1jYW52YXMtc3VidGxlOiMzMTMyNDQ7LS1jb2xvci1ib3JkZXItZGVmYXVsdDojQ0JBNmY3Oy0tY29sb3ItYm9yZGVyLW11dGVkOiNDQkE2Zjc7LS1jb2xvci1uZXV0cmFsLW11dGVkOiMzMTMyNDQ7LS1jb2xvci1hY2NlbnQtZmc6I0NCQTZmNzstLWNvbG9yLWFjY2VudC1lbXBoYXNpczojQ0JBNmY3Oy0tY29sb3ItYXR0ZW50aW9uLXN1YnRsZTojQkFDMkRFOy0tY29sb3ItZGFuZ2VyLWZnOnJlZDt9LmxpZ2h0LWNvZGV7ZGlzcGxheTogbm9uZX0uZGFyay1jb2Rle2Rpc3BsYXk6IGJsb2NrfX1dXT48L3N0eWxlPjxnIGNsYXNzPSJZVzUwYVE9PSBncm91cCI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjYzNCIgaGVpZ2h0PSIyMTMiIHJ4PSI4IiBjbGFzcz0iIHN0cm9rZS1CMSBmaWxsLUI0IiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSIzMTciIHk9IjIzIiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE4cHgiPlBvZC1BbnRpLUFmZmluaXR5ICh0b3BvbG9neUtleTogaG9zdG5hbWUpIOKAkyBow7ZjaHN0ZW5zIDEgUG9kIHBybyBOb2RlPC90ZXh0PjwvZz48ZyBjbGFzcz0iYzNCeVpXRmsgZ3JvdXAiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjAiIHk9IjIzNyIgd2lkdGg9IjYzNCIgaGVpZ2h0PSIyMjQiIHJ4PSI4IiBjbGFzcz0iIHN0cm9rZS1CMSBmaWxsLUI0IiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSIzMTciIHk9IjI2MCIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxOHB4Ij5Ub3BvbG9neSBTcHJlYWQgKG1heFNrZXc6IDEpIOKAkyBnbGVpY2htw6TDn2lnLCBhdWNoIG1laHJlcmUgcHJvIE5vZGU8L3RleHQ+PC9nPjxnIGNsYXNzPSJZV1ptYVc1cGRIaz0gZ3JvdXAiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjAiIHk9IjQ4NSIgd2lkdGg9IjYzNCIgaGVpZ2h0PSIyMjQiIHJ4PSI4IiBjbGFzcz0iIHN0cm9rZS1CMSBmaWxsLUI0IiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSIzMTciIHk9IjUwOCIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxOHB4Ij5Qb2QtQWZmaW5pdHkgKHRvcG9sb2d5S2V5OiBob3N0bmFtZSkg4oCTIENhY2hlIG5lYmVuIGRlciBEZW1vLUFwcDwvdGV4dD48L2c+PGcgY2xhc3M9IllXNTBhUzV1TVE9PSBzdWJncm91cCI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iMTYiIHk9IjMzIiB3aWR0aD0iMTkwIiBoZWlnaHQ9IjE2NCIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjExMSIgeT0iNTQiIGNsYXNzPSJ0ZXh0LWJvbGQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTZweCI+Tm9kZSAxPC90ZXh0PjwvZz48ZyBjbGFzcz0iWVc1MGFTNXVNZz09IHN1Ymdyb3VwIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSIyMjIiIHk9IjMzIiB3aWR0aD0iMTkwIiBoZWlnaHQ9IjE2NCIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjMxNyIgeT0iNTQiIGNsYXNzPSJ0ZXh0LWJvbGQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTZweCI+Tm9kZSAyPC90ZXh0PjwvZz48ZyBjbGFzcz0iWVc1MGFTNXVNdz09IHN1Ymdyb3VwIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSI0MjgiIHk9IjMzIiB3aWR0aD0iMTkwIiBoZWlnaHQ9IjE2NCIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjUyMyIgeT0iNTQiIGNsYXNzPSJ0ZXh0LWJvbGQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTZweCI+Tm9kZSAzPC90ZXh0PjwvZz48ZyBjbGFzcz0iYzNCeVpXRmtMbTR4IHN1Ymdyb3VwIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSIxNiIgeT0iMjcwIiB3aWR0aD0iMTkwIiBoZWlnaHQ9IjE3NSIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjExMSIgeT0iMjkxIiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE2cHgiPk5vZGUgMTwvdGV4dD48L2c+PGcgY2xhc3M9ImMzQnlaV0ZrTG00eSBzdWJncm91cCI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iMjIyIiB5PSIyNzAiIHdpZHRoPSIxOTAiIGhlaWdodD0iMTc1IiByeD0iNiIgY2xhc3M9IiBzdHJva2UtQjEgZmlsbC1CNSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iMzE3IiB5PSIyOTEiIGNsYXNzPSJ0ZXh0LWJvbGQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTZweCI+Tm9kZSAyPC90ZXh0PjwvZz48ZyBjbGFzcz0iYzNCeVpXRmtMbTR6IHN1Ymdyb3VwIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSI0MjgiIHk9IjI3MCIgd2lkdGg9IjE5MCIgaGVpZ2h0PSIxNzUiIHJ4PSI2IiBjbGFzcz0iIHN0cm9rZS1CMSBmaWxsLUI1IiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSI1MjMiIHk9IjI5MSIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNnB4Ij5Ob2RlIDM8L3RleHQ+PC9nPjxnIGNsYXNzPSJZV1ptYVc1cGRIa3ViakU9IHN1Ymdyb3VwIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSIxNiIgeT0iNTE4IiB3aWR0aD0iMTkwIiBoZWlnaHQ9IjE3NSIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjExMSIgeT0iNTM5IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE2cHgiPk5vZGUgMTwvdGV4dD48L2c+PGcgY2xhc3M9IllXWm1hVzVwZEhrdWJqST0gc3ViZ3JvdXAiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjIyMiIgeT0iNTE4IiB3aWR0aD0iMTkwIiBoZWlnaHQ9IjE3NSIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjMxNyIgeT0iNTM5IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE2cHgiPk5vZGUgMjwvdGV4dD48L2c+PGcgY2xhc3M9IllXWm1hVzVwZEhrdWJqTT0gc3ViZ3JvdXAiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjQyOCIgeT0iNTE4IiB3aWR0aD0iMTkwIiBoZWlnaHQ9IjE3NSIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjUyMyIgeT0iNTM5IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE2cHgiPk5vZGUgMzwvdGV4dD48L2c+PGcgY2xhc3M9IllXNTBhUzV1TVM1dyByZXNvdXJjZSI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iNjkiIHk9IjgzIiB3aWR0aD0iODMiIGhlaWdodD0iNjQiIHJ4PSI2IiBzdHJva2U9IiMxQTczRTgiIGZpbGw9IiNFOEYwRkUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjExMC41IiB5PSIxMjAuNSIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNXB4Ij5kZW1vPC90ZXh0PjwvZz48ZyBjbGFzcz0iWVc1MGFTNXVNaTV3IHJlc291cmNlIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSIyNzUiIHk9IjgzIiB3aWR0aD0iODMiIGhlaWdodD0iNjQiIHJ4PSI2IiBzdHJva2U9IiMxQTczRTgiIGZpbGw9IiNFOEYwRkUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjMxNi41IiB5PSIxMjAuNSIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNXB4Ij5kZW1vPC90ZXh0PjwvZz48ZyBjbGFzcz0iWVc1MGFTNXVNeTV3IHJlc291cmNlIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSI0ODEiIHk9IjgzIiB3aWR0aD0iODMiIGhlaWdodD0iNjQiIHJ4PSI2IiBzdHJva2U9IiMxQTczRTgiIGZpbGw9IiNFOEYwRkUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjUyMi41IiB5PSIxMjAuNSIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNXB4Ij5kZW1vPC90ZXh0PjwvZz48ZyBjbGFzcz0iYzNCeVpXRmtMbTR4TG1FPSByZXNvdXJjZSI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iNjkiIHk9IjMwMSIgd2lkdGg9IjgzIiBoZWlnaHQ9IjY0IiByeD0iNiIgc3Ryb2tlPSIjMUE3M0U4IiBmaWxsPSIjRThGMEZFIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSIxMTAuNSIgeT0iMzM4LjUiIGNsYXNzPSJ0ZXh0LWJvbGQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTVweCI+ZGVtbzwvdGV4dD48L2c+PGcgY2xhc3M9ImMzQnlaV0ZrTG00eExtST0gcmVzb3VyY2UiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjY5IiB5PSIzNzMiIHdpZHRoPSI4MyIgaGVpZ2h0PSI2NCIgcng9IjYiIHN0cm9rZT0iIzFBNzNFOCIgZmlsbD0iI0U4RjBGRSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iMTEwLjUiIHk9IjQxMC41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPmRlbW88L3RleHQ+PC9nPjxnIGNsYXNzPSJjM0J5WldGa0xtNHlMbUU9IHJlc291cmNlIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSIyNzUiIHk9IjMwMSIgd2lkdGg9IjgzIiBoZWlnaHQ9IjY0IiByeD0iNiIgc3Ryb2tlPSIjMUE3M0U4IiBmaWxsPSIjRThGMEZFIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSIzMTYuNSIgeT0iMzM4LjUiIGNsYXNzPSJ0ZXh0LWJvbGQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTVweCI+ZGVtbzwvdGV4dD48L2c+PGcgY2xhc3M9ImMzQnlaV0ZrTG00eUxtST0gcmVzb3VyY2UiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjI3NSIgeT0iMzczIiB3aWR0aD0iODMiIGhlaWdodD0iNjQiIHJ4PSI2IiBzdHJva2U9IiMxQTczRTgiIGZpbGw9IiNFOEYwRkUiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjMxNi41IiB5PSI0MTAuNSIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNXB4Ij5kZW1vPC90ZXh0PjwvZz48ZyBjbGFzcz0iYzNCeVpXRmtMbTR6TG1FPSByZXNvdXJjZSI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iNDgxIiB5PSIzMDEiIHdpZHRoPSI4MyIgaGVpZ2h0PSI2NCIgcng9IjYiIHN0cm9rZT0iIzFBNzNFOCIgZmlsbD0iI0U4RjBGRSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iNTIyLjUiIHk9IjMzOC41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPmRlbW88L3RleHQ+PC9nPjxnIGNsYXNzPSJjM0J5WldGa0xtNHpMbUk9IHJlc291cmNlIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSI0ODEiIHk9IjM3MyIgd2lkdGg9IjgzIiBoZWlnaHQ9IjY0IiByeD0iNiIgc3Ryb2tlPSIjMUE3M0U4IiBmaWxsPSIjRThGMEZFIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSI1MjIuNSIgeT0iNDEwLjUiIGNsYXNzPSJ0ZXh0LWJvbGQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTVweCI+ZGVtbzwvdGV4dD48L2c+PGcgY2xhc3M9IllXWm1hVzVwZEhrdWJqRXVZUT09IHJlc291cmNlIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSI0OCIgeT0iNTQ5IiB3aWR0aD0iMTI2IiBoZWlnaHQ9IjY0IiByeD0iNiIgc3Ryb2tlPSIjMUE3M0U4IiBmaWxsPSIjRThGMEZFIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSIxMTEiIHk9IjU4Ni41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPmRlbW88L3RleHQ+PC9nPjxnIGNsYXNzPSJZV1ptYVc1cGRIa3ViakV1WWc9PSBjb21wb25lbnQiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjQ4IiB5PSI2MjEiIHdpZHRoPSIxMjYiIGhlaWdodD0iNjQiIHJ4PSI2IiBjbGFzcz0iIHN0cm9rZS1CMSBmaWxsLUI2IiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSIxMTEiIHk9IjY1OC41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPmRlbW8tY2FjaGU8L3RleHQ+PC9nPjxnIGNsYXNzPSJZV1ptYVc1cGRIa3Viakl1WVE9PSByZXNvdXJjZSI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iMjc1IiB5PSI1NjgiIHdpZHRoPSI4MyIgaGVpZ2h0PSI2NCIgcng9IjYiIHN0cm9rZT0iIzFBNzNFOCIgZmlsbD0iI0U4RjBGRSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iMzE2LjUiIHk9IjYwNS41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPmRlbW88L3RleHQ+PC9nPjxnIGNsYXNzPSJZV1ptYVc1cGRIa3Viak11WVE9PSByZXNvdXJjZSI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iNDgxIiB5PSI1NjgiIHdpZHRoPSI4MyIgaGVpZ2h0PSI2NCIgcng9IjYiIHN0cm9rZT0iIzFBNzNFOCIgZmlsbD0iI0U4RjBGRSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iNTIyLjUiIHk9IjYwNS41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPmRlbW88L3RleHQ+PC9nPjxtYXNrIGlkPSJkMi0zNDYyMjY4MjUiIG1hc2tVbml0cz0idXNlclNwYWNlT25Vc2UiIHg9Ii0yMSIgeT0iLTIxIiB3aWR0aD0iNjc2IiBoZWlnaHQ9Ijc1MSI+CjxyZWN0IHg9Ii0yMSIgeT0iLTIxIiB3aWR0aD0iNjc2IiBoZWlnaHQ9Ijc1MSIgZmlsbD0id2hpdGUiPjwvcmVjdD4KCjwvbWFzaz48L3N2Zz48L3N2Zz4K" alt="Anti-Affinity, Topology Spread und Affinity im Vergleich" /></p>
+<hr />
+<h2 id="node-labels">Node-Labels</h2>
+<p>Alle Regeln beziehen sich auf <strong>Labels der Nodes</strong>.
+Einige setzt Kubernetes bzw. der Cloud-Provider automatisch:</p>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Beispiel</th>
+<th>Bedeutung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>kubernetes.io/hostname</code></td>
+<td><code>ip-10-0-4-73.ec2.internal</code></td>
+<td>ein einzelner Node</td>
+</tr>
+<tr>
+<td><code>topology.kubernetes.io/zone</code></td>
+<td><code>us-east-1a</code></td>
+<td>Availability Zone (Rechenzentrum)</td>
+</tr>
+<tr>
+<td><code>topology.kubernetes.io/region</code></td>
+<td><code>us-east-1</code></td>
+<td>Region</td>
+</tr>
+<tr>
+<td><code>kubernetes.io/arch</code></td>
+<td><code>amd64</code>, <code>arm64</code></td>
+<td>Prozessor-Architektur</td>
+</tr>
+<tr>
+<td><code>kubernetes.io/os</code></td>
+<td><code>linux</code></td>
+<td>Betriebssystem</td>
+</tr>
+</tbody>
+</table>
+<p>❗ Nodes und ihre Labels ansehen erfordert Leserechte auf
+Cluster-Ebene (z. B. nicht in der Developer Sandbox):</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get nodes <span class="at">-L</span> topology.kubernetes.io/zone,kubernetes.io/arch</span></code></pre></div>
+<p>Ohne diese Rechte sieht man immerhin, <strong>auf welchem</strong>
+Node ein Pod läuft – Spalte <code>NODE</code> bzw. das Feld
+<code>spec.nodeName</code>. Darüber prüfen wir in diesem Kapitel die
+Platzierung.</p>
+<p>Die einfachste Form der Steuerung ist <code>nodeSelector</code> – der
+Pod läuft nur auf Nodes, die <strong>alle</strong> angegebenen Labels
+haben:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">nodeSelector</span><span class="kw">:</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kubernetes.io/arch</span><span class="kw">:</span><span class="at"> amd64</span></span></code></pre></div>
+<hr />
+<h2 id="node-affinity">Node Affinity</h2>
+<p>Node Affinity ist die ausdrucksstärkere Variante von
+<code>nodeSelector</code>: mit Operatoren (<code>In</code>,
+<code>NotIn</code>, <code>Exists</code>, <code>Gt</code>, …) und als
+<strong>harte</strong> oder <strong>weiche</strong> Regel:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">affinity</span><span class="kw">:</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">nodeAffinity</span><span class="kw">:</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">    # hart: Pod läuft nur, wenn die Regel erfüllt ist</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">nodeSelectorTerms</span><span class="kw">:</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> </span><span class="fu">key</span><span class="kw">:</span><span class="at"> kubernetes.io/arch</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;amd64&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;arm64&quot;</span><span class="kw">]</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co">    # weich: wenn möglich, sonst egal (weight 1–100 gewichtet mehrere Präferenzen)</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">preferredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">preference</span><span class="kw">:</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> </span><span class="fu">key</span><span class="kw">:</span><span class="at"> topology.kubernetes.io/zone</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;us-east-1a&quot;</span><span class="kw">]</span></span></code></pre></div>
+<p><code>…IgnoredDuringExecution</code> bedeutet: Die Regel gilt
+<strong>beim Einplanen</strong>. Ändern sich später die Labels eines
+Nodes, laufen bereits gestartete Pods weiter.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 18-scheduling/node-affinity.yaml</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> rollout status deployment/demo</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pods <span class="at">-l</span> app=demo <span class="at">-o</span> wide</span></code></pre></div>
+<p>Eine harte Regel, die kein Node erfüllt, führt zu einem Pod, der
+<strong>für immer</strong> <code>Pending</code> bleibt:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 18-scheduling/node-affinity-unmoeglich.yaml</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> wait <span class="at">--for</span><span class="op">=</span>jsonpath=<span class="st">&#39;{.status.conditions[?(@.type==&quot;PodScheduled&quot;)].reason}&#39;</span>=Unschedulable pod/demo-unmoeglich <span class="at">--timeout</span><span class="op">=</span>60s</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># STATUS Pending; im Event: &quot;didn&#39;t match Pod&#39;s node affinity/selector&quot;</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pod demo-unmoeglich</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> describe pod demo-unmoeglich <span class="kw">|</span> <span class="fu">grep</span> <span class="at">-i</span> <span class="st">&#39;node affinity&#39;</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> delete pod demo-unmoeglich</span></code></pre></div>
+<hr />
+<h2 id="pod-anti-affinity-replicas-trennen">Pod Anti-Affinity: Replicas
+trennen</h2>
+<p>Drei Replicas helfen wenig, wenn alle auf <strong>demselben</strong>
+Node laufen und genau dieser ausfällt. Pod Anti-Affinity verbietet, dass
+zwei Pods mit passendem Label in derselben <strong>Topologie</strong>
+landen – welche das ist, bestimmt <code>topologyKey</code>:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">affinity</span><span class="kw">:</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">podAntiAffinity</span><span class="kw">:</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">labelSelector</span><span class="kw">:</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">app</span><span class="kw">:</span><span class="at"> demo</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">topologyKey</span><span class="kw">:</span><span class="at"> kubernetes.io/hostname</span><span class="co">    # oder topology.kubernetes.io/zone</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Neu anlegen, damit keine alten Pods (noch im Beenden) die Zählung verfälschen</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> delete deployment demo <span class="at">--ignore-not-found</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> wait <span class="at">--for</span><span class="op">=</span>delete pod <span class="at">-l</span> app=demo <span class="at">--timeout</span><span class="op">=</span>120s</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 18-scheduling/pod-anti-affinity.yaml</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> rollout status deployment/demo</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Auf welchen Nodes laufen die Pods? Jeder Node genau einmal (Zähler 1)</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pods <span class="at">-l</span> app=demo <span class="at">-o</span> jsonpath=<span class="st">&#39;{range .items[*]}{.spec.nodeName}{&quot;\n&quot;}{end}&#39;</span> <span class="kw">|</span> <span class="fu">sort</span> <span class="kw">|</span> <span class="fu">uniq</span> <span class="at">-c</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Kontrolle: kein Node doppelt – uniq -d findet nichts, grep endet mit Exit-Code 1</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pods <span class="at">-l</span> app=demo <span class="at">-o</span> jsonpath=<span class="st">&#39;{range .items[*]}{.spec.nodeName}{&quot;\n&quot;}{end}&#39;</span> <span class="kw">|</span> <span class="fu">sort</span> <span class="kw">|</span> <span class="fu">uniq</span> <span class="at">-d</span> <span class="kw">|</span> <span class="fu">grep</span> .   <span class="co"># → keine Ausgabe (Fehler erwartet)</span></span></code></pre></div>
+<blockquote>
+<p><strong>Achtung:</strong> Mit einer <strong>harten</strong>
+Anti-Affinity können nie mehr Replicas laufen, als es Nodes (bzw. Zonen)
+gibt – weitere Pods bleiben <code>Pending</code>. Für &quot;möglichst
+verteilt&quot; ist <code>preferredDuringScheduling…</code> oder Topology
+Spread (unten) meist die bessere Wahl.</p>
+</blockquote>
+<hr />
+<h2 id="pod-affinity-pods-zusammen-platzieren">Pod Affinity: Pods
+zusammen platzieren</h2>
+<p>Umgekehrt kann ein Pod <strong>in der Nähe</strong> anderer Pods
+laufen sollen – z. B. ein Cache, der mit geringer Latenz von der
+Anwendung erreichbar sein soll. <code>pod-affinity.yaml</code> startet
+einen &quot;Cache&quot; auf einem Node, auf dem auch ein Pod mit
+<code>app=demo</code> läuft:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">affinity</span><span class="kw">:</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">podAffinity</span><span class="kw">:</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">labelSelector</span><span class="kw">:</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">app</span><span class="kw">:</span><span class="at"> demo</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">topologyKey</span><span class="kw">:</span><span class="at"> kubernetes.io/hostname</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 18-scheduling/pod-affinity.yaml</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> rollout status deployment/demo-cache</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="va">CACHE_NODE</span><span class="op">=</span><span class="va">$(</span><span class="ex">oc</span> get pod <span class="at">-l</span> app=demo-cache <span class="at">-o</span> jsonpath=<span class="st">&#39;{.items[0].spec.nodeName}&#39;</span><span class="va">)</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;Cache läuft auf </span><span class="va">$CACHE_NODE</span><span class="st">&quot;</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Auf diesem Node läuft auch ein Pod der Demo-App</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pods <span class="at">-l</span> app=demo <span class="at">-o</span> wide <span class="kw">|</span> <span class="fu">grep</span> <span class="st">&quot;</span><span class="va">$CACHE_NODE</span><span class="st">&quot;</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> delete deployment demo-cache</span></code></pre></div>
+<blockquote>
+<p>Pod (Anti-)Affinity ist für den Scheduler aufwendig zu berechnen. In
+sehr großen Clustern (tausende Nodes) wird sie deshalb sparsam
+eingesetzt.</p>
+</blockquote>
+<hr />
+<h2 id="topology-spread-constraints">Topology Spread Constraints</h2>
+<p>Anti-Affinity kennt nur &quot;höchstens einer pro Topologie&quot;.
+<strong>Topology Spread Constraints</strong> verteilen dagegen
+<strong>gleichmäßig</strong> – auch wenn es mehr Pods als Nodes oder
+Zonen gibt:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">topologySpreadConstraints</span><span class="kw">:</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">maxSkew</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co">                                # max. 1 Pod Unterschied zwischen den Zonen</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">topologyKey</span><span class="kw">:</span><span class="at"> topology.kubernetes.io/zone</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">whenUnsatisfiable</span><span class="kw">:</span><span class="at"> DoNotSchedule</span><span class="co">          # harte Regel</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">nodeTaintsPolicy</span><span class="kw">:</span><span class="at"> Honor</span><span class="co">                   # Zonen mit nur gesperrten Nodes nicht mitzählen</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">labelSelector</span><span class="kw">:</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> demo</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">maxSkew</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co">                                # innerhalb der Zonen möglichst auf verschiedene Nodes</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">topologyKey</span><span class="kw">:</span><span class="at"> kubernetes.io/hostname</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">whenUnsatisfiable</span><span class="kw">:</span><span class="at"> ScheduleAnyway</span><span class="co">         # weiche Regel</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">labelSelector</span><span class="kw">:</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> demo</span></span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Feld</th>
+<th>Bedeutung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>maxSkew</code></td>
+<td>erlaubter Unterschied der Pod-Anzahl zwischen der vollsten und der
+leersten Topologie</td>
+</tr>
+<tr>
+<td><code>topologyKey</code></td>
+<td>Node-Label, das die Topologien bildet (Node, Zone, Region …)</td>
+</tr>
+<tr>
+<td><code>whenUnsatisfiable</code></td>
+<td><code>DoNotSchedule</code> (hart: lieber <code>Pending</code>) oder
+<code>ScheduleAnyway</code> (weich)</td>
+</tr>
+<tr>
+<td><code>nodeTaintsPolicy</code></td>
+<td><code>Honor</code>: Nodes, auf denen der Pod wegen Taints nicht
+laufen darf, zählen nicht mit</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> delete deployment demo</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> wait <span class="at">--for</span><span class="op">=</span>delete pod <span class="at">-l</span> app=demo <span class="at">--timeout</span><span class="op">=</span>120s</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 18-scheduling/topology-spread.yaml</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> rollout status deployment/demo</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="co"># 6 Pods, möglichst gleichmäßig auf die Nodes verteilt</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pods <span class="at">-l</span> app=demo <span class="at">-o</span> jsonpath=<span class="st">&#39;{range .items[*]}{.spec.nodeName}{&quot;\n&quot;}{end}&#39;</span> <span class="kw">|</span> <span class="fu">sort</span> <span class="kw">|</span> <span class="fu">uniq</span> <span class="at">-c</span></span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Pod Anti-Affinity</th>
+<th>Topology Spread</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ziel</td>
+<td>Pods <strong>trennen</strong></td>
+<td>Pods <strong>gleichmäßig verteilen</strong></td>
+</tr>
+<tr>
+<td>Mehr Pods als Nodes/Zonen</td>
+<td>weitere Pods <code>Pending</code> (hart)</td>
+<td>kein Problem</td>
+</tr>
+<tr>
+<td>Typischer Einsatz</td>
+<td>&quot;nie zwei Instanzen auf einem Node&quot;</td>
+<td>Hochverfügbarkeit über Zonen</td>
+</tr>
+</tbody>
+</table>
+<p>Für die Verteilung von Replicas ist Topology Spread heute meist die
+erste Wahl.</p>
+<hr />
+<h2 id="ausblick-taints-und-tolerations">Ausblick: Taints und
+Tolerations</h2>
+<p>Affinity zieht Pods <strong>zu</strong> Nodes hin.
+<strong>Taints</strong> wirken umgekehrt: Ein Node mit Taint (z. B.
+<code>node-role.kubernetes.io/infra:NoSchedule</code>)
+<strong>weist</strong> alle Pods ab, die keine passende
+<strong>Toleration</strong> haben. So reserviert die
+Cluster-Administration Nodes für bestimmte Aufgaben (Infrastruktur,
+GPUs). In den Scheduling-Events sieht man das als
+<code>node(s) had untolerated taint(s)</code>. Taints setzen erfordert
+Cluster-Admin-Rechte.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Toleration im Pod: darf auf Nodes mit diesem Taint laufen (muss aber nicht)</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tolerations</span><span class="kw">:</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">key</span><span class="kw">:</span><span class="at"> node-role.kubernetes.io/infra</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> Exists</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">effect</span><span class="kw">:</span><span class="at"> NoSchedule</span></span></code></pre></div>
+<hr />
+<h2 id="manifeste-in-diesem-kapitel">Manifeste in diesem Kapitel</h2>
+<ul>
+<li><code>node-affinity.yaml</code> – Deployment mit harter und weicher
+Node Affinity</li>
+<li><code>node-affinity-unmoeglich.yaml</code> – Pod mit unerfüllbarer
+Node Affinity (bleibt <code>Pending</code>)</li>
+<li><code>pod-anti-affinity.yaml</code> – Deployment mit 3 Replicas auf
+verschiedenen Nodes</li>
+<li><code>pod-affinity.yaml</code> – &quot;Cache&quot;, der auf demselben Node wie
+die Demo-App läuft</li>
+<li><code>topology-spread.yaml</code> – Deployment mit 6 Replicas,
+gleichmäßig über Zonen und Nodes verteilt</li>
+</ul>
+<hr />
+<h2 id="weiterführende-links">Weiterführende Links</h2>
+<ul>
+<li><a href="https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/">Kubernetes:
+Assigning Pods to Nodes (Affinity)</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/">Kubernetes:
+Pod Topology Spread Constraints</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/">Kubernetes:
+Taints and Tolerations</a></li>
+<li><a href="https://kubernetes.io/docs/reference/labels-annotations-taints/">Kubernetes:
+Well-Known Labels</a></li>
+<li><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/nodes/index">OpenShift
+4.22: Nodes – Controlling pod placement</a></li>
+</ul>
+<p>Siehe auch <a href="../99-anhang/DOCUMENTATION.html">99-anhang/DOCUMENTATION.md</a>
+für die vollständige Liste.</p>
+<nav class="pager-bottom">
+  <a class="prev" href="../17-jobs/README.html"><span>← Zurück</span>Kapitel 17: Jobs und CronJobs</a>
+
+  <a class="up" href="../README.html#inhaltsverzeichnis"><span>↑ Übersicht</span>Inhaltsverzeichnis</a>
+
+  <a class="next" href="../19-availability/README.html"><span>Weiter →</span>Kapitel 19: Verfügbarkeit – Rolling Updates, PodDisruptionBudget, Autoscaling</a>
+
+</nav>
+</main>
+</div>
+<script>
+// Kopier-Button für Codeblöcke
+document.querySelectorAll("pre").forEach(function (pre) {
+  var button = document.createElement("button");
+  button.className = "copy";
+  button.type = "button";
+  button.textContent = "Kopieren";
+  button.addEventListener("click", function () {
+    navigator.clipboard.writeText(pre.innerText).then(function () {
+      button.textContent = "Kopiert ✓";
+      setTimeout(function () { button.textContent = "Kopieren"; }, 1500);
+    });
+  });
+  pre.appendChild(button);
+});
+</script>
+</body>
+</html>

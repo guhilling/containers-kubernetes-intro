@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kapitel 4: Container/Pods auf
+Kubernetes – Container und Kubernetes/OpenShift</title>
+<style type="text/css">:root {
+--bg: #ffffff;
+--fg: #1f2328;
+--muted: #59636e;
+--border: #d1d9e0;
+--accent: #1a5fb4;
+--accent-soft: #e8f0fe;
+--code-bg: #f6f8fa;
+--topbar-bg: #f6f8fa;
+--warn: #9a6700;
+--warn-bg: #fff8c5;
+--rookie: #1a7f37;
+--rookie-bg: #dafbe1;
+--advanced: #8250df;
+--advanced-bg: #fbefff;
+--tok-comment: #6e7781;
+--tok-keyword: #cf222e;
+--tok-string: #0a3069;
+--tok-variable: #953800;
+--tok-function: #8250df;
+--tok-number: #0550ae;
+--tok-attr: #116329;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg: #0d1117;
+--fg: #e6edf3;
+--muted: #9198a1;
+--border: #30363d;
+--accent: #6cb6ff;
+--accent-soft: #15233a;
+--code-bg: #161b22;
+--topbar-bg: #161b22;
+--warn: #d29922;
+--warn-bg: #2b2111;
+--rookie: #3fb950;
+--rookie-bg: #12261e;
+--advanced: #d2a8ff;
+--advanced-bg: #221a33;
+--tok-comment: #9198a1;
+--tok-keyword: #ff7b72;
+--tok-string: #a5d6ff;
+--tok-variable: #ffa657;
+--tok-function: #d2a8ff;
+--tok-number: #79c0ff;
+--tok-attr: #7ee787;
+}
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 4.5rem; }
+body {
+margin: 0;
+background: var(--bg);
+color: var(--fg);
+font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.topbar {
+position: sticky; top: 0; z-index: 10;
+display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+padding: 0.6rem 1.5rem;
+background: var(--topbar-bg);
+border-bottom: 1px solid var(--border);
+}
+.topbar .course { font-weight: 600; color: var(--fg); }
+.pager { display: flex; gap: 1.25rem; font-size: 0.95rem; }
+.layout {
+display: grid;
+grid-template-columns: 16rem minmax(0, 52rem);
+gap: 3rem;
+justify-content: center;
+padding: 2rem 1.5rem 4rem;
+}
+.toc {
+position: sticky; top: 4.5rem;
+align-self: start;
+max-height: calc(100vh - 6rem);
+overflow-y: auto;
+font-size: 0.9rem;
+}
+.toc-title { margin: 0 0 0.5rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; }
+.toc ul { list-style: none; margin: 0; padding-left: 0; }
+.toc ul ul { padding-left: 1rem; }
+.toc li { margin: 0.3rem 0; }
+.toc a { color: var(--muted); }
+.toc a:hover { color: var(--accent); }
+main { min-width: 0; }
+h1, h2, h3, h4 { line-height: 1.25; margin: 2rem 0 1rem; }
+h1 { font-size: 2rem; margin-top: 0; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+h2 { font-size: 1.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.2rem; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 2rem 0; }
+img { max-width: 100%; height: auto; display: block; margin: 1.5rem auto; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.95rem; display: block; overflow-x: auto; }
+th, td { border: 1px solid var(--border); padding: 0.4rem 0.75rem; text-align: left; vertical-align: top; }
+th { background: var(--code-bg); }
+code { font: 0.875em/1.5 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+:not(pre) > code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.1em 0.35em; }
+pre {
+position: relative;
+background: var(--code-bg);
+border: 1px solid var(--border);
+border-radius: 8px;
+padding: 1rem 1.25rem;
+overflow-x: auto;
+}
+pre code { background: none; border: 0; padding: 0; }
+pre .copy {
+position: absolute; top: 0.5rem; right: 0.5rem;
+font: 0.75rem/1 inherit; font-family: inherit;
+padding: 0.3rem 0.55rem;
+color: var(--muted); background: var(--bg);
+border: 1px solid var(--border); border-radius: 6px;
+cursor: pointer; opacity: 0; transition: opacity 0.15s;
+}
+pre:hover .copy, pre .copy:focus { opacity: 1; }
+blockquote {
+margin: 1rem 0; padding: 0.5rem 1rem;
+color: var(--fg);
+background: var(--accent-soft);
+border-left: 4px solid var(--accent);
+border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0.4rem 0; }
+.pager-bottom { display: flex; justify-content: space-between; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.pager-bottom a { display: flex; flex-direction: column; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; max-width: 40%; }
+.pager-bottom a span { font-size: 0.8rem; color: var(--muted); }
+.pager-bottom .next { margin-left: auto; text-align: right; }
+.pager-bottom .up { text-align: center; }
+@media (max-width: 960px) {
+.layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; padding: 1.5rem 1rem 3rem; }
+.toc { position: static; max-height: none; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+.topbar { padding: 0.6rem 1rem; }
+}
+
+code span.co { color: var(--tok-comment); font-style: italic; }
+code span.kw, code span.cf { color: var(--tok-keyword); }
+code span.st, code span.ss, code span.ch, code span.vs { color: var(--tok-string); }
+code span.va { color: var(--tok-variable); }
+code span.fu, code span.bu { color: var(--tok-function); }
+code span.dv, code span.fl, code span.bn, code span.cn { color: var(--tok-number); }
+code span.at { color: var(--tok-attr); }
+code span.op, code span.ot { color: inherit; }
+div.sourceCode { margin: 1rem 0; }
+pre > code.sourceCode > span { display: inline; }
+
+.badge {
+display: inline-block;
+padding: 0.15em 0.6em;
+border-radius: 999px;
+font-size: 0.75rem;
+font-weight: 600;
+line-height: 1.5;
+vertical-align: middle;
+white-space: nowrap;
+}
+.badge-rookie { color: var(--rookie); background: var(--rookie-bg); border: 1px solid var(--rookie); }
+.badge-advanced { color: var(--advanced); background: var(--advanced-bg); border: 1px solid var(--advanced); }
+.chapter-level { margin: -0.5rem 0 1.5rem; }
+h1 + .chapter-level { margin-top: -0.25rem; }
+.advanced-section {
+margin: 1.5rem 0;
+padding: 0.25rem 1.25rem 0.75rem;
+border-left: 4px solid var(--advanced);
+background: var(--advanced-bg);
+border-radius: 0 8px 8px 0;
+}
+.toc .badge { font-size: 0.65rem; padding: 0 0.45em; margin-left: 0.25rem; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="course" href="../README.html">Container und Kubernetes/OpenShift</a>
+  <nav class="pager">
+    <a href="../README.html#inhaltsverzeichnis">↑ Inhaltsverzeichnis</a>
+
+    <a href="../03-openshift-vs-kubernetes/README.html" title="Kapitel 3: OpenShift vs. " Vanilla Kubernetes"">← Zurück</a>
+
+    <a href="../05-automation/README.html" title="Kapitel 5: Automation – Kubernetes Manifeste &amp; GitOps">Weiter →</a>
+
+  </nav>
+</header>
+<div class="layout">
+<aside class="toc">
+  <p class="toc-title">Inhalt</p>
+<ul>
+<li><a href="#kapitel-4-containerpods-auf-kubernetes" id="toc-kapitel-4-containerpods-auf-kubernetes">Kapitel 4:
+Container/Pods auf Kubernetes</a>
+<ul>
+<li><a href="#namespace--openshift-project" id="toc-namespace--openshift-project">Namespace / OpenShift
+Project</a></li>
+<li><a href="#warum-pods" id="toc-warum-pods">Warum Pods?</a></li>
+<li><a href="#troubleshooting" id="toc-troubleshooting">Troubleshooting</a></li>
+<li><a href="#grenzen-von-standalone-pods" id="toc-grenzen-von-standalone-pods">Grenzen von &quot;Standalone
+Pods&quot;</a></li>
+<li><a href="#deployment-und-replicaset" id="toc-deployment-und-replicaset">Deployment und ReplicaSet</a></li>
+<li><a href="#kubernetes-manifeste-für-dieses-kapitel" id="toc-kubernetes-manifeste-für-dieses-kapitel">Kubernetes-Manifeste
+für dieses Kapitel</a></li>
+<li><a href="#weiterführende-links" id="toc-weiterführende-links">Weiterführende Links</a></li>
+</ul></li>
+</ul>
+</aside>
+<main>
+<h1 id="kapitel-4-containerpods-auf-kubernetes">Kapitel 4:
+Container/Pods auf Kubernetes</h1>
+<div class="chapter-level">
+<span class="badge badge-rookie">Rookie · Tag 1–2</span>
+</div>
+<h2 id="namespace--openshift-project">Namespace / OpenShift Project</h2>
+<p>Ein <strong>Namespace</strong> ist eine logische Isolationsschicht in
+Kubernetes. OpenShift nennt diese <strong>Projects</strong> (= Namespace
++ zusätzliche Metadaten).</p>
+<p>Genauer: Ein <strong>Project</strong> ist ein Hilfsobjekt, um
+leichter mit <strong>Namespaces</strong> umgehen zu können.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Namespace/Project anzeigen</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get projects             <span class="co"># geht immer</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get namespaces      <span class="co"># ❗ nur mit cluster-admin-Berechtigung</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Aktuelles Project anzeigen</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> project</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># (fast) Alle Ressourcen im aktuellen Namespace</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get all             <span class="co"># ❗ Developer Sandbox: Fehler bei einzelnen Ressourcentypen (fehlende Rechte)</span></span></code></pre></div>
+<p>Alle Befehle in diesem Seminar werden im
+<strong>Repository-Root</strong> ausgeführt und wirken im aktuell
+aktiven Project.</p>
+<hr />
+<h2 id="warum-pods">Warum Pods?</h2>
+<p>Ein <strong>Pod</strong> ist die kleinste deploybare Einheit in
+Kubernetes:</p>
+<ul>
+<li>Enthält einen oder mehrere Container</li>
+<li>Teilen sich Netzwerk (localhost) und Storage (optional)</li>
+<li>Haben eine gemeinsame IP-Adresse</li>
+<li>Laufen immer auf demselben Node</li>
+</ul>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Pod direkt starten (für Tests/Demos)</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> run demo <span class="at">--image</span><span class="op">=</span>quay.io/ghilling/quarkus-demo:1.0 <span class="at">--port</span><span class="op">=</span>8080</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Warten, bis der Pod bereit ist</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># (Ready heißt hier nur: Der Container läuft. Ob die Anwendung schon antwortet,</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co">#  weiß Kubernetes erst mit einer Readiness-Probe – siehe Kapitel 10.)</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> wait <span class="at">--for</span><span class="op">=</span>condition=Ready pod/demo <span class="at">--timeout</span><span class="op">=</span>120s</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Pod anzeigen</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pods</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pod demo <span class="at">-o</span> wide</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Pod-Details</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> describe pod demo</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Logs</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> logs demo</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> logs <span class="at">-f</span> demo   <span class="co"># folgen (Abbruch mit Strg+C)</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Befehl im Pod ausführen (--retry: falls die Anwendung noch startet)</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> exec demo <span class="at">--</span> curl <span class="at">-s</span> <span class="at">--retry</span> 10 <span class="at">--retry-all-errors</span> <span class="at">--retry-delay</span> 1 http://localhost:8080/</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="co"># In Pod einloggen</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> exec <span class="at">-it</span> demo <span class="at">--</span> /bin/bash</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> exec <span class="at">-it</span> demo <span class="at">--</span> sh</span></code></pre></div>
+<hr />
+<h2 id="troubleshooting">Troubleshooting</h2>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Pod-Status prüfen</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pods</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># STATUS: Running | Pending | CrashLoopBackOff | ImagePullBackOff | Error</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Detaillierte Infos (Events sind wichtig!)</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> describe pod demo</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Logs des Containers</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> logs demo</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> logs demo <span class="at">--previous</span>   <span class="co"># ❗ nur nach einem Neustart des Containers (z. B. nach Crash)</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Events im Namespace</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get events <span class="at">--sort-by</span><span class="op">=</span><span class="st">&#39;.lastTimestamp&#39;</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Resource-Nutzung</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> adm top pods           <span class="co"># ❗ Metriken erst ca. 1 Minute nach dem Pod-Start verfügbar</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Netzwerk-Test aus dem Pod</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> exec demo <span class="at">--</span> curl <span class="at">-s</span> http://localhost:8080/</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Pod wieder löschen</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> delete pod demo</span></code></pre></div>
+<p><strong>Häufige Fehler:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Ursache</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ImagePullBackOff</code></td>
+<td>Image nicht gefunden oder keine Pull-Berechtigung</td>
+</tr>
+<tr>
+<td><code>CrashLoopBackOff</code></td>
+<td>Container startet, crasht sofort (Logs prüfen!)</td>
+</tr>
+<tr>
+<td><code>Pending</code></td>
+<td>Kein Node verfügbar (Ressourcen?) oder fehlende PVC</td>
+</tr>
+<tr>
+<td><code>OOMKilled</code></td>
+<td>Container überschreitet Memory-Limit</td>
+</tr>
+<tr>
+<td><code>CreateContainerConfigError</code></td>
+<td>Secret oder ConfigMap fehlt</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="grenzen-von-standalone-pods">Grenzen von &quot;Standalone Pods&quot;</h2>
+<p>Ein direkter Pod (ohne Deployment) hat folgende Nachteile:</p>
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Standalone Pod</th>
+<th>Deployment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Container crasht</td>
+<td>Neustart im selben Pod durch das kubelet ✅</td>
+<td>Neustart im selben Pod durch das kubelet ✅</td>
+</tr>
+<tr>
+<td>Node fällt aus</td>
+<td>Pod ist weg ❌</td>
+<td>Neuer Pod auf einem anderen Node ✅</td>
+</tr>
+<tr>
+<td>Pod wird gelöscht oder verdrängt (Eviction, Node-Wartung)</td>
+<td>Pod ist weg ❌</td>
+<td>Neuer Pod wird gestartet ✅</td>
+</tr>
+<tr>
+<td>Skalierung</td>
+<td>Manuell (weitere Pods anlegen) ❌</td>
+<td><code>replicas: N</code> ✅</td>
+</tr>
+<tr>
+<td>Rolling Update</td>
+<td>Nicht möglich ❌</td>
+<td>Automatisch ✅</td>
+</tr>
+<tr>
+<td>Rollback</td>
+<td>Nicht möglich ❌</td>
+<td><code>oc rollout undo</code> ✅</td>
+</tr>
+</tbody>
+</table>
+<p>Der Neustart eines abgestürzten <strong>Containers</strong> ist also
+kein Vorteil des Deployments – das erledigt das kubelet für jeden Pod
+(<code>restartPolicy: Always</code> ist der Default). Der Unterschied
+liegt darin, was passiert, wenn der <strong>Pod selbst</strong>
+verschwindet: Ein Standalone Pod ist dann weg, ein Deployment (genauer:
+sein ReplicaSet) erzeugt einen neuen.</p>
+<blockquote>
+<p><strong>Fazit</strong>: Standalone Pods nur für Debugging und Tests.
+Für Produktionsanwendungen immer ein <strong>Deployment</strong> (oder
+<strong>StatefulSet</strong>, für Anwendungen mit eigenem Zustand wie
+Datenbanken) verwenden!</p>
+</blockquote>
+<hr />
+<h2 id="deployment-und-replicaset">Deployment und ReplicaSet</h2>
+<pre><code>Deployment
+  └── ReplicaSet (v1)          ← alte Version
+  └── ReplicaSet (v2, aktiv)   ← neue Version
+        └── Pod
+        └── Pod
+        └── Pod</code></pre>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Deployment erstellen (imperativ)</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> create deployment demo <span class="at">--image</span> quay.io/ghilling/quarkus-demo:1.0 <span class="at">--port</span> 8080</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> rollout status deployment/demo</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> delete deployment demo</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># oder deklarativ aus einem Manifest:</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 04-pods-on-kubernetes/deployment.yaml</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Um die Manifest-Datei selber zu erzeugen:</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> create deployment demo <span class="at">--image</span> quay.io/ghilling/quarkus-demo:1.0 <span class="at">--port</span> 8080 <span class="at">--dry-run</span><span class="op">=</span>client <span class="at">-o</span> yaml <span class="op">&gt;</span> /tmp/demo-deployment.yaml</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> /tmp/demo-deployment.yaml</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Deployment anzeigen</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get deployments</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> describe deployment demo</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Skalieren</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> scale deployment demo <span class="at">--replicas</span><span class="op">=</span>3</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Rolling Update</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> set image deployment/demo demo=quay.io/ghilling/quarkus-demo:1.1</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Rollout-Status verfolgen</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> rollout status deployment/demo</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Rollout-Historie</span></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> rollout history deployment/demo</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Rollback</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> rollout undo deployment/demo</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> rollout status deployment/demo</span></code></pre></div>
+<hr />
+<h2 id="kubernetes-manifeste-für-dieses-kapitel">Kubernetes-Manifeste
+für dieses Kapitel</h2>
+<p>Die YAML-Manifeste befinden sich in diesem Verzeichnis:</p>
+<ul>
+<li><code>pod.yaml</code> – Standalone Pod (für Demo)</li>
+<li><code>deployment.yaml</code> – Deployment mit ReplicaSet</li>
+</ul>
+<h3 id="hinweis-securitycontext-in-openshift">Hinweis: SecurityContext
+in OpenShift</h3>
+<p>OpenShift setzt über die <strong>Security Context Constraints
+(SCC)</strong> automatisch restriktive Sicherheitsrichtlinien für Pods
+und Container durch — ohne dass diese explizit im Manifest angegeben
+werden müssen. Die <code>restricted-v2</code> SCC (Standard in
+OpenShift) erzwingt beispielsweise automatisch:</p>
+<ul>
+<li><code>allowPrivilegeEscalation: false</code></li>
+<li><code>runAsNonRoot: true</code></li>
+<li><code>seccompProfile.type: RuntimeDefault</code></li>
+<li><code>capabilities.drop: [ALL]</code></li>
+</ul>
+<p>Das bedeutet: In der Praxis müssen diese
+<code>securityContext</code>-Felder <strong>nicht</strong> explizit in
+Deployment-Manifesten aufgeführt werden — OpenShift kümmert sich
+selbstständig darum. In der <code>pod.yaml</code> dieses Kapitels sind
+sie zur Veranschaulichung dennoch eingetragen, um zu zeigen, was
+OpenShift im Hintergrund einstellt.</p>
+<hr />
+<h2 id="weiterführende-links">Weiterführende Links</h2>
+<ul>
+<li><a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/">Kubernetes:
+Namespaces</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/workloads/pods/">Kubernetes:
+Pods</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/workloads/controllers/deployment/">Kubernetes:
+Deployments</a></li>
+<li><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/building_applications/index">OpenShift
+4.22: Building Applications</a></li>
+</ul>
+<p>Siehe auch <a href="../99-anhang/DOCUMENTATION.html">99-anhang/DOCUMENTATION.md</a>
+für die vollständige Liste.</p>
+<nav class="pager-bottom">
+  <a class="prev" href="../03-openshift-vs-kubernetes/README.html"><span>← Zurück</span>Kapitel 3: OpenShift vs. &quot;Vanilla Kubernetes&quot;</a>
+
+  <a class="up" href="../README.html#inhaltsverzeichnis"><span>↑ Übersicht</span>Inhaltsverzeichnis</a>
+
+  <a class="next" href="../05-automation/README.html"><span>Weiter →</span>Kapitel 5: Automation – Kubernetes Manifeste &amp; GitOps</a>
+
+</nav>
+</main>
+</div>
+<script>
+// Kopier-Button für Codeblöcke
+document.querySelectorAll("pre").forEach(function (pre) {
+  var button = document.createElement("button");
+  button.className = "copy";
+  button.type = "button";
+  button.textContent = "Kopieren";
+  button.addEventListener("click", function () {
+    navigator.clipboard.writeText(pre.innerText).then(function () {
+      button.textContent = "Kopiert ✓";
+      setTimeout(function () { button.textContent = "Kopieren"; }, 1500);
+    });
+  });
+  pre.appendChild(button);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kapitel 20: Debugging und
+Observability – Container und Kubernetes/OpenShift</title>
+<style type="text/css">:root {
+--bg: #ffffff;
+--fg: #1f2328;
+--muted: #59636e;
+--border: #d1d9e0;
+--accent: #1a5fb4;
+--accent-soft: #e8f0fe;
+--code-bg: #f6f8fa;
+--topbar-bg: #f6f8fa;
+--warn: #9a6700;
+--warn-bg: #fff8c5;
+--rookie: #1a7f37;
+--rookie-bg: #dafbe1;
+--advanced: #8250df;
+--advanced-bg: #fbefff;
+--tok-comment: #6e7781;
+--tok-keyword: #cf222e;
+--tok-string: #0a3069;
+--tok-variable: #953800;
+--tok-function: #8250df;
+--tok-number: #0550ae;
+--tok-attr: #116329;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg: #0d1117;
+--fg: #e6edf3;
+--muted: #9198a1;
+--border: #30363d;
+--accent: #6cb6ff;
+--accent-soft: #15233a;
+--code-bg: #161b22;
+--topbar-bg: #161b22;
+--warn: #d29922;
+--warn-bg: #2b2111;
+--rookie: #3fb950;
+--rookie-bg: #12261e;
+--advanced: #d2a8ff;
+--advanced-bg: #221a33;
+--tok-comment: #9198a1;
+--tok-keyword: #ff7b72;
+--tok-string: #a5d6ff;
+--tok-variable: #ffa657;
+--tok-function: #d2a8ff;
+--tok-number: #79c0ff;
+--tok-attr: #7ee787;
+}
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 4.5rem; }
+body {
+margin: 0;
+background: var(--bg);
+color: var(--fg);
+font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.topbar {
+position: sticky; top: 0; z-index: 10;
+display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+padding: 0.6rem 1.5rem;
+background: var(--topbar-bg);
+border-bottom: 1px solid var(--border);
+}
+.topbar .course { font-weight: 600; color: var(--fg); }
+.pager { display: flex; gap: 1.25rem; font-size: 0.95rem; }
+.layout {
+display: grid;
+grid-template-columns: 16rem minmax(0, 52rem);
+gap: 3rem;
+justify-content: center;
+padding: 2rem 1.5rem 4rem;
+}
+.toc {
+position: sticky; top: 4.5rem;
+align-self: start;
+max-height: calc(100vh - 6rem);
+overflow-y: auto;
+font-size: 0.9rem;
+}
+.toc-title { margin: 0 0 0.5rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; }
+.toc ul { list-style: none; margin: 0; padding-left: 0; }
+.toc ul ul { padding-left: 1rem; }
+.toc li { margin: 0.3rem 0; }
+.toc a { color: var(--muted); }
+.toc a:hover { color: var(--accent); }
+main { min-width: 0; }
+h1, h2, h3, h4 { line-height: 1.25; margin: 2rem 0 1rem; }
+h1 { font-size: 2rem; margin-top: 0; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+h2 { font-size: 1.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.2rem; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 2rem 0; }
+img { max-width: 100%; height: auto; display: block; margin: 1.5rem auto; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.95rem; display: block; overflow-x: auto; }
+th, td { border: 1px solid var(--border); padding: 0.4rem 0.75rem; text-align: left; vertical-align: top; }
+th { background: var(--code-bg); }
+code { font: 0.875em/1.5 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+:not(pre) > code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.1em 0.35em; }
+pre {
+position: relative;
+background: var(--code-bg);
+border: 1px solid var(--border);
+border-radius: 8px;
+padding: 1rem 1.25rem;
+overflow-x: auto;
+}
+pre code { background: none; border: 0; padding: 0; }
+pre .copy {
+position: absolute; top: 0.5rem; right: 0.5rem;
+font: 0.75rem/1 inherit; font-family: inherit;
+padding: 0.3rem 0.55rem;
+color: var(--muted); background: var(--bg);
+border: 1px solid var(--border); border-radius: 6px;
+cursor: pointer; opacity: 0; transition: opacity 0.15s;
+}
+pre:hover .copy, pre .copy:focus { opacity: 1; }
+blockquote {
+margin: 1rem 0; padding: 0.5rem 1rem;
+color: var(--fg);
+background: var(--accent-soft);
+border-left: 4px solid var(--accent);
+border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0.4rem 0; }
+.pager-bottom { display: flex; justify-content: space-between; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.pager-bottom a { display: flex; flex-direction: column; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; max-width: 40%; }
+.pager-bottom a span { font-size: 0.8rem; color: var(--muted); }
+.pager-bottom .next { margin-left: auto; text-align: right; }
+.pager-bottom .up { text-align: center; }
+@media (max-width: 960px) {
+.layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; padding: 1.5rem 1rem 3rem; }
+.toc { position: static; max-height: none; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+.topbar { padding: 0.6rem 1rem; }
+}
+
+code span.co { color: var(--tok-comment); font-style: italic; }
+code span.kw, code span.cf { color: var(--tok-keyword); }
+code span.st, code span.ss, code span.ch, code span.vs { color: var(--tok-string); }
+code span.va { color: var(--tok-variable); }
+code span.fu, code span.bu { color: var(--tok-function); }
+code span.dv, code span.fl, code span.bn, code span.cn { color: var(--tok-number); }
+code span.at { color: var(--tok-attr); }
+code span.op, code span.ot { color: inherit; }
+div.sourceCode { margin: 1rem 0; }
+pre > code.sourceCode > span { display: inline; }
+
+.badge {
+display: inline-block;
+padding: 0.15em 0.6em;
+border-radius: 999px;
+font-size: 0.75rem;
+font-weight: 600;
+line-height: 1.5;
+vertical-align: middle;
+white-space: nowrap;
+}
+.badge-rookie { color: var(--rookie); background: var(--rookie-bg); border: 1px solid var(--rookie); }
+.badge-advanced { color: var(--advanced); background: var(--advanced-bg); border: 1px solid var(--advanced); }
+.chapter-level { margin: -0.5rem 0 1.5rem; }
+h1 + .chapter-level { margin-top: -0.25rem; }
+.advanced-section {
+margin: 1.5rem 0;
+padding: 0.25rem 1.25rem 0.75rem;
+border-left: 4px solid var(--advanced);
+background: var(--advanced-bg);
+border-radius: 0 8px 8px 0;
+}
+.toc .badge { font-size: 0.65rem; padding: 0 0.45em; margin-left: 0.25rem; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="course" href="../README.html">Container und Kubernetes/OpenShift</a>
+  <nav class="pager">
+    <a href="../README.html#inhaltsverzeichnis">↑ Inhaltsverzeichnis</a>
+
+    <a href="../19-availability/README.html" title="Kapitel 19: Verfügbarkeit – Rolling Updates, PodDisruptionBudget, Autoscaling">← Zurück</a>
+
+    <a href="../21-quarkus/README.html" title="Kapitel 21: Quarkus: Kurze Wiederholung">Weiter →</a>
+
+  </nav>
+</header>
+<div class="layout">
+<aside class="toc">
+  <p class="toc-title">Inhalt</p>
+<ul>
+<li><a href="#kapitel-20-debugging-und-observability" id="toc-kapitel-20-debugging-und-observability">Kapitel 20: Debugging
+und Observability</a>
+<ul>
+<li><a href="#fehlerbild-1-image-nicht-gefunden" id="toc-fehlerbild-1-image-nicht-gefunden">Fehlerbild 1: Image nicht
+gefunden</a></li>
+<li><a href="#fehlerbild-2-anwendung-stürzt-ab" id="toc-fehlerbild-2-anwendung-stürzt-ab">Fehlerbild 2: Anwendung stürzt
+ab</a></li>
+<li><a href="#fehlerbild-3-configmap-fehlt" id="toc-fehlerbild-3-configmap-fehlt">Fehlerbild 3: ConfigMap
+fehlt</a></li>
+<li><a href="#fehlerbild-4-speicherlimit-überschritten" id="toc-fehlerbild-4-speicherlimit-überschritten">Fehlerbild 4:
+Speicherlimit überschritten</a></li>
+<li><a href="#werkzeuge" id="toc-werkzeuge">Werkzeuge</a></li>
+<li><a href="#aufräumen" id="toc-aufräumen">Aufräumen</a></li>
+<li><a href="#manifeste-in-diesem-kapitel" id="toc-manifeste-in-diesem-kapitel">Manifeste in diesem
+Kapitel</a></li>
+<li><a href="#weiterführende-links" id="toc-weiterführende-links">Weiterführende Links</a></li>
+</ul></li>
+</ul>
+</aside>
+<main>
+<h1 id="kapitel-20-debugging-und-observability">Kapitel 20: Debugging
+und Observability</h1>
+<div class="chapter-level">
+<span class="badge badge-advanced">Advanced · Tag 3–4</span>
+</div>
+<p>Kapitel 4 hat die wichtigsten Befehle zur Fehlersuche vorgestellt. In
+diesem Kapitel werden typische Fehler <strong>bewusst erzeugt</strong>
+und Schritt für Schritt diagnostiziert. Danach geht es um Werkzeuge, mit
+denen man in laufende oder abstürzende Pods hineinsehen kann.</p>
+<p><img role="img" aria-label="Vom Pod-Status zum passenden Diagnose-Befehl" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiICBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWluWU1pbiBtZWV0IiB2aWV3Qm94PSIwIDAgODUwIDY3NiI+PHN2ZyBjbGFzcz0iZDItNzQyNTIyMjA4IGQyLXN2ZyIgd2lkdGg9Ijg1MCIgaGVpZ2h0PSI2NzYiIHZpZXdCb3g9Ii05IC05IDg1MCA2NzYiPjxyZWN0IHg9Ii05IiB5PSItOSIgd2lkdGg9Ijg1MCIgaGVpZ2h0PSI2NzYiIHJ4PSIwIiBmaWxsPSJ0cmFuc3BhcmVudCIgc3Ryb2tlLXdpZHRoPSIwIiAvPjxzdHlsZSB0eXBlPSJ0ZXh0L2NzcyI+PCFbQ0RBVEFbCi5kMi03NDI1MjIyMDggLnRleHQtYm9sZCB7Cglmb250LWZhbWlseTogImQyLTc0MjUyMjIwOC1mb250LWJvbGQiLCAiU291cmNlIFNhbnMgUHJvIiwgIlNvdXJjZSBTYW5zIDMiLCAtYXBwbGUtc3lzdGVtLCBCbGlua01hY1N5c3RlbUZvbnQsICJTZWdvZSBVSSIsIEhlbHZldGljYSwgQXJpYWwsIHNhbnMtc2VyaWY7Cn0KQGZvbnQtZmFjZSB7Cglmb250LWZhbWlseTogZDItNzQyNTIyMjA4LWZvbnQtYm9sZDsKCWZvbnQtZGlzcGxheTogc3dhcDsKCXNyYzogdXJsKCJkYXRhOmZvbnQvd29mZjtiYXNlNjQsZDA5R1JnQUJBQUFBQUJKOEFBb0FBQUFBRzhRQUFndUZBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUJQVXk4eUFBQUE5QUFBQUdBQUFBQmdYeEhYcm1OdFlYQUFBQUZVQUFBQXhnQUFBUllHNlNqd1oyeDVaZ0FBQWh3QUFBdFRBQUFQZ0RHdnA0dG9aV0ZrQUFBTmNBQUFBRFlBQUFBMkczOGUxR2hvWldFQUFBMm9BQUFBSkFBQUFDUUtmd1g0YUcxMGVBQUFEY3dBQUFESkFBQUE1RzMxQ1lGc2IyTmhBQUFPbUFBQUFIUUFBQUIwY3ZoMjBHMWhlSEFBQUE4TUFBQUFJQUFBQUNBQVVRRDNibUZ0WlFBQUR5d0FBQU12QUFBSUtnandWa0Z3YjNOMEFBQVNYQUFBQUNBQUFBQWcvOUVBTWdBREFpb0N2QUFGQUFBQ2lnSllBQUFBU3dLS0FsZ0FBQUZlQURJQktRQUFBZ3NIQXdNRUF3SUNCR0FBQXZjQUFBQURBQUFBQUFBQUFBQkJSRUpQQUNBQUlQLy9BdTcvQmdBQUE5Z0JFU0FBQVo4QUFBQUFBZkFDbEFBQUFDQUFBM2ljaE0yN0xvTUJITWJoNStOemFOWDVmUDVLMGRLcVV3d1dzVWdhdTZTalVTeGlrYmdNbCtBT0JKc1FOeUp4QndheC9rVVRpYTE1MTEvZUI0bE9DUXJTSkkrU1RDcVZxYWlxcVR0dzZGakRxYVp6bDY3ZCtDN2VSaUJUL2xjZGFUalJkT2JDMVY4VkgzSXRKWTJ2K0l5M2VJMlhlSTZuZUl5SHVJLzk5N3VXMzM2SmJUdHF0dXphVk5meCs2bEx0eDY5Y3ZMNkZQUWJNR2pJc0JHanhveWJNR25LdEJtejVzeGJzQ2hUdEdSWnlZcFZhOG9xMW0ybzJ1TUhBQUQvL3dNQUgwUXI1Z0FBZUp5RVYxdHdHMVdhL3M5Ulc0MWwrU0pMclpaazNkdnFsbVJidHRWcXRhK1JGVXUyWTB1K0pvNERkdXk0UW1MaXhNa216c2F3WnJOVkNld3VDTUxpWUVMQ1FxQkM3UTVEbUtJeVZBRXpwbXFvQ1pBaUQweUZtcndNZ2FHbUFnTVA4VENHNG1LM3BrNzdFaVV2ODJDZHJ2WTU1Ly9POTMvLzkvZUJQT2dGd09QNE5HZ2dINHFoRkJnQTBlQXgrRVJCNEdoWmxHV08xY2dDTXRDOXVGUjU1WUlRb0FJQkt1Zys0M3BvZEJTbGQrTFRLL3Z2UzQrUGZ6L2EyS2k4OFBZN3loUG95RHNBT1BzVEFHN0ZHY2dIQTRDUkZnV2VGeml0Vm1NVWpaekEwVGRMSGk4dUxDdWs5TmFmcnI1eDlYbi9CMzdVMmRSVU95VkdEaWlQNE16SzlMbHpBQUFhU0FQZ0pwd0JBOWpBUzdDSlliT1pNV2xwUmgyMG5FWU1SNlVJejNFR01heU82YzhTKzF1cS9PSFd4T0gyMFdTME5oeHBHM2l3cVhrQVp4eHRzWXFCWXFxd0s5NjZOWUQrTThqeGJtVm9xTUlIZ0NDVVhjSTErQXlVQWVSNWVWNktSS05pMk16U1BNOTV0VnJHWkJiRFVablZvcEgreHdhMlBkRWYyKzNwdHNwYzVaYUt3UTUvek5MZHIwODljMkQvYzMyaWR5ZnJDTy9jdlB0UXVYVjRERENrQVhBS1owQUhUQTU2TFNlSTRTakJUUUMvdGZ2cHZ0NVRZMVgydW9GUWFLRE9qak9KVTRjT1BkMSt6RC9jM2IzREJ3UmZHZ0Rkd2hrb0lCeDRHQThqTWh6allkTG9qUEx6alJ1b0dHZG1UL3piL096RzNLOVU3blBtcHRFNTVZY3Z2c0NaMldkblYyQjlIbnlPTTZBaGU0cUc5QnpPckV5dnZzZjdjUWIwcSs5Rm82Z3hjaHFhU2M5Ujc3MTgrYTh2dlpqQ0dlVTdWS0FzS3pQSXVQdFg2ekcvd0JuSVcxM2pZZEp6Q09QTXl1THNSaXg4RVdmQXBmN2ZhRGF6WWpRcUcwVURSNmlXT1pybUJJRnpZb1pKdi9TQXJsUkg2UXk2dmVjZnBmTTFsRFRTTnhLaHFIdG9uRkZ1MkRjNW5adnN5THN5ZmN2ZDArczY5K09QNTF5OVBlNWI2ekVJMThiVkdLekk4NUlrR2ppTndKbk5ESk4rOXRVV2lpcktrQ0d2RUdlVTN6NFYrWStHbXl2VEtQbGtkTGJoU3dEQXFnNytIWitCNHJ1VW9JcE5XSldhbCtnQkRRNDkwdFgxeU5EcWIydDNkMnRyZDdlKy83bDlrOC8wOU16djIvZGMvL0hwOGZHcHFmSHhhYkl2d1ZhamNtcktVYkdXNDVnTjNYN2VjYlN0YlRyWjF6SFQwcFRBR1dHNEp6VmUvU25xbnhDRHNJYXRFNS9IWjZBQWVBQmZMaFl2TDl5QmxEYXY2VldMQnRlZ0lkdmVwN2lKaDFjUkh4cGxld0tNcjhoVzJyai82QVJCT1hGVXVYRi95dno2WTZ2d1QveXl6T3VrcWNuOHdqWHNBemdEUmNEbVZpQXBaSUpleGNHbHYwa2VUc1NrMDY4ODNKZHFhRzV1U09HTWI2aTdZNFJWZnY3bUd6UldXMVBEa3h4eDJTV3N3MmNncUxJcnlDcFFLY0lMUWdqZldYU015Y3l5YWlRdE1yVWNEMi9sQnYyaEtyRmltNmVKYjN3Z1VYY28yT1Z1RWZpcSt1RFd4cmFHS1gxTjZING43M1c0SEtYbFJkVnQxZEdoU0dWd3hGcm1zanVkQnE5bGF6STZYQWNJckFEWWlETkFrNU53a29maERGY3ZvWjh1NFpMWjJaVkZ3ak9DTGRrbDNLTjZEc0VvR1VTRFd2N3FneFoxSDMvMGRJTXNOejE1UWo5L0FlMVU1c1pTcVRGMFFIbjV3anlnN0k4QVdNUVpLQVFRTlRrNjE3eDcrZm51WXJhWUtySVVwZWQvanpQS3g5S2VhSFNQaEdwSXpXVi9BTUFNemtBeGdDaHBSSFp0b1N4cW1JWExMelFVMlFxcEludGg0OW5MWDZFTDg3NGt6eWQ5ODhyd1Y2b3VndGtsOUFsYUJpdHdBS3lYQ0VGV2ZZc1dWRUlaQTBlOFZ3NUhaVW4xc25jVHZTZm5NQmR3dFpSTDFaTU5vM3RtZEpTci9SNnJ6OWpkNU5KdmozVVBGWHNFQzdQTFVUNTFXUG1MYU9jT3M4YnR1Z3FIaFZYanhiTkwySXdYd0VTcW1XU1Jvem1EeU5CM0ZRcm5KU2FOa3A1V0I2VS9Na2M1RXQ2bW9lcW0wU0UrT2xnWk1QbjFIcmVFRjE1TDJSeWIvaVcxN2NIWVRGdnEwYXFQU292VUhKUm5sOUFDV2diYjNYN01lVys3c1JaWmt3ZmpIZithQ0xYYms1eGJpc1ZxTENGamcyOVEzM3kwZjJDNjJjbU9PbEx4bGpSVFBPWXVJN25GSUdTWDBESmVBQ080MTdraXFGbEJFbk5ZV2hmZ3Q4TUhHMGNqZ1RxcmRtNUdSOW5hc0VVb05WYVl1R2kxL3ZFSCs0NXVzbHRTdjFocHJiVnhNeWJyUjZWRnJlMWJrb0JWN0g5R3kyQUIxeDNvaVpacEQxRTh3YTRSSXlRS2NyVWYzdHk2djdGOXBKckN5blZkVzYwVXJlVjNucjBrVkhxaitrM1QvWDNUc2Roa3d1akxqNHFlSFRZbmFnaEkxZVFzQ0N3QWFCcGZJU1BSc254WC9SRGJOOXk3ZVhONWI2c3JVbEpXYU5PWE9YZnNRQThmeUN1VEJpTjY3ZjY4UEEvdlBLS2NBTkNBTjF1RmFiUU0xZEFJblNvenZCU1JKUlg3MmhBVnc2ekljR3ZHNVJVSVFTS1JsMG1yMWVTNGtYSE5FYnk4T3VYYmhwMTE3Y1l5dDhVV2FOZ3BWWHJlN0tIekkwT3l3MVhxRGZRTzcwck1kam9Fd2VFUWhFQzRSZkNKVm8rK3JQbWFyYTZ5eVU4VitsMWw0UktxTkZIUjFPUFhUeFo0VGZXZDVicGlzN0cwc1ZYc0M2RXJ3WUFROFBzRFFXV3UzTXFXYURRV3E5Mnh5azJjSkZ2VktJZ2IybVFNbkVFbG5UYkU1Mmg3Vjdodnk1ekRiZmRiOE1Kck82d1ZreVBLVmVTSitxMnM4Z1prc3lBRHdLZjRHdVpCQWdBYW92RFl4dDVPdkxEUkgyV1JObklDemNSUFVmOTcvdlhmdkhnb2hoZVVxY3RYbFQvOXJ2MGhNais3aEVyeEFxbHROc2RQaUFnK1REWE9HZkx6YUcycDNxZS9yd3R6SzlmWlVvUU81TkZrSFlER2daYkJvOFloZmtDeWU4ZEo2STB4VG1xNHJWYUtHejJkdGIxZGN3NjNyNGI4VktQRkZsZFZoZDlidTM2OEd1V050V0dkSjdRTXB0d1l1VHpONkNoM2VvTW90Qmh6VnQzQjA2cmVWZTM4ODU1cGpoMU1KQTdHWWxPSnhGU3NLaFNxQ2xWVnJkVnE4L1JBLzlIbVkrbVdlSXFVTElFVnozWmdNMW9HSXpnQjJOdm9WUG54QXNzWWI5c01PYjVqaTNEdlJOTm8xTjFreSt2aG80TVZRWlAvTGZ6L3RUYnV2NDlzbTRtVldYditCNVZ2bUl4NmRuUUtMVVBwSGZ6Uy9PMlRsNlY0eHE2ekZGcEw3TTBtdExnOVhKdVhkNXlpQW1IbGMwREFaSmZRaTJnWkJEV3Z0M3NadjlyTE5qWWpuY3lKR1pQMld1MWVmck0zNXZJNEhTR2JzOUgvd0xiNjdhN050b2l0dnA1M053Y205THhyMkZyR0dnMW1vMDVmWGg5SURncVdJWk5ac0ZpTENyajZVT3ZJcXJZTjJTVTBoYWRKTnliOVNlSWtXUlpKdGVjWUl3ejNKRktHaDQ0ZDR4eDZxNDQxeXZwOWcxY09hRStlUFBKQjBLZWxKclg2MWIyYXNrdm9CN1FJcHJ1MGFWaXp3ei8yYlpsenV1MjhlVzZtUU9QcTFFK09vSWp5bVJTd09WQ0hVcEwwVlFJaWRZQ3lhSEd0NStXMHJrdi9kN3BGWjlSUitVWmQvSW1YMGVMWHZyUWdwSDFmS3lYci9vVVgwU0o0N2xxWHN3TzNkbStnNmRPelQ5ZG9kVnFLTHN5WGo5ZmxGOU1VblU5WC85ZXgxNnJvUXBxaUMraEt0SGpUMThIem5keE5kZXp3M1ZSSzN1ZmEvUDQyN24wMUh2a0ErVFZhVkwrTEpTTnAvaHFSNFQ5K0d4MzYrSG9QQ2gzcFZ2NXdoTlM5cW1mOEllWkpQd1VhWkdSVzE0ZXlteERBUmFJWFZvaEdCYStYVTV2dHFpWlR6cm9HaENuTVJhTjhPREw4WHJjcDdxdnc4NkhPZVA4TUFObTNPYnNFdDlEZnNBQjFBQ2dCV2pJQ2hrQjJDYjJDWHdVYithNlQrVTBhS1pMVHZjMk1xVWpEMGptUnptck5RdERoYzlvclRIM2NlRU4wVzloWkdiUlJjVDRjNW5sUi9ESVFsNm9xekM2M3pkUVpDSmVuR24zMU5kVnkrZDhsd1M5SmZvRjRHWUlLdUlJOHFKWjgrOHVTeUZSOGYyVmlncnp2eUthUkgzOUdjc21xcmsvVVJBUjhOWlpNeG9ibGNGaSt0UGZHeVpNMzl2Szdyay91dXo0T0NHcXlhVlN5dGtaUWJ6V2tGaGlUTmpOY0Z3N1hEY2VTeVV2OCtQVjlrOWQzOGVwYVFGQ1lIVU5SL0Q2Snp4cEZUZUdWc1N2bk5YdVd6eElNL3V3dFBJRHpTWjd5Qk5ramVRUVpNYWk1YlY0NWgrNmZiME5tUTgvSjZaTTl5bmZVaHRmREoyaHgvUjRUbjBPTFNnbWc3RVZjRHdQNEdya3pHWExvODRWQ1BsOG9oT3VESEJja2YrUysyb1hyNFUzOElSU1FxdExrekJaem5nKzRBZ0dYV3hEZWNmbjlMcmZmaitzRExtY2c0Q1N2VjBjVmo1cG51RWppc2pseDUzbFJKUG5SUzRKZmt2eUNCUDhBQUFELy93TUFVcHRVdXdBQUFRQUFBQUlMaFZaR3VnVmZEenoxQUFFRDZBQUFBQURZWGFDRUFBQUFBTjFtTHpiK04vN0VDRzBEOFFBQkFBTUFBZ0FBQUFBQUFBQUJBQUFEMlA3dkFBQUltUDQzL2pjSWJRQUJBQUFBQUFBQUFBQUFBQUFBQUFBQU9YaWNCTUE5U2tOQkZJYmg5M3lCSUpnZ1FwVFlXT2pnM3gwdmRncG1pdE9Jb2djRUZXSmhxZUFhTE55QmZmWVFHMXMzWUNGWXVCbTl6ZVRSQjlkOGdVcnQ5RURvakZZdmhCS2hBV0dIaEo0STlRbDFoR2FFNXJTNkpUU24xU09oekxZeUc1cHhvVnovTmF4L1d1RkFCYmRma2dxNzZwUHNqckhXMmRJcGJpT09sWERieEh2M3VDYTRHcElLYm0rNGZiSm1yNnpxaEltV0dmU1dHTnMzTzJwSWxta3RVK3lIZmJ1aXNTbm5OdVhJYmhqcW1UMGI0VkRmb1Y1YXBpd0FBQUQvL3dNQUdJRWx5UUFBQUFBQUFDd0FMQUJRQUlRQXNBRFVBT29BL2dFS0FTUUJOQUZtQVlnQnRBSFdBaElDT0FKNEFvb0NxQUxFQXVJREdnTk1BM2dEcWdQZUJBUUViQVNPQkpvRXNnVE9CUUFGSWdWT0JYNEZuZ1hhQmdBR0lnWStCbllHaWdhV0JyWUd3Z2I4QndnSElnYzhCMG9IWWdkdUI0UUhxZ2ZBQUFFQUFBQTVBSkFBREFCakFBY0FBUUFBQUFBQUFBQUFBQUFBQUFBRUFBTjRuSnlVejI0YlpSVEZmMDVzMHdyQkFrVlZ1b20rQllzaXRXTlRKVlhickNha1ZrWkVjZkM0SUNTRU5MWW50dVh4ek1nemRocWVnRFZ2d1Z0MHhVUHdISWcxdXRmWHJsMFFCU3VLZFdibS9qbmZ1ZWQrd0FGL3NrK2xlaC80clo0YXJuQlV2emE4eDczNmhlRjlXdlU5dzFVZTFYNDNYR05RV3hpdTgzbXRZL2dqM2xaL01YeVA0K3FQaHU5eldHMFovcGluMVFQRG4rdzcvakQ4S2NlOFhlSUtQT2Rud3hVT3lRM3ZjY0FQaHZkNWdOV3NWSGxBMDNDTnp6Z3lYT2NJNkRLbUpHRk15aERIRFdPR3pKa1JVeEFTTTJQTURURURIQUUrQ2FXK1RZa1VPWWIvK0RZaXBHUkdwQlZIbERnU1FoSWlDa1pXOFNmTnlyaldqdEpucGtpNitaU01pT2hweG9TSUZFZkdrSXlVbUluV0tTbkplVW1EQmdWOTVadFRVdUJSTUNiQkkyUEdrQVp0V2x6U1pjU1lBa2RMS3dtemtJd2JTbTZKdEwrekNGR21UMHhLWWF6bXBBeVVwMU4rc1dZSFhPSm9rMnZzWnVYTHJRcVBjWHlyMmNKTlloeGY0dW0vMjJDMjNYZkZKbUtoZW9xR1BSTGxlYXNUSEtuaTB0Zm5HOFVsTDNFNzZiUE41TU1hRFpTZHpIcE1qN25PWCtZbmVjSWt4YmxEZkVKMVVPZ2U0ampUNTRCUUZmbU9nQzRYdEhsTlY1OTlPblR3dWFKTHdDdk5iZFBCOFJWdHJqalhqRUR4OGx0TEhYUEY5emkrSnRBWXFSMmJQcUs1UEwwaE4zY0xkM0dHbkdOS3Jsc2dNNWJ6aS9Qam5TWXNPNVJ0dWFOUVYvUjFqeVJTOWtCVWtUMkxHSm9yY25YRlZMVmNlYU13L1FibUNQbGE2bXpmZlpkdFdOanVyYmI0amt4MzJERTNUaks1SmFNUFRkVjd6ek8zK3VjUk1TQ2pweEY5TXFZMEtMblRzMTBUTVNmQmNhNCt2dEF0S2ZIWE9kTG5UbDBTTTFVR0FhbldtWkhyYjJTK0NZMTdmOHYzenU0UzJieXA3dWhrZmFwZHVramxkR05HcjFXOTFiZlFWSTQzSnRDd3FXYVdJeE9XeXN1VGl2Y2wydHZpSDZyN0M3M2RNcDV3UmtiQzRHODN3Rk04bWh4endpa2o3U0NWVXhaMk96VDFobWp5Z2xNOS9ZUllvK1MrZktNNlNZVVRQSjV4d2drdmVQYWVqaXNtenJpNE5aZk4zajdubk5IbTlEK2RZaG5mNW94WDYzZi8zdlZYWmRyVXN6aWVySitlN3p6RlIvL0RyVi93ZU91KzdPZ3RJSnV6c0dydnR1S0tpS2x3Y1llYldyaUhlSDhCQUFELy93TUE5TGRQVVFBQUF3QUFBQUFBQVAvT0FESUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQT09Iik7Cn1dXT48L3N0eWxlPjxzdHlsZSB0eXBlPSJ0ZXh0L2NzcyI+PCFbQ0RBVEFbLnNoYXBlIHsKICBzaGFwZS1yZW5kZXJpbmc6IGdlb21ldHJpY1ByZWNpc2lvbjsKICBzdHJva2UtbGluZWpvaW46IHJvdW5kOwp9Ci5jb25uZWN0aW9uIHsKICBzdHJva2UtbGluZWNhcDogcm91bmQ7CiAgc3Ryb2tlLWxpbmVqb2luOiByb3VuZDsKfQouYmxlbmQgewogIG1peC1ibGVuZC1tb2RlOiBtdWx0aXBseTsKICBvcGFjaXR5OiAwLjU7Cn0KCgkJLmQyLTc0MjUyMjIwOCAuZmlsbC1OMXtmaWxsOiMwQTBGMjU7fQoJCS5kMi03NDI1MjIyMDggLmZpbGwtQjF7ZmlsbDojMEQzMkIyO30KCQkuZDItNzQyNTIyMjA4IC5maWxsLUI2e2ZpbGw6I0Y3RjhGRTt9CgkJLmQyLTc0MjUyMjIwOCAuc3Ryb2tlLUIxe3N0cm9rZTojMEQzMkIyO30KCQkuZDItNzQyNTIyMjA4IC5zdHJva2UtQjJ7c3Ryb2tlOiMwRDMyQjI7fS5hcHBlbmRpeCB0ZXh0LnRleHR7ZmlsbDojMEEwRjI1fS5tZHstLWNvbG9yLWZnLWRlZmF1bHQ6IzBBMEYyNTstLWNvbG9yLWZnLW11dGVkOiM2NzZDN0U7LS1jb2xvci1mZy1zdWJ0bGU6Izk0OTlBQjstLWNvbG9yLWNhbnZhcy1kZWZhdWx0OiNGRkZGRkY7LS1jb2xvci1jYW52YXMtc3VidGxlOiNFRUYxRjg7LS1jb2xvci1ib3JkZXItZGVmYXVsdDojMEQzMkIyOy0tY29sb3ItYm9yZGVyLW11dGVkOiMwRDMyQjI7LS1jb2xvci1uZXV0cmFsLW11dGVkOiNFRUYxRjg7LS1jb2xvci1hY2NlbnQtZmc6IzBEMzJCMjstLWNvbG9yLWFjY2VudC1lbXBoYXNpczojMEQzMkIyOy0tY29sb3ItYXR0ZW50aW9uLXN1YnRsZTojNjc2QzdFOy0tY29sb3ItZGFuZ2VyLWZnOnJlZDt9LmxpZ2h0LWNvZGV7ZGlzcGxheTogYmxvY2t9LmRhcmstY29kZXtkaXNwbGF5OiBub25lfUBtZWRpYSBzY3JlZW4gYW5kIChwcmVmZXJzLWNvbG9yLXNjaGVtZTpkYXJrKXsKCQkuZDItNzQyNTIyMjA4IC5maWxsLU4xe2ZpbGw6I0NERDZGNDt9CgkJLmQyLTc0MjUyMjIwOCAuZmlsbC1CMXtmaWxsOiNDQkE2Zjc7fQoJCS5kMi03NDI1MjIyMDggLmZpbGwtQjZ7ZmlsbDojMzEzMjQ0O30KCQkuZDItNzQyNTIyMjA4IC5zdHJva2UtQjF7c3Ryb2tlOiNDQkE2Zjc7fQoJCS5kMi03NDI1MjIyMDggLnN0cm9rZS1CMntzdHJva2U6I0NCQTZmNzt9LmFwcGVuZGl4IHRleHQudGV4dHtmaWxsOiNDREQ2RjR9Lm1key0tY29sb3ItZmctZGVmYXVsdDojQ0RENkY0Oy0tY29sb3ItZmctbXV0ZWQ6I0JBQzJERTstLWNvbG9yLWZnLXN1YnRsZTojQTZBREM4Oy0tY29sb3ItY2FudmFzLWRlZmF1bHQ6IzFFMUUyRTstLWNvbG9yLWNhbnZhcy1zdWJ0bGU6IzMxMzI0NDstLWNvbG9yLWJvcmRlci1kZWZhdWx0OiNDQkE2Zjc7LS1jb2xvci1ib3JkZXItbXV0ZWQ6I0NCQTZmNzstLWNvbG9yLW5ldXRyYWwtbXV0ZWQ6IzMxMzI0NDstLWNvbG9yLWFjY2VudC1mZzojQ0JBNmY3Oy0tY29sb3ItYWNjZW50LWVtcGhhc2lzOiNDQkE2Zjc7LS1jb2xvci1hdHRlbnRpb24tc3VidGxlOiNCQUMyREU7LS1jb2xvci1kYW5nZXItZmc6cmVkO30ubGlnaHQtY29kZXtkaXNwbGF5OiBub25lfS5kYXJrLWNvZGV7ZGlzcGxheTogYmxvY2t9fV1dPjwvc3R5bGU+PGcgY2xhc3M9ImMzUmhkSFZ6IHJlc291cmNlIj48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSIxMiIgeT0iMjA5IiB3aWR0aD0iMTIxIiBoZWlnaHQ9IjI0MCIgcng9IjYiIHN0cm9rZT0iIzFBNzNFOCIgZmlsbD0iI0U4RjBGRSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iNzIuNSIgeT0iMzI3IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPjx0c3BhbiB4PSI3Mi41IiBkeT0iMCI+b2MgZ2V0IHBvZHM8L3RzcGFuPjx0c3BhbiB4PSI3Mi41IiBkeT0iMTciPlNUQVRVUz88L3RzcGFuPjwvdGV4dD48L2c+PGcgY2xhc3M9ImNHVnVaR2x1Wnc9PSBjb21wb25lbnQiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjM0OCIgeT0iMjciIHdpZHRoPSI5OSIgaGVpZ2h0PSI2NCIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjYiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjM5Ny41IiB5PSI2NC41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPlBlbmRpbmc8L3RleHQ+PC9nPjxnIGNsYXNzPSJhVzFoWjJVPSBjb21wb25lbnQiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjMxNSIgeT0iMTMzIiB3aWR0aD0iMTY1IiBoZWlnaHQ9Ijc5IiByeD0iNiIgY2xhc3M9IiBzdHJva2UtQjEgZmlsbC1CNiIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgLz48L2c+PHRleHQgeD0iMzk3LjUiIHk9IjE3MC41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPjx0c3BhbiB4PSIzOTcuNSIgZHk9IjAiPkVyckltYWdlUHVsbCAvPC90c3Bhbj48dHNwYW4geD0iMzk3LjUiIGR5PSIxNyI+SW1hZ2VQdWxsQmFja09mZjwvdHNwYW4+PC90ZXh0PjwvZz48ZyBjbGFzcz0iWTI5dVptbG4gY29tcG9uZW50Ij48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSIzMTgiIHk9IjI0MCIgd2lkdGg9IjE2MCIgaGVpZ2h0PSI3OSIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjYiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjM5OCIgeT0iMjc3LjUiIGNsYXNzPSJ0ZXh0LWJvbGQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTVweCI+PHRzcGFuIHg9IjM5OCIgZHk9IjAiPkNyZWF0ZUNvbnRhaW5lci08L3RzcGFuPjx0c3BhbiB4PSIzOTgiIGR5PSIxNyI+Q29uZmlnRXJyb3I8L3RzcGFuPjwvdGV4dD48L2c+PGcgY2xhc3M9IlkzSmhjMmc9IGNvbXBvbmVudCI+PGcgY2xhc3M9InNoYXBlIiA+PHJlY3QgeD0iMzEzIiB5PSIzNDYiIHdpZHRoPSIxNzAiIGhlaWdodD0iNjQiIHJ4PSI2IiBjbGFzcz0iIHN0cm9rZS1CMSBmaWxsLUI2IiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiAvPjwvZz48dGV4dCB4PSIzOTgiIHk9IjM4My41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPkNyYXNoTG9vcEJhY2tPZmY8L3RleHQ+PC9nPjxnIGNsYXNzPSJibTkwY21WaFpIaz0gY29tcG9uZW50Ij48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSIzMTgiIHk9IjQ0NSIgd2lkdGg9IjE1OSIgaGVpZ2h0PSI3OSIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjYiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjM5Ny41IiB5PSI0ODIuNSIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNXB4Ij48dHNwYW4geD0iMzk3LjUiIGR5PSIwIj5SdW5uaW5nLDwvdHNwYW4+PHRzcGFuIHg9IjM5Ny41IiBkeT0iMTciPmFiZXIgbmljaHQgUkVBRFk8L3RzcGFuPjwvdGV4dD48L2c+PGcgY2xhc3M9ImIyOXQgY29tcG9uZW50Ij48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSIzMTYiIHk9IjU1OSIgd2lkdGg9IjE2MyIgaGVpZ2h0PSI3OSIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIxIGZpbGwtQjYiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIC8+PC9nPjx0ZXh0IHg9IjM5Ny41IiB5PSI1OTYuNSIgY2xhc3M9InRleHQtYm9sZCBmaWxsLU4xIiBzdHlsZT0idGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtc2l6ZToxNXB4Ij48dHNwYW4geD0iMzk3LjUiIGR5PSIwIj5PT01LaWxsZWQ8L3RzcGFuPjx0c3BhbiB4PSIzOTcuNSIgZHk9IjE3Ij4oUmVzdGFydHMgc3RlaWdlbik8L3RzcGFuPjwvdGV4dD48L2c+PGcgY2xhc3M9IlpDMXdaVzVrYVc1biBjb21wb25lbnQiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjU1MyIgeT0iMTIiIHdpZHRoPSIyNTMiIGhlaWdodD0iOTQiIHJ4PSI2IiBjbGFzcz0iIHN0cm9rZS1CMiBmaWxsLUI2IiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7c3Ryb2tlLWRhc2hhcnJheTo4LjAwMDAwMCw3Ljg5MjUxMTsiIC8+PC9nPjx0ZXh0IHg9IjY3OS41IiB5PSI0OS41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPjx0c3BhbiB4PSI2NzkuNSIgZHk9IjAiPm9jIGRlc2NyaWJlIHBvZDwvdHNwYW4+PHRzcGFuIHg9IjY3OS41IiBkeT0iMTYuMzMzMzMzIj7ihpIgRXZlbnRzOiB6dSB3ZW5pZyBSZXNzb3VyY2VuLDwvdHNwYW4+PHRzcGFuIHg9IjY3OS41IiBkeT0iMTYuMzMzMzMzIj5QVkMgbmljaHQgZ2VidW5kZW4sIFF1b3RhPC90c3Bhbj48L3RleHQ+PC9nPjxnIGNsYXNzPSJaQzFwYldGblpRPT0gY29tcG9uZW50Ij48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSI1NTMiIHk9IjEyNiIgd2lkdGg9IjE3NyIgaGVpZ2h0PSI5NCIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIyIGZpbGwtQjYiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjtzdHJva2UtZGFzaGFycmF5OjguMDAwMDAwLDcuODkyNTExOyIgLz48L2c+PHRleHQgeD0iNjQxLjUiIHk9IjE2My41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPjx0c3BhbiB4PSI2NDEuNSIgZHk9IjAiPm9jIGRlc2NyaWJlIHBvZDwvdHNwYW4+PHRzcGFuIHg9IjY0MS41IiBkeT0iMTYuMzMzMzMzIj7ihpIgSW1hZ2UtTmFtZS9UYWcsPC90c3Bhbj48dHNwYW4geD0iNjQxLjUiIGR5PSIxNi4zMzMzMzMiPlB1bGwtU2VjcmV0PC90c3Bhbj48L3RleHQ+PC9nPjxnIGNsYXNzPSJaQzFqYjI1bWFXYz0gY29tcG9uZW50Ij48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSI1NTMiIHk9IjI0MCIgd2lkdGg9IjIzOSIgaGVpZ2h0PSI3OSIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIyIGZpbGwtQjYiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjtzdHJva2UtZGFzaGFycmF5OjguMDAwMDAwLDcuODkyNTExOyIgLz48L2c+PHRleHQgeD0iNjcyLjUiIHk9IjI3Ny41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPjx0c3BhbiB4PSI2NzIuNSIgZHk9IjAiPm9jIGRlc2NyaWJlIHBvZDwvdHNwYW4+PHRzcGFuIHg9IjY3Mi41IiBkeT0iMTciPuKGkiBmZWhsZW5kZSBDb25maWdNYXAvU2VjcmV0PC90c3Bhbj48L3RleHQ+PC9nPjxnIGNsYXNzPSJaQzFqY21GemFBPT0gY29tcG9uZW50Ij48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSI1NTMiIHk9IjMzOSIgd2lkdGg9IjI2NyIgaGVpZ2h0PSI3OSIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIyIGZpbGwtQjYiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjtzdHJva2UtZGFzaGFycmF5OjguMDAwMDAwLDcuODkyNTExOyIgLz48L2c+PHRleHQgeD0iNjg2LjUiIHk9IjM3Ni41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPjx0c3BhbiB4PSI2ODYuNSIgZHk9IjAiPm9jIGxvZ3MgLS1wcmV2aW91czwvdHNwYW4+PHRzcGFuIHg9IjY4Ni41IiBkeT0iMTciPuKGkiBGZWhsZXJtZWxkdW5nIGRlciBBbndlbmR1bmc8L3RzcGFuPjwvdGV4dD48L2c+PGcgY2xhc3M9IlpDMXViM1J5WldGa2VRPT0gY29tcG9uZW50Ij48ZyBjbGFzcz0ic2hhcGUiID48cmVjdCB4PSI1NTMiIHk9IjQzOCIgd2lkdGg9IjE3NSIgaGVpZ2h0PSI5NCIgcng9IjYiIGNsYXNzPSIgc3Ryb2tlLUIyIGZpbGwtQjYiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjtzdHJva2UtZGFzaGFycmF5OjguMDAwMDAwLDcuODkyNTExOyIgLz48L2c+PHRleHQgeD0iNjQwLjUiIHk9IjQ3NS41IiBjbGFzcz0idGV4dC1ib2xkIGZpbGwtTjEiIHN0eWxlPSJ0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1zaXplOjE1cHgiPjx0c3BhbiB4PSI2NDAuNSIgZHk9IjAiPm9jIGRlc2NyaWJlIHBvZDwvdHNwYW4+PHRzcGFuIHg9IjY0MC41IiBkeT0iMTYuMzMzMzMzIj7ihpIgUmVhZGluZXNzLVByb2JlLDwvdHNwYW4+PHRzcGFuIHg9IjY0MC41IiBkeT0iMTYuMzMzMzMzIj5vYyBsb2dzPC90c3Bhbj48L3RleHQ+PC9nPjxnIGNsYXNzPSJaQzF2YjIwPSBjb21wb25lbnQiPjxnIGNsYXNzPSJzaGFwZSIgPjxyZWN0IHg9IjU1MyIgeT0iNTUyIiB3aWR0aD0iMjA3IiBoZWlnaHQ9Ijk0IiByeD0iNiIgY2xhc3M9IiBzdHJva2UtQjIgZmlsbC1CNiIgc3R5bGU9InN0cm9rZS13aWR0aDoyO3N0cm9rZS1kYXNoYXJyYXk6OC4wMDAwMDAsNy44OTI1MTE7IiAvPjwvZz48dGV4dCB4PSI2NTYuNSIgeT0iNTg5LjUiIGNsYXNzPSJ0ZXh0LWJvbGQgZmlsbC1OMSIgc3R5bGU9InRleHQtYW5jaG9yOm1pZGRsZTtmb250LXNpemU6MTVweCI+PHRzcGFuIHg9IjY1Ni41IiBkeT0iMCI+b2MgZGVzY3JpYmUgcG9kPC90c3Bhbj48dHNwYW4geD0iNjU2LjUiIGR5PSIxNi4zMzMzMzMiPuKGkiBMYXN0IFN0YXRlOiBPT01LaWxsZWQsPC90c3Bhbj48dHNwYW4geD0iNjU2LjUiIGR5PSIxNi4zMzMzMzMiPkxpbWl0cyBlcmjDtmhlbjwvdHNwYW4+PC90ZXh0PjwvZz48ZyBjbGFzcz0iS0hOMFlYUjFjeUF0Sm1kME95QndaVzVrYVc1bktWc3dYUT09Ij48bWFya2VyIGlkPSJtay1kMi03NDI1MjIyMDgtMzQ4ODM3ODEzNCIgbWFya2VyV2lkdGg9IjEwIiBtYXJrZXJIZWlnaHQ9IjEyIiByZWZYPSI3IiByZWZZPSI2IiB2aWV3Qm94PSIwIDAgMTAgMTIiIG9yaWVudD0iYXV0byIgbWFya2VyVW5pdHM9InVzZXJTcGFjZU9uVXNlIj4gPHBvbHlnb24gcG9pbnRzPSIwLDAgMTAsNiAwLDEyIiBjbGFzcz0iY29ubmVjdGlvbiBmaWxsLUIxIiBzdHJva2Utd2lkdGg9IjIiIC8+IDwvbWFya2VyPjxwYXRoIGQ9Ik0gMTM1IDI0My4yODUwMDQgTCAxNjMgMjQzLjI4NTAwNCBTIDE3MyAyNDMuMjg1MDA0IDE3MyAyMzMuMjg1MDA0IEwgMTczIDY5IFMgMTczIDU5IDE4MyA1OSBMIDM0NSA1OSIgZmlsbD0ibm9uZSIgY2xhc3M9ImNvbm5lY3Rpb24gc3Ryb2tlLUIxIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiBtYXJrZXItZW5kPSJ1cmwoI21rLWQyLTc0MjUyMjIwOC0zNDg4Mzc4MTM0KSIgbWFzaz0idXJsKCNkMi03NDI1MjIyMDgpIiAvPjwvZz48ZyBjbGFzcz0iS0hCbGJtUnBibWNnTFNabmREc2daQzF3Wlc1a2FXNW5LVnN3WFE9PSI+PHBhdGggZD0iTSA0NDkgNTkgTCA1NDkgNTkiIGZpbGw9Im5vbmUiIGNsYXNzPSJjb25uZWN0aW9uIHN0cm9rZS1CMSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgbWFya2VyLWVuZD0idXJsKCNtay1kMi03NDI1MjIyMDgtMzQ4ODM3ODEzNCkiIG1hc2s9InVybCgjZDItNzQyNTIyMjA4KSIgLz48L2c+PGcgY2xhc3M9IktITjBZWFIxY3lBdEptZDBPeUJwYldGblpTbGJNRjA9Ij48cGF0aCBkPSJNIDEzNSAyNzcuNTcxMDE0IEwgMjEzIDI3Ny41NzEwMTQgUyAyMjMgMjc3LjU3MTAxNCAyMjMgMjY3LjU3MTAxNCBMIDIyMyAxODMgUyAyMjMgMTczIDIzMyAxNzMgTCAzMTIgMTczIiBmaWxsPSJub25lIiBjbGFzcz0iY29ubmVjdGlvbiBzdHJva2UtQjEiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIG1hcmtlci1lbmQ9InVybCgjbWstZDItNzQyNTIyMjA4LTM0ODgzNzgxMzQpIiBtYXNrPSJ1cmwoI2QyLTc0MjUyMjIwOCkiIC8+PC9nPjxnIGNsYXNzPSJLR2x0WVdkbElDMG1aM1E3SUdRdGFXMWhaMlVwV3pCZCI+PHBhdGggZD0iTSA0ODIgMTczIEwgNTQ5IDE3MyIgZmlsbD0ibm9uZSIgY2xhc3M9ImNvbm5lY3Rpb24gc3Ryb2tlLUIxIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiBtYXJrZXItZW5kPSJ1cmwoI21rLWQyLTc0MjUyMjIwOC0zNDg4Mzc4MTM0KSIgbWFzaz0idXJsKCNkMi03NDI1MjIyMDgpIiAvPjwvZz48ZyBjbGFzcz0iS0hOMFlYUjFjeUF0Sm1kME95QmpiMjVtYVdjcFd6QmQiPjxwYXRoIGQ9Ik0gMTM1IDMxMS44NTY5OTUgTCAyNjMgMzExLjg1Njk5NSBTIDI3MyAzMTEuODU2OTk1IDI3MyAzMDEuODU2OTk1IEwgMjczIDI4OS41IFMgMjczIDI3OS41IDI4MyAyNzkuNSBMIDMxNCAyNzkuNSIgZmlsbD0ibm9uZSIgY2xhc3M9ImNvbm5lY3Rpb24gc3Ryb2tlLUIxIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiBtYXJrZXItZW5kPSJ1cmwoI21rLWQyLTc0MjUyMjIwOC0zNDg4Mzc4MTM0KSIgbWFzaz0idXJsKCNkMi03NDI1MjIyMDgpIiAvPjwvZz48ZyBjbGFzcz0iS0dOdmJtWnBaeUF0Sm1kME95QmtMV052Ym1acFp5bGJNRjA9Ij48cGF0aCBkPSJNIDQ4MCAyNzkuNSBMIDU0OSAyNzkuNSIgZmlsbD0ibm9uZSIgY2xhc3M9ImNvbm5lY3Rpb24gc3Ryb2tlLUIxIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiBtYXJrZXItZW5kPSJ1cmwoI21rLWQyLTc0MjUyMjIwOC0zNDg4Mzc4MTM0KSIgbWFzaz0idXJsKCNkMi03NDI1MjIyMDgpIiAvPjwvZz48ZyBjbGFzcz0iS0hOMFlYUjFjeUF0Sm1kME95QmpjbUZ6YUNsYk1GMD0iPjxwYXRoIGQ9Ik0gMTM1IDM0Ni4xNDE5OTggTCAyNjMgMzQ2LjE0MTk5OCBTIDI3MyAzNDYuMTQxOTk4IDI3MyAzNTYuMTQxOTk4IEwgMjczIDM2OC41IFMgMjczIDM3OC41IDI4MyAzNzguNSBMIDMwOSAzNzguNSIgZmlsbD0ibm9uZSIgY2xhc3M9ImNvbm5lY3Rpb24gc3Ryb2tlLUIxIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOjI7IiBtYXJrZXItZW5kPSJ1cmwoI21rLWQyLTc0MjUyMjIwOC0zNDg4Mzc4MTM0KSIgbWFzaz0idXJsKCNkMi03NDI1MjIyMDgpIiAvPjwvZz48ZyBjbGFzcz0iS0dOeVlYTm9JQzBtWjNRN0lHUXRZM0poYzJncFd6QmQiPjxwYXRoIGQ9Ik0gNDg1IDM3OC41IEwgNTQ5IDM3OC41IiBmaWxsPSJub25lIiBjbGFzcz0iY29ubmVjdGlvbiBzdHJva2UtQjEiIHN0eWxlPSJzdHJva2Utd2lkdGg6MjsiIG1hcmtlci1lbmQ9InVybCgjbWstZDItNzQyNTIyMjA4LTM0ODgzNzgxMzQpIiBtYXNrPSJ1cmwoI2QyLTc0MjUyMjIwOCkiIC8+PC9nPjxnIGNsYXNzPSJLSE4wWVhSMWN5QXRKbWQwT3lCdWIzUnlaV0ZrZVNsYk1GMD0iPjxwYXRoIGQ9Ik0gMTM1IDM4MC40MjgwMDkgTCAyMTMgMzgwLjQyODAwOSBTIDIyMyAzODAuNDI4MDA5IDIyMyAzOTAuNDI4MDA5IEwgMjIzIDQ3NSBTIDIyMyA0ODUgMjMzIDQ4NSBMIDMxNSA0ODUiIGZpbGw9Im5vbmUiIGNsYXNzPSJjb25uZWN0aW9uIHN0cm9rZS1CMSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgbWFya2VyLWVuZD0idXJsKCNtay1kMi03NDI1MjIyMDgtMzQ4ODM3ODEzNCkiIG1hc2s9InVybCgjZDItNzQyNTIyMjA4KSIgLz48L2c+PGcgY2xhc3M9IktHNXZkSEpsWVdSNUlDMG1aM1E3SUdRdGJtOTBjbVZoWkhrcFd6QmQiPjxwYXRoIGQ9Ik0gNDc5IDQ4NSBMIDU0OSA0ODUiIGZpbGw9Im5vbmUiIGNsYXNzPSJjb25uZWN0aW9uIHN0cm9rZS1CMSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgbWFya2VyLWVuZD0idXJsKCNtay1kMi03NDI1MjIyMDgtMzQ4ODM3ODEzNCkiIG1hc2s9InVybCgjZDItNzQyNTIyMjA4KSIgLz48L2c+PGcgY2xhc3M9IktITjBZWFIxY3lBdEptZDBPeUJ2YjIwcFd6QmQiPjxwYXRoIGQ9Ik0gMTM1IDQxNC43MTM5ODkgTCAxNjMgNDE0LjcxMzk4OSBTIDE3MyA0MTQuNzEzOTg5IDE3MyA0MjQuNzEzOTg5IEwgMTczIDU4OSBTIDE3MyA1OTkgMTgzIDU5OSBMIDMxMyA1OTkiIGZpbGw9Im5vbmUiIGNsYXNzPSJjb25uZWN0aW9uIHN0cm9rZS1CMSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgbWFya2VyLWVuZD0idXJsKCNtay1kMi03NDI1MjIyMDgtMzQ4ODM3ODEzNCkiIG1hc2s9InVybCgjZDItNzQyNTIyMjA4KSIgLz48L2c+PGcgY2xhc3M9IktHOXZiU0F0Sm1kME95QmtMVzl2YlNsYk1GMD0iPjxwYXRoIGQ9Ik0gNDgxIDU5OSBMIDU0OSA1OTkiIGZpbGw9Im5vbmUiIGNsYXNzPSJjb25uZWN0aW9uIHN0cm9rZS1CMSIgc3R5bGU9InN0cm9rZS13aWR0aDoyOyIgbWFya2VyLWVuZD0idXJsKCNtay1kMi03NDI1MjIyMDgtMzQ4ODM3ODEzNCkiIG1hc2s9InVybCgjZDItNzQyNTIyMjA4KSIgLz48L2c+PG1hc2sgaWQ9ImQyLTc0MjUyMjIwOCIgbWFza1VuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeD0iLTkiIHk9Ii05IiB3aWR0aD0iODUwIiBoZWlnaHQ9IjY3NiI+CjxyZWN0IHg9Ii05IiB5PSItOSIgd2lkdGg9Ijg1MCIgaGVpZ2h0PSI2NzYiIGZpbGw9IndoaXRlIj48L3JlY3Q+Cgo8L21hc2s+PC9zdmc+PC9zdmc+Cg==" alt="Vom Pod-Status zum passenden Diagnose-Befehl" /></p>
+<blockquote>
+<p>Die fehlerhaften Deployments tragen das Label
+<code>app: demo-debug</code> (nicht <code>app: demo</code>), damit sie
+den Service der Demo-App nicht stören. Am Ende des Kapitels werden sie
+wieder gelöscht.</p>
+</blockquote>
+<hr />
+<h2 id="fehlerbild-1-image-nicht-gefunden">Fehlerbild 1: Image nicht
+gefunden</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 20-debugging/fehler-image.yaml</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> wait <span class="at">--for</span><span class="op">=</span>jsonpath=<span class="st">&#39;{.status.containerStatuses[0].state.waiting.reason}&#39;</span>=ImagePullBackOff pod <span class="at">-l</span> fehler=image <span class="at">--timeout</span><span class="op">=</span>120s</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># STATUS: ErrImagePull bzw. ImagePullBackOff</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pods <span class="at">-l</span> fehler=image</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Ursache steht in den Events am Ende von describe</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> describe pod <span class="at">-l</span> fehler=image <span class="kw">|</span> <span class="fu">tail</span> <span class="at">-8</span></span></code></pre></div>
+<p><strong>Typische Ursachen:</strong> Tippfehler in Image-Name oder
+Tag, Tag existiert (noch) nicht, privates Repository ohne Pull-Secret,
+Registry vom Cluster aus nicht erreichbar.</p>
+<hr />
+<h2 id="fehlerbild-2-anwendung-stürzt-ab">Fehlerbild 2: Anwendung stürzt
+ab</h2>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 20-debugging/fehler-crash.yaml</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> wait <span class="at">--for</span><span class="op">=</span>jsonpath=<span class="st">&#39;{.status.containerStatuses[0].state.waiting.reason}&#39;</span>=CrashLoopBackOff pod <span class="at">-l</span> fehler=crash <span class="at">--timeout</span><span class="op">=</span>120s</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># STATUS: CrashLoopBackOff, RESTARTS steigen</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pods <span class="at">-l</span> fehler=crash</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Die Fehlermeldung steht im Log des letzten (abgestürzten) Containers</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> logs deployment/demo-fehler-crash <span class="at">--previous</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Exit-Code des letzten Laufs</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pod <span class="at">-l</span> fehler=crash <span class="at">-o</span> jsonpath=<span class="st">&#39;{.items[0].status.containerStatuses[0].lastState.terminated.exitCode}{&quot;\n&quot;}&#39;</span></span></code></pre></div>
+<p>Zwischen den Neustarts wartet das kubelet immer länger (10 s, 20 s,
+40 s … bis 5 Minuten) – daher &quot;BackOff&quot;.</p>
+<h3 id="oc-debug-den-pod-mit-einer-shell-statt-der-anwendung-starten"><code>oc debug</code>:
+den Pod mit einer Shell statt der Anwendung starten</h3>
+<p>Ein abstürzender Container lässt sich nicht mit <code>oc exec</code>
+untersuchen – er läuft ja nicht. <code>oc debug</code> startet eine
+<strong>Kopie</strong> des Pods (gleiches Image, gleiche Umgebung,
+gleiche Volumes), aber mit einer Shell statt des eigentlichen
+Befehls:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Interaktiv: Shell in der Kopie (Beenden mit exit, die Kopie wird gelöscht)</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> debug deployment/demo-fehler-crash   <span class="co"># ❗ interaktiv</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Einzelne Befehle in der Kopie ausführen: Ist DB_URL gesetzt?</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> debug deployment/demo-fehler-crash <span class="at">--</span> sh <span class="at">-c</span> <span class="st">&#39;echo &quot;DB_URL=${DB_URL:-&lt;nicht gesetzt&gt;}&quot;&#39;</span></span></code></pre></div>
+<hr />
+<h2 id="fehlerbild-3-configmap-fehlt">Fehlerbild 3: ConfigMap fehlt</h2>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 20-debugging/fehler-config.yaml</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> wait <span class="at">--for</span><span class="op">=</span>jsonpath=<span class="st">&#39;{.status.containerStatuses[0].state.waiting.reason}&#39;</span>=CreateContainerConfigError pod <span class="at">-l</span> fehler=config <span class="at">--timeout</span><span class="op">=</span>120s</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># STATUS: CreateContainerConfigError – der Container wird gar nicht erst gestartet</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pods <span class="at">-l</span> fehler=config</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> describe pod <span class="at">-l</span> fehler=config <span class="kw">|</span> <span class="fu">grep</span> <span class="at">-i</span> <span class="st">&#39;configmap&#39;</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Behebung: ConfigMap anlegen – das kubelet startet den Container dann von selbst</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> create configmap datenbank-config <span class="at">--from-literal</span><span class="op">=</span>url=jdbc:postgresql://db:5432/demo</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> label configmap datenbank-config app=demo-debug</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> wait <span class="at">--for</span><span class="op">=</span>condition=Ready pod <span class="at">-l</span> fehler=config <span class="at">--timeout</span><span class="op">=</span>120s</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pods <span class="at">-l</span> fehler=config</span></code></pre></div>
+<hr />
+<h2 id="fehlerbild-4-speicherlimit-überschritten">Fehlerbild 4:
+Speicherlimit überschritten</h2>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 20-debugging/fehler-oom.yaml</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> wait <span class="at">--for</span><span class="op">=</span>jsonpath=<span class="st">&#39;{.status.containerStatuses[0].lastState.terminated.reason}&#39;</span>=OOMKilled pod <span class="at">-l</span> fehler=oom <span class="at">--timeout</span><span class="op">=</span>120s</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># RESTARTS steigen, STATUS wechselt zwischen OOMKilled, Running und CrashLoopBackOff</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get pods <span class="at">-l</span> fehler=oom</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co"># &quot;Last State: Terminated, Reason: OOMKilled, Exit Code: 137&quot;</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> describe pod <span class="at">-l</span> fehler=oom <span class="kw">|</span> <span class="fu">grep</span> <span class="at">-A4</span> <span class="st">&#39;Last State&#39;</span></span></code></pre></div>
+<p>Exit-Code <strong>137</strong> = 128 + 9 (SIGKILL): Der Kernel hat
+den Prozess beendet, weil der Container sein Memory-Limit überschritten
+hat (Kapitel 8). Abhilfe: Limit erhöhen – oder bei Java die Heap-Größe
+passend zum Limit einstellen.</p>
+<hr />
+<h2 id="werkzeuge">Werkzeuge</h2>
+<h3 id="logs-und-events">Logs und Events</h3>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Die Demo-App als &quot;gesunde&quot; Referenz</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> apply <span class="at">-f</span> 05-automation/deployment.yaml</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> rollout status deployment/demo</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Logs aller Pods eines Deployments, mit Pod-Namen als Präfix</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> logs <span class="at">-l</span> app=demo <span class="at">--prefix</span> <span class="at">--tail</span><span class="op">=</span>5</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Nur die Logs der letzten 10 Minuten</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> logs deployment/demo <span class="at">--since</span><span class="op">=</span>10m</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Events des Projects, neueste zuletzt – oft der schnellste Weg zur Ursache</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get events <span class="at">--sort-by</span><span class="op">=</span>.lastTimestamp <span class="kw">|</span> <span class="fu">tail</span> <span class="at">-15</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Nur Warnungen</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> get events <span class="at">--field-selector</span> type=Warning</span></code></pre></div>
+<h3 id="debug-image-statt-anwendungs-image">Debug-Image statt
+Anwendungs-Image</h3>
+<p>Produktions-Images enthalten oft kaum Werkzeuge (in der Demo-App gibt
+es z. B. kein <code>ps</code>). <code>oc debug</code> kann die Kopie mit
+einem <strong>anderen Image</strong> starten – Umgebung und Volumes
+bleiben gleich:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> exec deployment/demo <span class="at">--</span> ps aux   <span class="co"># → &quot;ps: command not found&quot; (Fehler erwartet)</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Kopie mit Werkzeug-Image: ps funktioniert, der Hostname zeigt den Namen der Kopie (…-debug-…)</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> debug deployment/demo <span class="at">--image</span><span class="op">=</span>quay.io/ghilling/ubi-tools:10-latest <span class="at">--</span> sh <span class="at">-c</span> <span class="st">&#39;ps aux; echo &quot;Hostname: $HOSTNAME&quot;&#39;</span></span></code></pre></div>
+<p><code>ps</code> zeigt hier nur die Prozesse der Kopie – die laufende
+Anwendung sieht man so nicht. Dafür gibt es Ephemeral Containers.</p>
+<h3 id="ephemeral-containers">Ephemeral Containers</h3>
+<p>Ein <strong>Ephemeral Container</strong> wird einem
+<em>laufenden</em> Pod nachträglich hinzugefügt – mit eigenem Image,
+aber im selben Pod (gleiches Netzwerk, mit <code>--target</code> auch
+dieselben Prozesse). Anders als bei <code>oc debug</code> untersucht man
+also den echten Pod, nicht eine Kopie.</p>
+<p>❗ Benötigt das Recht <code>pods/ephemeralcontainers</code> (nicht in
+der Developer Sandbox):</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="va">POD</span><span class="op">=</span><span class="va">$(</span><span class="ex">oc</span> get pod <span class="at">-l</span> app=demo <span class="at">-o</span> jsonpath=<span class="st">&#39;{.items[0].metadata.name}&#39;</span><span class="va">)</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> debug <span class="at">-it</span> <span class="st">&quot;</span><span class="va">$POD</span><span class="st">&quot;</span> <span class="at">--image</span><span class="op">=</span>quay.io/ghilling/ubi-tools:10-latest <span class="at">--target</span><span class="op">=</span>demo <span class="at">--profile</span><span class="op">=</span>restricted <span class="at">--</span> sh</span></code></pre></div>
+<h3 id="metriken-und-logs-in-der-openshift-console">Metriken und Logs in
+der OpenShift-Console</h3>
+<p>In der Web-Console gibt es ohne weitere Werkzeuge:</p>
+<ul>
+<li><strong>Workloads → Pods → Pod → Metrics:</strong> CPU, Speicher,
+Netzwerk des Pods</li>
+<li><strong>Workloads → Pods → Pod → Logs / Events:</strong> wie
+<code>oc logs</code> bzw. Events</li>
+<li><strong>Observe → Dashboards / Metrics:</strong> Auslastung des
+Projects, eigene PromQL-Abfragen (z. B.
+<code>container_memory_working_set_bytes{namespace=&quot;&lt;project&gt;&quot;}</code>)</li>
+<li><strong>Observe → Alerts:</strong> vom Cluster gemeldete
+Probleme</li>
+</ul>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Dieselben Zahlen auf der Kommandozeile</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> adm top pods   <span class="co"># ❗ Metriken erst ca. 1 Minute nach dem Pod-Start verfügbar</span></span></code></pre></div>
+<hr />
+<h2 id="aufräumen">Aufräumen</h2>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> delete deployment,configmap <span class="at">-l</span> app=demo-debug</span></code></pre></div>
+<hr />
+<h2 id="manifeste-in-diesem-kapitel">Manifeste in diesem Kapitel</h2>
+<ul>
+<li><code>fehler-image.yaml</code> – Deployment mit nicht existierendem
+Image-Tag</li>
+<li><code>fehler-crash.yaml</code> – Deployment, dessen Container sofort
+mit Fehler endet</li>
+<li><code>fehler-config.yaml</code> – Deployment, das eine fehlende
+ConfigMap referenziert</li>
+<li><code>fehler-oom.yaml</code> – Deployment, das sein Memory-Limit
+überschreitet</li>
+</ul>
+<hr />
+<h2 id="weiterführende-links">Weiterführende Links</h2>
+<ul>
+<li><a href="https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/">Kubernetes:
+Debug Running Pods</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/">Kubernetes:
+Ephemeral Containers</a></li>
+<li><a href="https://kubernetes.io/docs/tasks/debug/debug-application/determine-reason-pod-failure/">Kubernetes:
+Determine the Reason for Pod Failure</a></li>
+<li><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/monitoring/index">OpenShift
+4.22: Monitoring</a></li>
+</ul>
+<p>Siehe auch <a href="../99-anhang/DOCUMENTATION.html">99-anhang/DOCUMENTATION.md</a>
+für die vollständige Liste.</p>
+<nav class="pager-bottom">
+  <a class="prev" href="../19-availability/README.html"><span>← Zurück</span>Kapitel 19: Verfügbarkeit – Rolling Updates, PodDisruptionBudget, Autoscaling</a>
+
+  <a class="up" href="../README.html#inhaltsverzeichnis"><span>↑ Übersicht</span>Inhaltsverzeichnis</a>
+
+  <a class="next" href="../21-quarkus/README.html"><span>Weiter →</span>Kapitel 21: Quarkus: Kurze Wiederholung</a>
+
+</nav>
+</main>
+</div>
+<script>
+// Kopier-Button für Codeblöcke
+document.querySelectorAll("pre").forEach(function (pre) {
+  var button = document.createElement("button");
+  button.className = "copy";
+  button.type = "button";
+  button.textContent = "Kopieren";
+  button.addEventListener("click", function () {
+    navigator.clipboard.writeText(pre.innerText).then(function () {
+      button.textContent = "Kopiert ✓";
+      setTimeout(function () { button.textContent = "Kopieren"; }, 1500);
+    });
+  });
+  pre.appendChild(button);
+});
+</script>
+</body>
+</html>

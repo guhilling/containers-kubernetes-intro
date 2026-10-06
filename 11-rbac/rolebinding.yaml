@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: demo-reader-binding
+  labels:
+    app: demo
+subjects:
+  - kind: ServiceAccount
+    name: demo-reader
+roleRef:
+  kind: Role
+  name: pod-and-configmap-reader
+  apiGroup: rbac.authorization.k8s.io

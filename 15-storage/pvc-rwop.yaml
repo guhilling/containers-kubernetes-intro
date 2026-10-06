@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: demo-rwop
+  labels:
+    app: demo-debug
+spec:
+  accessModes:
+    - ReadWriteOncePod      # nur EIN Pod im ganzen Cluster darf das Volume nutzen
+  resources:
+    requests:
+      storage: 1Gi

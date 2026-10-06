@@ -1,0 +1,22 @@
+...@../../tools/diagrams/style
+
+node: "CPU eines Nodes" {
+  class: group
+  grid-columns: 3
+  grid-gap: 0
+
+  request: "Request\nreserviert, garantiert" {
+    class: component
+    width: 160
+    style.fill: "#C8E6C9"
+  }
+  burst: "bis zum Limit\nnutzbar, wenn frei" {
+    class: component
+    width: 220
+    style.fill: "#FFF3C4"
+  }
+  rest: "für andere Pods" {
+    class: component
+    width: 320
+  }
+}

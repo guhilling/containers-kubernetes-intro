@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: load
+  labels:
+    app: demo-job
+spec:
+  parallelism: 3
+  completions: 3
+  activeDeadlineSeconds: 240      # Last für höchstens 4 Minuten
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: demo-job
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: load
+          image: quay.io/ghilling/ubi-tools:10-latest
+          command: ["sh", "-c", "end=$((SECONDS + 200)); while [ $SECONDS -lt $end ]; do curl -s -o /dev/null http://demo:8080/; done"]
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "500m"
+              memory: "128Mi"
