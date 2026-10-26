@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  containers:
+    - name: demo
+      image: quay.io/ghilling/quarkus-demo:1.0
+      ports:
+        - containerPort: 8080
+      # restricted-v2 SCC: kein root, read-only rootfs
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+        capabilities:
+          drop:
+            - ALL

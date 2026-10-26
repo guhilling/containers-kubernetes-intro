@@ -1,0 +1,14 @@
+...@../../tools/diagrams/style
+
+direction: right
+
+available: Available {class: component}
+bound: Bound {class: component}
+released: Released {class: component}
+delete: "gelöscht\n(Reclaim Policy: Delete)" {class: component; style.stroke-dash: 4}
+retain: "bleibt erhalten\n(Reclaim Policy: Retain)" {class: component; style.stroke-dash: 4}
+
+available -> bound: Bind an PVC
+bound -> released: PVC gelöscht
+released -> delete
+released -> retain

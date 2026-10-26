@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:
+        app: demo
+    spec:
+      containers:
+        - name: demo
+          image: quay.io/ghilling/quarkus-demo:1.0
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DEMO_HTML_DIR
+              value: /var/demo/html
+            - name: QUARKUS_PROFILE
+              value: production
+            - name: DEMO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: demo-secret
+                  key: demo-key
+          volumeMounts:
+            - name: html-content
+              mountPath: /var/demo/html
+              readOnly: true
+          resources: {}
+      volumes:
+        - name: html-content
+          configMap:
+            name: html-content

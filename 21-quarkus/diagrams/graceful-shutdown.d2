@@ -1,0 +1,15 @@
+...@../../tools/diagrams/style
+
+shutdown: "" {
+  shape: sequence_diagram
+  kubelet: kubelet
+  app: Quarkus-Anwendung
+  svc: Service / Endpoints
+
+  kubelet -> app: SIGTERM
+  kubelet -> svc: Pod wird aus den Endpoints entfernt
+  app -> app: "/q/health/ready → DOWN,\nnimmt aber noch Anfragen an\n(shutdown.delay = 5 s)"
+  app -> app: "laufende Anfragen abschließen\n(shutdown.timeout = 10 s)"
+  app -> kubelet: Prozess endet
+  kubelet -> app: "SIGKILL – nur falls nach\nterminationGracePeriodSeconds\nnoch nicht beendet" {style.stroke-dash: 4}
+}

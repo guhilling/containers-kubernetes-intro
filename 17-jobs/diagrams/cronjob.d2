@@ -1,0 +1,22 @@
+...@../../tools/diagrams/style
+
+direction: right
+
+cronjob: "CronJob\n(Zeitplan)" {class: resource}
+jobs: "Jobs (einer je Zeitpunkt)" {
+  class: group
+  job1: "Job 10:00" {class: resource}
+  job2: "Job 10:02" {class: resource}
+}
+pods: "Pods" {
+  class: group
+  pod1: "Pod\n✓ Completed" {class: component}
+  pod2a: "Pod\n✗ Error" {class: component; style.stroke-dash: 4}
+  pod2b: "Pod (Wiederholung)\n✓ Completed" {class: component}
+}
+
+cronjob -> jobs.job1: erzeugt
+cronjob -> jobs.job2: erzeugt
+jobs.job1 -> pods.pod1
+jobs.job2 -> pods.pod2a
+jobs.job2 -> pods.pod2b: "Wiederholung (backoffLimit)"

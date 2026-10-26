@@ -1,0 +1,26 @@
+...@../../tools/diagrams/style
+
+direction: right
+
+status: "oc get pods\nSTATUS?" {class: resource}
+
+pending: "Pending" {class: component}
+image: "ErrImagePull /\nImagePullBackOff" {class: component}
+config: "CreateContainer-\nConfigError" {class: component}
+crash: "CrashLoopBackOff" {class: component}
+notready: "Running,\naber nicht READY" {class: component}
+oom: "OOMKilled\n(Restarts steigen)" {class: component}
+
+d-pending: "oc describe pod\n→ Events: zu wenig Ressourcen,\nPVC nicht gebunden, Quota" {class: component; style.stroke-dash: 4}
+d-image: "oc describe pod\n→ Image-Name/Tag,\nPull-Secret" {class: component; style.stroke-dash: 4}
+d-config: "oc describe pod\n→ fehlende ConfigMap/Secret" {class: component; style.stroke-dash: 4}
+d-crash: "oc logs --previous\n→ Fehlermeldung der Anwendung" {class: component; style.stroke-dash: 4}
+d-notready: "oc describe pod\n→ Readiness-Probe,\noc logs" {class: component; style.stroke-dash: 4}
+d-oom: "oc describe pod\n→ Last State: OOMKilled,\nLimits erhöhen" {class: component; style.stroke-dash: 4}
+
+status -> pending -> d-pending
+status -> image -> d-image
+status -> config -> d-config
+status -> crash -> d-crash
+status -> notready -> d-notready
+status -> oom -> d-oom

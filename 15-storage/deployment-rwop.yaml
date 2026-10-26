@@ -1,0 +1,36 @@
+# Zwei Replicas wollen dasselbe RWOP-Volume nutzen – nur eine darf.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-rwop
+  labels:
+    app: demo-debug
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: demo-debug
+      volume: rwop
+  template:
+    metadata:
+      labels:
+        app: demo-debug
+        volume: rwop
+    spec:
+      containers:
+        - name: demo
+          image: quay.io/ghilling/quarkus-demo:1.0
+          volumeMounts:
+            - name: data
+              mountPath: /var/demo/data
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: demo-rwop

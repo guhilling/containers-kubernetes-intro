@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-config
+  labels:
+    app: demo
+data:
+  # Wird als /app/config/application.properties gemountet – Quarkus liest diese Datei
+  # beim Start zusätzlich zur application.properties im Image.
+  application.properties: |
+    demo.message=Hallo aus der ConfigMap

@@ -1,0 +1,22 @@
+# Fehlerbild 1: Image existiert nicht → ErrImagePull / ImagePullBackOff
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-fehler-image
+  labels:
+    app: demo-debug
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-debug
+      fehler: image
+  template:
+    metadata:
+      labels:
+        app: demo-debug
+        fehler: image
+    spec:
+      containers:
+        - name: demo
+          image: quay.io/ghilling/quarkus-demo:gibt-es-nicht

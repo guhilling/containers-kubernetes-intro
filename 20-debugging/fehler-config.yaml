@@ -1,0 +1,28 @@
+# Fehlerbild 3: referenzierte ConfigMap fehlt → CreateContainerConfigError
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-fehler-config
+  labels:
+    app: demo-debug
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-debug
+      fehler: config
+  template:
+    metadata:
+      labels:
+        app: demo-debug
+        fehler: config
+    spec:
+      containers:
+        - name: demo
+          image: quay.io/ghilling/quarkus-demo:1.0
+          env:
+            - name: DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: datenbank-config     # diese ConfigMap gibt es nicht
+                  key: url

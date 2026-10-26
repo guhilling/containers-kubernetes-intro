@@ -1,0 +1,21 @@
+...@../../tools/diagrams/style
+
+stack: "" {
+  grid-rows: 4
+  grid-gap: 12
+  style.stroke: transparent
+  style.fill: transparent
+
+  containers: "" {
+    grid-columns: 3
+    grid-gap: 12
+    style.stroke: transparent
+    style.fill: transparent
+    c1: "Container\nApp + Libs" {class: resource; width: 180}
+    c2: "Container\nApp + Libs" {class: resource; width: 180}
+    c3: "Container\nApp + Libs" {class: resource; width: 180}
+  }
+  engine: "Container Engine (z. B. Podman, CRI-O)" {class: component; width: 564}
+  kernel: "Linux Kernel – gemeinsam genutzt (Namespaces, cgroups)" {class: component; width: 564}
+  hardware: "Hardware / VM" {class: component; width: 564}
+}

@@ -1,0 +1,13 @@
+...@../../tools/diagrams/style
+
+direction: right
+
+metrics: "Metrics API\n(CPU-Verbrauch der Pods)" {class: store}
+hpa: "HorizontalPodAutoscaler\nZiel: 50 % CPU" {class: resource}
+deployment: "Deployment demo\nreplicas: 2 … 5" {class: resource}
+pods: Pods {class: resource; style.multiple: true}
+
+metrics -> hpa: "liest alle 15 s"
+hpa -> deployment: "setzt replicas"
+deployment -> pods: "erzeugt / entfernt"
+pods -> metrics: "Verbrauch" {style.stroke-dash: 4}

@@ -1,0 +1,32 @@
+...@../../tools/diagrams/style
+
+grid-rows: 3
+grid-gap: 24
+
+anti: "Pod-Anti-Affinity (topologyKey: hostname) – höchstens 1 Pod pro Node" {
+  class: group
+  grid-columns: 3
+  grid-gap: 16
+  n1: "Node 1" {class: subgroup; width: 190; p: "demo" {class: resource}}
+  n2: "Node 2" {class: subgroup; width: 190; p: "demo" {class: resource}}
+  n3: "Node 3" {class: subgroup; width: 190; p: "demo" {class: resource}}
+}
+
+spread: "Topology Spread (maxSkew: 1) – gleichmäßig, auch mehrere pro Node" {
+  class: group
+  grid-columns: 3
+  grid-gap: 16
+  n1: "Node 1" {class: subgroup; width: 190; grid-rows: 2; grid-gap: 8; a: "demo" {class: resource}; b: "demo" {class: resource}}
+  n2: "Node 2" {class: subgroup; width: 190; grid-rows: 2; grid-gap: 8; a: "demo" {class: resource}; b: "demo" {class: resource}}
+  n3: "Node 3" {class: subgroup; width: 190; grid-rows: 2; grid-gap: 8; a: "demo" {class: resource}; b: "demo" {class: resource}}
+}
+
+affinity: "Pod-Affinity (topologyKey: hostname) – Cache neben der Demo-App" {
+  class: group
+  grid-columns: 3
+  grid-gap: 16
+  n1: "Node 1" {class: subgroup; width: 190; grid-rows: 2; grid-gap: 8; a: "demo" {class: resource}; b: "demo-cache" {class: component}}
+  n2: "Node 2" {class: subgroup; width: 190; a: "demo" {class: resource}}
+  n3: "Node 3" {class: subgroup; width: 190; a: "demo" {class: resource}}
+}
+
